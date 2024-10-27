@@ -1,11 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, SplashScreen, Stack } from "expo-router";
-import {
-  useFonts,
-  Inter_400Regular,
-  Inter_500Medium,
-} from "@expo-google-fonts/inter";
-import AppLoading from "expo-app-loading";
+import { SplashScreen, Stack } from "expo-router";
 import "../global.css";
 import * as Font from "expo-font";
 
@@ -23,18 +17,23 @@ export default function RootLayout() {
         "Inter-SemiBold": require("../assets/fonts/Inter_18pt-SemiBold.ttf"),
       });
       setFontsLoaded(true);
-      SplashScreen.hideAsync(); // Hide the splash screen after fonts are loaded
+      SplashScreen.hideAsync();
     }
 
     loadFonts();
   }, []);
 
   if (!fontsLoaded) {
-    return null; // Render nothing until fonts are loaded
+    return null;
   }
   return (
     <Stack>
-      <Stack.Screen name="index" />
+      <Stack.Screen
+        name="index"
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }

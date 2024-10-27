@@ -5,7 +5,7 @@ import { Image, Text, View } from "react-native";
 import HomeIcon from "@/constants/icons/HomeIcon";
 import UsersIcon from "@/constants/icons/UsersIcon";
 import LockIcon from "@/constants/icons/LockIcon";
-import ProfileIcon from "@/constants/icons/profileIcon";
+import ProfileIcon from "@/constants/icons/ProfileIcon";
 
 interface TabIconTypes {
   icon: React.ReactElement;
@@ -43,9 +43,9 @@ const TabsLayout = () => {
         screenOptions={{
           tabBarShowLabel: false,
           tabBarStyle: {
-            paddingBottom: 20, // Adjust this value to move the tabs down
-            paddingTop: 10, // Optional: Adds some space above the tabs
-            height: 90, // Adjust height if needed
+            paddingBottom: 20,
+            paddingTop: 10,
+            height: 90,
           },
         }}
       >
