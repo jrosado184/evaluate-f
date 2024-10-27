@@ -5,10 +5,10 @@ import { Text, View } from "react-native";
 export default function Index() {
   return (
     <View className="h-full flex justify-center items-center">
-      <Text>Edit app/index.tsx to edit this screen.</Text>
-      <Link className="text-blue-500" href="/users">
-        Go To Here
-      </Link>
+      <Text className="font-inter-medium text-2xl">
+        Edit app/index.tsx to edit this screen.
+      </Text>
+      <Link href="/home">Go Home</Link>
     </View>
   );
 }

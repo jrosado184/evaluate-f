@@ -1,10 +1,12 @@
 import { View, Text } from "react-native";
 import React from "react";
 
-export default function users() {
+const users = () => {
   return (
-    <View className="h-full flex justify-center items-center">
+    <View>
       <Text>users</Text>
     </View>
   );
-}
+};
+
+export default users;
