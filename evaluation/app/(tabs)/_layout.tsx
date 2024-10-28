@@ -1,40 +1,10 @@
 import React from "react";
-import { Tabs, Redirect } from "expo-router";
-import { FontAwesome, MaterialIcons } from "@expo/vector-icons";
-import { Image, Text, View } from "react-native";
+import { Tabs } from "expo-router";
 import HomeIcon from "@/constants/icons/HomeIcon";
 import UsersIcon from "@/constants/icons/UsersIcon";
 import LockIcon from "@/constants/icons/LockIcon";
 import ProfileIcon from "@/constants/icons/ProfileIcon";
-
-interface TabIconTypes {
-  icon: React.ReactElement;
-  color: string;
-  icon_name: string;
-  focused?: boolean;
-}
-
-const TabIcon: React.FC<TabIconTypes> = ({
-  icon,
-  color,
-  icon_name,
-  focused,
-}) => {
-  return (
-    <View className="items-center justify-center gap-1">
-      {React.cloneElement(icon)}
-      <Text
-        className={`${
-          focused
-            ? "font-inter-semibold text-[#323FC1]"
-            : "font-inter-regular text-[#B4B4B4]"
-        } text-sm`}
-      >
-        {icon_name}
-      </Text>
-    </View>
-  );
-};
+import { TabIcon } from "@/components/navigation/TabBarIcon";
 
 const TabsLayout = () => {
   return (
