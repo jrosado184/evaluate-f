@@ -4,17 +4,38 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import FormField from "@/components/FormField";
 import Button from "@/components/Button";
 import { router } from "expo-router";
+import axios from "axios";
+import Error from "@/components/Error";
 
 const SignIn = () => {
   const [form, setForm] = useState({
-    email: "",
+    employee_id: "",
+    password: "",
+  });
+
+  const [errors, setErrors] = useState({
+    emplyee_id: "",
     password: "",
   });
 
   const [isSigningIn, setIsSigningIn] = useState(false);
 
   const submit = () => {
-    router.replace("/home");
+    axios
+      .post("http://localhost:9000/api/auth/login", {
+        ...form,
+      })
+      .then((res) => {
+        if (res.status === 200) router.replace("/home");
+      })
+      .catch((error) => {
+        setErrors({
+          ...errors,
+          emplyee_id: error.response.data.employee_id,
+          password: error.response.data.password,
+        });
+        throw Error(error);
+      });
   };
 
   return (
@@ -28,13 +49,15 @@ const SignIn = () => {
           />
           <View className="justify-center items-center w-full">
             <FormField
-              title="Email"
-              value={form.email}
-              handleChangeText={(e: any) => setForm({ ...form, email: e })}
-              keyboadtype="email-address"
+              title="Employee ID"
+              value={form.employee_id}
+              handleChangeText={(e: any) =>
+                setForm({ ...form, employee_id: e })
+              }
               styles="mt-7"
-              placeholder="Enter your email"
+              placeholder="Enter your ID"
             />
+            <Error hidden={!errors.emplyee_id} title={errors.emplyee_id} />
             <FormField
               title="Password"
               value={form.password}
@@ -42,6 +65,7 @@ const SignIn = () => {
               styles="mt-7"
               placeholder="Enter your password"
             />
+            <Error hidden={!errors.password} title={errors.password} />
             <Button
               handlePress={submit}
               isLoading={isSigningIn}
