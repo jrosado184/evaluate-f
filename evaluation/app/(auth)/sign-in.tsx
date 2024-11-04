@@ -16,6 +16,7 @@ const SignIn = () => {
   const [errors, setErrors] = useState({
     emplyee_id: "",
     password: "",
+    invalidCreddential: "",
   });
 
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -33,11 +34,11 @@ const SignIn = () => {
           ...errors,
           emplyee_id: error.response.data.employee_id,
           password: error.response.data.password,
+          invalidCreddential: error.response.data.message,
         });
         throw Error(error);
       });
   };
-
   return (
     <SafeAreaView className="h-full">
       <ScrollView>
@@ -66,6 +67,13 @@ const SignIn = () => {
               placeholder="Enter your password"
             />
             <Error hidden={!errors.password} title={errors.password} />
+            <Error
+              hidden={!errors.invalidCreddential}
+              title={
+                errors.invalidCreddential &&
+                "Employee id and password are incorrect"
+              }
+            />
             <Button
               handlePress={submit}
               isLoading={isSigningIn}
