@@ -1,9 +1,30 @@
-// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
+import React from "react";
+import { Text, View } from "react-native";
 
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { type IconProps } from '@expo/vector-icons/build/createIconSet';
-import { type ComponentProps } from 'react';
-
-export function TabBarIcon({ style, ...rest }: IconProps<ComponentProps<typeof Ionicons>['name']>) {
-  return <Ionicons size={28} style={[{ marginBottom: -3 }, style]} {...rest} />;
+interface TabIconTypes {
+  icon: React.ReactElement;
+  color: string;
+  icon_name: string;
+  focused?: boolean;
 }
+
+export const TabIcon: React.FC<TabIconTypes> = ({
+  icon,
+  icon_name,
+  focused,
+}) => {
+  return (
+    <View className="items-center justify-center gap-1">
+      {React.cloneElement(icon)}
+      <Text
+        className={`${
+          focused
+            ? "font-inter-semibold text-[#323FC1]"
+            : "font-inter-regular text-[#B4B4B4]"
+        } text-sm`}
+      >
+        {icon_name}
+      </Text>
+    </View>
+  );
+};

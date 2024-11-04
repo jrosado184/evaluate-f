@@ -1,12 +1,18 @@
 import { View, Text, Image } from "react-native";
 import React from "react";
-import logo from "../../constants/icons/logo.png";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const home = () => {
   return (
-    <View>
-      <Text>home</Text>
-    </View>
+    <SafeAreaView>
+      <View>
+        <Image
+          resizeMode="contain"
+          className="w-[12rem]"
+          source={require("../../constants/icons/logo.png")}
+        />
+      </View>
+    </SafeAreaView>
   );
 };
 
