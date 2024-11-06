@@ -78,6 +78,7 @@ const SignIn = () => {
               handlePress={submit}
               isLoading={isSigningIn}
               title="Sign in"
+              styles="my-12 w-full"
             />
           </View>
         </View>
