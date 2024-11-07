@@ -55,7 +55,7 @@ const SignIn = () => {
               handleChangeText={(e: any) =>
                 setForm({ ...form, employee_id: e })
               }
-              styles="mt-7"
+              styles="mt-7 w-[90%]"
               placeholder="Enter your ID"
             />
             <Error hidden={!errors.emplyee_id} title={errors.emplyee_id} />
@@ -63,7 +63,7 @@ const SignIn = () => {
               title="Password"
               value={form.password}
               handleChangeText={(e: any) => setForm({ ...form, password: e })}
-              styles="mt-7"
+              styles="mt-7 w-[90%]"
               placeholder="Enter your password"
             />
             <Error hidden={!errors.password} title={errors.password} />
@@ -78,6 +78,7 @@ const SignIn = () => {
               handlePress={submit}
               isLoading={isSigningIn}
               title="Sign in"
+              styles="my-12 w-full"
             />
           </View>
         </View>

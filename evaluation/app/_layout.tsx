@@ -46,6 +46,12 @@ export default function RootLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="(entry)"
+        options={{
+          headerShown: false,
+        }}
+      />
       {/* <Stack.Screen
         name="/search/[query]"
         options={{

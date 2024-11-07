@@ -5,7 +5,7 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import Entypo from "@expo/vector-icons/Entypo";
 
 interface FormFieldProps {
-  title: string;
+  title?: string;
   value: string;
   handleChangeText: any;
   keyboadtype?: string;
@@ -22,7 +22,7 @@ const FormField: React.FC<FormFieldProps> = ({
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   return (
-    <View className={`space-y-2 w-[90%] gap-2 ${styles}`}>
+    <View className={`space-y-2 gap-2 ${styles}`}>
       <Text className="text-base font-inter-medium">{title}</Text>
       <View className="border-2 border-gray-300 w-full h-16 rounded-[0.625rem] flex-row items-center">
         <TextInput
