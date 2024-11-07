@@ -8,7 +8,7 @@ import Shortcuts from "@/components/Shortcuts";
 import Activities from "@/components/Activities";
 const home = () => {
   return (
-    <SafeAreaView className="p-5">
+    <SafeAreaView className="p-6">
       <StatusBar barStyle="dark-content" />
       <Header />
       <Greeting />

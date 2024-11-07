@@ -1,16 +1,22 @@
-import { View, Text, Image } from "react-native";
+import { View, Text, Image, TouchableOpacity } from "react-native";
 import React from "react";
+import { Href, router } from "expo-router";
 
 interface CardTypes {
   title: string;
   icon: any;
+  route: Href;
 }
-const Card: React.FC<CardTypes> = ({ title, icon }) => {
+const Card: React.FC<CardTypes> = ({ title, icon, route }) => {
   return (
-    <View className="w-[48%] h-[9rem] rounded-lg border border-[#616161] items-center justify-center gap-2">
+    <TouchableOpacity
+      onPress={() => router.push(route)}
+      activeOpacity={0.8}
+      className="w-[48%] h-[9rem] rounded-lg border border-[#616161] items-center justify-center gap-2"
+    >
       <View>{icon}</View>
       <Text className="font-inter-semibold">{title}</Text>
-    </View>
+    </TouchableOpacity>
   );
 };
 

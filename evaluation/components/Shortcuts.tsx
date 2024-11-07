@@ -12,11 +12,20 @@ const Shortcuts = () => {
     <View className="w-full flex-row flex-wrap justify-between items-center gap-y-4 my-6">
       <Card title="Scan QR" icon={<QRIcon width={38} height={38} />} />
       <Card
+        route={"/enter_manually"}
         title="Enter Manually"
         icon={<KeyboardIcon width={38} height={38} />}
       />
-      <Card title="Lockers" icon={<LockSimpleIcon width={38} height={38} />} />
-      <Card title="Users" icon={<UsersIcon width={38} height={38} />} />
+      <Card
+        route={"/lockers"}
+        title="Lockers"
+        icon={<LockSimpleIcon width={38} height={38} />}
+      />
+      <Card
+        route={"/users"}
+        title="Users"
+        icon={<UsersIcon width={38} height={38} />}
+      />
     </View>
   );
 };
