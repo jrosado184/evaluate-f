@@ -10,7 +10,11 @@ import UsersIcon from "@/constants/icons/UsersIcon";
 const Shortcuts = () => {
   return (
     <View className="w-full flex-row flex-wrap justify-between items-center gap-y-4 my-6">
-      <Card title="Scan QR" icon={<QRIcon width={38} height={38} />} />
+      <Card
+        route={"/"}
+        title="Scan QR"
+        icon={<QRIcon width={38} height={38} />}
+      />
       <Card
         route={"/enter_manually"}
         title="Enter Manually"

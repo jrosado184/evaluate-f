@@ -11,7 +11,11 @@ const enter_manually = () => {
     <SafeAreaView className="p-6">
       <Header />
       <View className="py-6">
-        <TouchableOpacity activeOpacity={0.8} onPress={() => router.back()}>
+        <TouchableOpacity
+          className="w-12"
+          activeOpacity={0.8}
+          onPress={() => router.back()}
+        >
           <LeftIcon width={30} height={30} />
         </TouchableOpacity>
       </View>
