@@ -10,7 +10,9 @@ interface FormFieldProps {
   handleChangeText: any;
   keyboadtype?: string;
   styles?: string;
-  placeholder?: string;
+  placeholder: string;
+  rounded?: string;
+  inputStyles?: string;
 }
 
 const FormField: React.FC<FormFieldProps> = ({
@@ -19,14 +21,18 @@ const FormField: React.FC<FormFieldProps> = ({
   handleChangeText,
   styles,
   placeholder,
+  rounded,
+  inputStyles,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   return (
     <View className={`space-y-2 gap-2 ${styles}`}>
       <Text className="text-base font-inter-medium">{title}</Text>
-      <View className="border-2 border-gray-300 w-full h-16 rounded-[0.625rem] flex-row items-center">
+      <View
+        className={`border border-gray-400 w-full h-16 flex-row items-center ${rounded}`}
+      >
         <TextInput
-          className="font-inter-semibold flex-1 pl-3"
+          className={`font-inter-semibold flex-1 ${inputStyles}`}
           value={value}
           placeholder={placeholder}
           placeholderTextColor="#929292"

@@ -15,6 +15,8 @@ export default function RootLayout() {
         "Inter-Regular": require("../assets/fonts/Inter_18pt-Regular.ttf"),
         "Inter-Medium": require("../assets/fonts/Inter_18pt-Medium.ttf"),
         "Inter-SemiBold": require("../assets/fonts/Inter_18pt-SemiBold.ttf"),
+        "Inter-Bold": require("../assets/fonts/Inter_18pt-Bold.ttf"),
+        "Inter-ExtraBold": require("../assets/fonts/Inter_18pt-ExtraBold.ttf"),
       });
       setFontsLoaded(true);
       SplashScreen.hideAsync();

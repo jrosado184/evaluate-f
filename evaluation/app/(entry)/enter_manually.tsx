@@ -23,17 +23,29 @@ const enter_manually = () => {
         <Text className="font-inter-semibold text-[1.2rem]">
           Personal Details
         </Text>
-        <FormField styles="w-100" placeholder="First Name" />
-        <FormField styles="w-100" placeholder="Last Name" />
-        <FormField styles="w-100" placeholder="Job Title" />
-        <FormField styles="w-100" placeholder="Identification Number" />
+        <FormField inputStyles="pl-4" styles="w-100" placeholder="First Name" />
+        <FormField inputStyles="pl-4" styles="w-100" placeholder="Last Name" />
+        <FormField inputStyles="pl-4" styles="w-100" placeholder="Job Title" />
+        <FormField
+          inputStyles="pl-4"
+          styles="w-100"
+          placeholder="Identification Number"
+        />
       </View>
       <View className="my-6">
         <Text className="font-inter-semibold text-[1.2rem]">
           Locker Details
         </Text>
-        <FormField styles="w-100" placeholder="Locker Number" />
-        <FormField styles="w-100" placeholder="Assign QR Code" />
+        <FormField
+          inputStyles="pl-4"
+          styles="w-100"
+          placeholder="Locker Number"
+        />
+        <FormField
+          inputStyles="pl-4"
+          styles="w-100"
+          placeholder="Assign QR Code"
+        />
       </View>
       <View className="w-full items-center justify-end h-[5.2rem] ">
         <TouchableOpacity

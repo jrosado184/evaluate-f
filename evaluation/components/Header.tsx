@@ -4,7 +4,7 @@ import Notification from "./Notification";
 import { avatar_url } from "@/constants/links";
 
 const Header = () => {
-  const amount = 0;
+  const amount = 25;
 
   return (
     <View className="flex-row justify-between items-start w-full">
@@ -20,7 +20,7 @@ const Header = () => {
           amount > 0 ? "gap-8" : "gap-5"
         }`}
       >
-        <Notification />
+        <Notification amount={amount} />
         <View className="w-[3rem] h-[3rem] mb-2 border border-black rounded-full">
           <Image
             className="w-full h-full rounded-full bg-black"

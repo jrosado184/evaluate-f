@@ -1,4 +1,4 @@
-import { StatusBar } from "react-native";
+import { StatusBar, View } from "react-native";
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "@/components/Header";
@@ -8,12 +8,14 @@ import Shortcuts from "@/components/Shortcuts";
 import Activities from "@/components/Activities";
 const home = () => {
   return (
-    <SafeAreaView className="p-6">
+    <SafeAreaView className="p-6 bg-neutral-50">
       <StatusBar barStyle="dark-content" />
-      <Header />
-      <Greeting />
-      <Shortcuts />
-      <Activities />
+      <View>
+        <Header />
+        <Greeting />
+        <Shortcuts />
+        <Activities />
+      </View>
     </SafeAreaView>
   );
 };
