@@ -3,7 +3,6 @@ import React from "react";
 import Card from "./Card";
 import QRIcon from "@/constants/icons/QRIcon";
 import KeyboardIcon from "@/constants/icons/KeyboardIcon";
-import LockIcon from "@/constants/icons/LockIcon";
 import LockSimpleIcon from "@/constants/icons/LockSimpleIcon";
 import UsersIcon from "@/constants/icons/UsersIcon";
 
@@ -16,7 +15,7 @@ const Shortcuts = () => {
         icon={<QRIcon width={38} height={38} />}
       />
       <Card
-        route={"/enter_manually"}
+        route={"/home/enter_manually"}
         title="Enter Manually"
         icon={<KeyboardIcon width={38} height={38} />}
       />

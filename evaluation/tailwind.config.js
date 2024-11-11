@@ -9,6 +9,8 @@ module.exports = {
         "inter-regular": ["Inter-Regular"],
         "inter-medium": ["Inter-Medium"],
         "inter-semibold": ["Inter-SemiBold"],
+        "inter-bold": ["Inter-Bold"],
+        "inter-extrabold": ["Inter-ExtraBold"],
       },
     },
   },

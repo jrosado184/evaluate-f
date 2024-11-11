@@ -3,14 +3,14 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Image, View } from "react-native";
 import SpinningCircle from "@/constants/animations/spinning-circle";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { AppRegistry } from "react-native";
+
 import { PaperProvider } from "react-native-paper";
 
 export default function Index() {
   useFocusEffect(
     useCallback(() => {
       const timer = setTimeout(() => {
-        router.replace("/home");
+        router.replace("/(tabs)/home");
       }, 3000);
 
       return () => clearTimeout(timer);

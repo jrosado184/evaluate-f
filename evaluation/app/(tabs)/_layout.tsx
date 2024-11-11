@@ -11,6 +11,7 @@ const TabsLayout = () => {
     <>
       <Tabs
         screenOptions={{
+          unmountOnBlur: true,
           tabBarShowLabel: false,
           tabBarStyle: {
             paddingBottom: 20,

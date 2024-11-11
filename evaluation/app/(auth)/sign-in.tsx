@@ -50,6 +50,7 @@ const SignIn = () => {
           />
           <View className="justify-center items-center w-full">
             <FormField
+              inputStyles="pl-4"
               title="Employee ID"
               value={form.employee_id}
               handleChangeText={(e: any) =>
@@ -57,14 +58,17 @@ const SignIn = () => {
               }
               styles="mt-7 w-[90%]"
               placeholder="Enter your ID"
+              rounded="rounded-[0.625rem]"
             />
             <Error hidden={!errors.emplyee_id} title={errors.emplyee_id} />
             <FormField
+              inputStyles="pl-4"
               title="Password"
               value={form.password}
               handleChangeText={(e: any) => setForm({ ...form, password: e })}
               styles="mt-7 w-[90%]"
               placeholder="Enter your password"
+              rounded="rounded-[0.625rem]"
             />
             <Error hidden={!errors.password} title={errors.password} />
             <Error
@@ -78,7 +82,7 @@ const SignIn = () => {
               handlePress={submit}
               isLoading={isSigningIn}
               title="Sign in"
-              styles="my-12 w-full"
+              styles="my-12 w-full rounded-[0.625rem]"
             />
           </View>
         </View>
