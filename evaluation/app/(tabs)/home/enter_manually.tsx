@@ -5,20 +5,13 @@ import Header from "@/components/Header";
 import FormField from "@/components/FormField";
 import LeftIcon from "@/constants/icons/LeftIcon";
 import { router } from "expo-router";
+import LeftButton from "@/components/LeftButton";
 
 const enter_manually = () => {
   return (
     <SafeAreaView className="p-6">
       <Header />
-      <View className="py-6">
-        <TouchableOpacity
-          className="w-12"
-          activeOpacity={0.8}
-          onPress={() => router.back()}
-        >
-          <LeftIcon width={30} height={30} />
-        </TouchableOpacity>
-      </View>
+      <LeftButton />
       <View className="my-2">
         <Text className="font-inter-semibold text-[1.2rem]">
           Personal Details
@@ -47,10 +40,10 @@ const enter_manually = () => {
           placeholder="Assign QR Code"
         />
       </View>
-      <View className="w-full items-center justify-end h-[5.2rem] ">
+      <View className="w-full items-center justify-center h-[5.2rem] ">
         <TouchableOpacity
           activeOpacity={0.8}
-          className="w-28 h-10 border border-black justify-center items-center rounded-md my-2"
+          className="w-28 h-10 border border-gray-700 justify-center items-center rounded-md my-2"
         >
           <Text>Add User</Text>
         </TouchableOpacity>

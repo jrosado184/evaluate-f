@@ -1,4 +1,4 @@
-import { View, Text } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import React from "react";
 import RightIcon from "@/constants/icons/RightIcon";
 import WarningIcon from "@/constants/icons/WarningIcon";
@@ -20,9 +20,10 @@ interface UserCardTypes {
   /** Last update timestamp */
   last_update: string;
   /** Assigned locker number */
-  locker_number: number;
+  locker_number: string;
   /** Status of the user */
   status: string;
+  button?: string;
 }
 
 /**
@@ -31,10 +32,11 @@ interface UserCardTypes {
  * @param {string} position - Position of the user in the company
  * @param {string} name - Full name of the user
  * @param {string} department - Department the user belongs to
- * @param {number} employee_id - Unique employee ID
+ * @param {string} employee_id - Unique employee ID
  * @param {string} last_update - Last update timestamp
- * @param {number} locker_number - Assigned locker number
+ * @param {string} locker_number - Assigned locker number
  * @param {string} status - Current status of the user
+ * @param {string} button - Arrow or update button
  */
 const UserCard: React.FC<UserCardTypes> = ({
   position,
@@ -44,6 +46,7 @@ const UserCard: React.FC<UserCardTypes> = ({
   last_update,
   locker_number,
   status,
+  button,
 }) => {
   return (
     <View className="w-full items-center">
@@ -70,7 +73,16 @@ const UserCard: React.FC<UserCardTypes> = ({
                 Locker: <Text className="font-inter-bold">{locker_number}</Text>
               </Text>
             </View>
-            <RightIcon />
+            {button === "arrow" ? (
+              <RightIcon />
+            ) : (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                className="w-28 h-10 border border-gray-500 justify-center items-center rounded-md my-2"
+              >
+                <Text>Update</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </View>

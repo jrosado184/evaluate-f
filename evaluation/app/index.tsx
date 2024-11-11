@@ -10,7 +10,7 @@ export default function Index() {
   useFocusEffect(
     useCallback(() => {
       const timer = setTimeout(() => {
-        router.replace("/home");
+        router.replace("/(tabs)/home");
       }, 3000);
 
       return () => clearTimeout(timer);
