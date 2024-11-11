@@ -4,8 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "@/components/Header";
 import FormField from "@/components/FormField";
 import UserCard from "@/components/UserCard";
-import { router, useNavigation } from "expo-router";
-import { useResetOnFocus } from "@/hooks/useResetOnFocus";
+import { router } from "expo-router";
 
 const Users = () => {
   const handleSearch = () => {};
@@ -35,6 +34,7 @@ const Users = () => {
         <View className="pb-[10rem] gap-y-3">
           {Array.from({ length: 6 }).map((_, index) => (
             <TouchableOpacity
+              key={index}
               onPress={() => router.push(`/users/${index + 1}`)}
               activeOpacity={0.8}
             >
