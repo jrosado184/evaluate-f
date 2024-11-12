@@ -5,31 +5,13 @@ import Header from "@/components/Header";
 import FormField from "@/components/FormField";
 import UserCard from "@/components/UserCard";
 import { router } from "expo-router";
+import Search from "@/components/Search";
 
 const Users = () => {
-  const handleSearch = () => {};
   return (
-    <SafeAreaView className="p-5 bg-neutral-50">
+    <SafeAreaView className="p-6 bg-neutral-50">
       <Header />
-      <View className="w-full items-center justify-start">
-        <FormField
-          styles="rounded-full w-full"
-          value=""
-          placeholder="Search..."
-          handleChangeText={handleSearch}
-          rounded="rounded-full h-14"
-          inputStyles="pl-5 text-[1.1rem]"
-        />
-        <View className="justify-between items-center w-[100%] flex-row my-4">
-          <Text className="pl-2 text-neutral-500">Total users: 1609</Text>
-          <View className="gap-2 flex-row items-center">
-            <Text>Sort By</Text>
-            <TouchableOpacity className="w-24 mr-2 h-8 border border-gray-400 rounded-lg items-center justify-center">
-              <Text className="text-sm">Last Name</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
+      <Search />
       <ScrollView>
         <View className="pb-[10rem] gap-y-3">
           {Array.from({ length: 6 }).map((_, index) => (

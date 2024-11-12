@@ -19,7 +19,7 @@ export default function Index() {
   return (
     <PaperProvider>
       <SafeAreaProvider>
-        <SafeAreaView className="h-full justify-center items-center ">
+        <SafeAreaView className="h-full justify-center items-center bg-neutral-50">
           <View className="h-full justify-center items-center">
             <Image
               className="w-80 h-48"
