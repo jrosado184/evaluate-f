@@ -29,7 +29,12 @@ export default function RootLayout() {
     return null;
   }
   return (
-    <Stack>
+    <Stack
+      screenOptions={{
+        gestureEnabled: true,
+        gestureDirection: "horizontal",
+      }}
+    >
       <Stack.Screen
         name="index"
         options={{
