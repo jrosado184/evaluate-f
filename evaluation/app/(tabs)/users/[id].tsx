@@ -10,8 +10,7 @@ import Activity from "@/components/Activity";
 const User = () => {
   const { id } = useGlobalSearchParams();
   return (
-    <SafeAreaView className="p-5">
-      <Header />
+    <SafeAreaView className="p-6 bg-neutral-50">
       <LeftButton />
       <View>
         <UserCard
