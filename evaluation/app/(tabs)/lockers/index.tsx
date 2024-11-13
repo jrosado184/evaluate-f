@@ -6,11 +6,12 @@ import { router } from "expo-router";
 import UserCard from "@/components/UserCard";
 import Search from "@/components/Search";
 import LockerCard from "@/components/LockerCard";
+import VacantCard from "@/components/VacantCard";
 
 const Lockers = () => {
   return (
     <SafeAreaView className="p-6 bg-neutral-50">
-      <Header />
+      <Text className="pl-2 font-inter-medium text-[2rem]">Lockers</Text>
       <Search />
       <ScrollView>
         <View className="pb-[10rem] gap-y-3">
@@ -27,6 +28,12 @@ const Lockers = () => {
                 assigned_by="Juan Guerrero"
                 last_update="May 11, 2008"
               />
+              {/* <VacantCard
+                button="Assign"
+                locker_number="456"
+                assigned_by="Juan Guerrero"
+                last_updated="May 11, 2008"
+              /> */}
             </TouchableOpacity>
           ))}
         </View>

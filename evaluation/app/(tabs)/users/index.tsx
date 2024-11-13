@@ -1,8 +1,6 @@
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Header from "@/components/Header";
-import FormField from "@/components/FormField";
 import UserCard from "@/components/UserCard";
 import { router } from "expo-router";
 import Search from "@/components/Search";
@@ -10,7 +8,7 @@ import Search from "@/components/Search";
 const Users = () => {
   return (
     <SafeAreaView className="p-6 bg-neutral-50">
-      <Header />
+      <Text className="pl-2 font-inter-medium text-[2rem]">Users</Text>
       <Search />
       <ScrollView>
         <View className="pb-[10rem] gap-y-3">

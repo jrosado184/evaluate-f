@@ -7,23 +7,31 @@ import LockerCard from "@/components/LockerCard";
 import Activity from "@/components/Activity";
 import RNPickerSelect from "react-native-picker-select";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import VacantCard from "@/components/VacantCard";
 
 const Locker = () => {
   const [status, setStatus] = useState("Functional");
   const pickerRef = useRef<RNPickerSelect | null>(null);
 
   return (
-    <SafeAreaView className="p-5 bg-neutral-50 h-full">
-      <Header />
+    <SafeAreaView className="p-6 bg-neutral-50 h-full">
       <LeftButton />
       <View>
         <LockerCard
+          vacant={false}
           button="update"
           locker_number="456"
           occupant="Javier Rosado"
           assigned_by="Juan Guerrero"
           last_update="May 11, 2008"
         />
+        {/* <VacantCard
+          status="Damaged"
+          locker_number="0056"
+          button="Assign"
+          last_updated="June 4, 2022"
+          assigned_by="Juan Guerrero"
+        /> */}
       </View>
       <View className="my-5">
         <Text className="font-inter-semibold text-[1.2rem]">History</Text>
@@ -54,7 +62,7 @@ const Locker = () => {
               ref={pickerRef}
               style={{
                 inputIOS: {
-                  paddingVertical: 21,
+                  paddingVertical: 22,
                   paddingHorizontal: 10,
                   color: "black",
                   flex: 1,
@@ -83,6 +91,14 @@ const Locker = () => {
               />
             </View>
           </View>
+        </TouchableOpacity>
+      </View>
+      <View className="py-36 items-center justify-center">
+        <TouchableOpacity
+          activeOpacity={0.8}
+          className="w-32 h-10 border border-red-500 justify-center items-center rounded-md my-2"
+        >
+          <Text className="text-red-500">Delete user</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
