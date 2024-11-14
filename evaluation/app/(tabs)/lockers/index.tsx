@@ -26,7 +26,7 @@ const Lockers = () => {
                 locker_number="456"
                 occupant="Javier Rosado"
                 assigned_by="Juan Guerrero"
-                last_update="May 11, 2008"
+                last_updated="May 11, 2008"
               />
               {/* <VacantCard
                 button="Assign"

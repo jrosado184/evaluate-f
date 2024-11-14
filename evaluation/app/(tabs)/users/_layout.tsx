@@ -1,7 +1,10 @@
 import React from "react";
 import { Stack } from "expo-router";
+import useResetOnTabFocus from "@/hooks/useResetOnTabFocus";
 
 const UserLayout = () => {
+  useResetOnTabFocus("users", "users");
+
   return (
     <Stack
       screenOptions={{
