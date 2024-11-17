@@ -1,30 +1,28 @@
-import { useCallback } from "react";
-import {
-  useFocusEffect,
-  useNavigation,
-  useRoute,
-  CommonActions,
-} from "@react-navigation/native";
+import { useCallback, useRef } from "react";
+import { router, useFocusEffect, useSegments } from "expo-router";
 
-const useResetOnTabFocus = (tabName: string, rootScreenName: string) => {
-  const navigation = useNavigation<any>();
-  const route = useRoute();
+const useResetOnTabReturn = (tabName: any) => {
+  const segments = useSegments(); // Get the current navigation segments
+  const previousTab = useRef<any | null>(null); // Track the previous tab state
+  const wasNested = useRef(false); // Track if the user was nested
 
   useFocusEffect(
     useCallback(() => {
-      const state = navigation.getState();
-      const isNestedInStack = state.routes[state.index]?.state?.index > 0;
+      const currentTab = segments[1]; // Current tab (based on segments)
+      const isNested = segments.length > 2; // Check if in a nested route
 
-      if (isNestedInStack && route.name === tabName) {
-        navigation.dispatch(
-          CommonActions.reset({
-            index: 0,
-            routes: [{ name: rootScreenName }],
-          })
-        );
+      // Only replace if coming back from a nested state and tabs have changed
+      if (isNested) {
+        wasNested.current = true;
+      } else if (wasNested.current && previousTab.current !== currentTab) {
+        wasNested.current = false; // Reset nested state
+        router.replace(tabName); // Reset to the tab root
       }
-    }, [navigation, route.name, tabName, rootScreenName])
+
+      // Update the previous tab state
+      previousTab.current = currentTab;
+    }, [segments, tabName])
   );
 };
 
-export default useResetOnTabFocus;
+export default useResetOnTabReturn;

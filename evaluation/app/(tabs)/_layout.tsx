@@ -14,7 +14,7 @@ const TabsLayout = () => {
           tabBarShowLabel: false,
           tabBarStyle: {
             paddingBottom: 20,
-            paddingTop: 10,
+            paddingTop: 19,
             height: 90,
           },
         }}
@@ -24,7 +24,7 @@ const TabsLayout = () => {
           options={{
             title: "Home",
             headerShown: false,
-            tabBarIcon: ({ color, focused }) => (
+            tabBarIcon: ({ color, focused }: any) => (
               <TabIcon
                 color={color}
                 icon_name="Home"
@@ -46,7 +46,7 @@ const TabsLayout = () => {
           options={{
             title: "Users",
             headerShown: false,
-            tabBarIcon: ({ color, focused }) => (
+            tabBarIcon: ({ color, focused }: any) => (
               <TabIcon
                 color={color}
                 icon_name="Users"
@@ -68,7 +68,7 @@ const TabsLayout = () => {
           options={{
             title: "Lockers",
             headerShown: false,
-            tabBarIcon: ({ color, focused }) => (
+            tabBarIcon: ({ color, focused }: any) => (
               <TabIcon
                 color={color}
                 icon_name="Lockers"
@@ -90,7 +90,7 @@ const TabsLayout = () => {
           options={{
             title: "Profile",
             headerShown: false,
-            tabBarIcon: ({ color, focused }) => (
+            tabBarIcon: ({ color, focused }: any) => (
               <TabIcon
                 color={color}
                 icon_name="Profile"

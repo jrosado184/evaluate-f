@@ -18,7 +18,7 @@ const Lockers = () => {
           {Array.from({ length: 6 }).map((_, index) => (
             <TouchableOpacity
               key={index}
-              onPress={() => router.push(`/lockers/${index + 1}`)}
+              onPress={() => router.replace(`/lockers/${index + 1}`)}
               activeOpacity={0.8}
             >
               <LockerCard

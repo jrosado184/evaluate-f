@@ -12,9 +12,9 @@ export const TabIcon: React.FC<TabIconTypes> = ({
   icon,
   icon_name,
   focused,
-}) => {
+}: TabIconTypes) => {
   return (
-    <View className="items-center justify-center gap-1">
+    <View className="items-center w-14 justify-center gap-1">
       {React.cloneElement(icon)}
       <Text
         className={`${

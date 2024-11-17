@@ -20,7 +20,7 @@ interface UserCardTypes {
   /** Last update timestamp */
   last_update: string;
   /** Assigned locker number */
-  locker_number: string;
+  locker_number: number;
   /** Status of the user */
   status: string;
   button?: string;
@@ -32,9 +32,9 @@ interface UserCardTypes {
  * @param {string} position - Position of the user in the company
  * @param {string} name - Full name of the user
  * @param {string} department - Department the user belongs to
- * @param {string} employee_id - Unique employee ID
+ * @param {number} employee_id - Unique employee ID
  * @param {string} last_update - Last update timestamp
- * @param {string} locker_number - Assigned locker number
+ * @param {number} locker_number - Assigned locker number
  * @param {string} status - Current status of the user
  * @param {string} button - Arrow or update button
  */

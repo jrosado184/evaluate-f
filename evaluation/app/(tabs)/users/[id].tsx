@@ -16,7 +16,7 @@ const User = () => {
         <UserCard
           name="Javier Rosado"
           employee_id={3169322}
-          locker_number="0098"
+          locker_number={98}
           position="Trim Heel Meat"
           department="Fabrication"
           last_update="March 6, 2024"
