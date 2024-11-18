@@ -6,19 +6,28 @@ import { router } from "expo-router";
 import Search from "@/components/Search";
 import { useEmployeeContext } from "@/app/context/GlobalContext";
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const Users = () => {
   const { employees, setEmployees } = useEmployeeContext();
 
   useEffect(() => {
-    axios
-      .get("http://localhost:9000/api/users")
-      .then((res) => {
-        setEmployees(res.data);
-      })
-      .catch((error) => {
-        console.log(error);
-      });
+    const getusers = async () => {
+      const token = await AsyncStorage.getItem("authToken");
+      axios
+        .get("http://localhost:9000/api/users", {
+          headers: {
+            Authorization: token,
+          },
+        })
+        .then((res) => {
+          setEmployees(res.data);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    };
+    getusers();
   }, [employees]);
 
   return (

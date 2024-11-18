@@ -6,6 +6,7 @@ import Button from "@/components/Button";
 import { router } from "expo-router";
 import axios from "axios";
 import Error from "@/components/Error";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const SignIn = () => {
   const [form, setForm] = useState({
@@ -21,13 +22,16 @@ const SignIn = () => {
 
   const [isSigningIn, setIsSigningIn] = useState(false);
 
-  const submit = () => {
+  const submit = async () => {
     axios
       .post("http://localhost:9000/api/auth/login", {
         ...form,
       })
-      .then((res) => {
-        if (res.status === 200) router.replace("/home");
+      .then(async (res) => {
+        if (res.status === 200)
+          await AsyncStorage.setItem("authToken", res.data.token);
+
+        router.replace("/home");
       })
       .catch((error) => {
         setErrors({

@@ -5,12 +5,18 @@ import SpinningCircle from "@/constants/animations/spinning-circle";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 import { PaperProvider } from "react-native-paper";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Index() {
   useFocusEffect(
     useCallback(() => {
-      const timer = setTimeout(() => {
-        router.replace("/(tabs)/home");
+      const timer = setTimeout(async () => {
+        const token = await AsyncStorage.getItem("authToken");
+        if (!token) {
+          router.replace("/sign-in");
+        } else {
+          router.replace("/home");
+        }
       }, 3000);
 
       return () => clearTimeout(timer);

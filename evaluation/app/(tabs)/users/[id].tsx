@@ -6,9 +6,12 @@ import Header from "@/components/Header";
 import LeftButton from "@/components/LeftButton";
 import UserCard from "@/components/UserCard";
 import Activity from "@/components/Activity";
+import { useEmployeeContext } from "@/app/context/GlobalContext";
 
 const User = () => {
   const { id } = useGlobalSearchParams();
+  const { employees, setEmployees } = useEmployeeContext();
+
   return (
     <SafeAreaView className="p-6 bg-neutral-50">
       <LeftButton />
