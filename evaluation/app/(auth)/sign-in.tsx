@@ -24,14 +24,12 @@ const SignIn = () => {
 
   const submit = async () => {
     axios
-      .post("http://localhost:9000/api/auth/login", {
+      .post("http://10.0.0.79:9000/api/auth/login", {
         ...form,
       })
       .then(async (res) => {
-        if (res.status === 200)
-          await AsyncStorage.setItem("authToken", res.data.token);
-
-        router.replace("/home");
+        AsyncStorage.setItem("token", res.data.token);
+        if (res.status === 200) router.replace("/home");
       })
       .catch((error) => {
         setErrors({

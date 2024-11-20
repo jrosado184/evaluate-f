@@ -10,17 +10,17 @@ import CheckIcon from "@/constants/icons/CheckIcon";
  */
 interface UserCardTypes {
   /** Position of the user in the company */
-  position: string;
+  position: string | undefined;
   /** Full name of the user */
-  name: string;
+  name: string | undefined;
   /** Department the user belongs to */
-  department: string;
+  department: string | undefined;
   /** Unique employee ID */
-  employee_id: number;
+  employee_id: number | undefined;
   /** Last update timestamp */
-  last_update: string;
+  last_update: string | undefined;
   /** Assigned locker number */
-  locker_number: number;
+  locker_number: number | undefined;
   /** Status of the user */
   status: string;
   button?: string;

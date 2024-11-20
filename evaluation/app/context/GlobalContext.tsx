@@ -16,10 +16,12 @@ type Employee = {
 
 // Define the context type
 type EmployeeContextType = {
+  employee: Employee | undefined;
   employees: Employee[];
   addEmployee: (employee: Employee) => void;
   updateEmployee: (id: string, updateData: Partial<Employee>) => void;
   deleteEmployee: (id: string) => void;
+  setEmployee: (employee: Employee) => void;
   setEmployees: (employees: Employee[]) => void;
 };
 
@@ -31,6 +33,7 @@ const EmployeeContext = createContext<EmployeeContextType | undefined>(
 // Provider component
 export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employee, setEmployee] = useState<Employee | undefined>();
 
   const addEmployee = (employee: Employee) => {
     setEmployees((prev) => [...prev, employee]);
@@ -51,11 +54,13 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
   return (
     <EmployeeContext.Provider
       value={{
+        employee,
         employees,
         addEmployee,
         updateEmployee,
         deleteEmployee,
         setEmployees,
+        setEmployee,
       }}
     >
       {children}
@@ -64,7 +69,7 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
 };
 
 // Hook to use the context
-export const useEmployeeContext = () => {
+const useEmployeeContext = () => {
   const context = useContext(EmployeeContext);
   if (!context) {
     throw new Error(
@@ -73,3 +78,5 @@ export const useEmployeeContext = () => {
   }
   return context;
 };
+
+export default useEmployeeContext;

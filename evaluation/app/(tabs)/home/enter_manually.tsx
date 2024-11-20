@@ -10,7 +10,6 @@ import LeftButton from "@/components/LeftButton";
 const enter_manually = () => {
   return (
     <SafeAreaView className="p-6">
-      <Header />
       <LeftButton />
       <View className="my-2">
         <Text className="font-inter-semibold text-[1.2rem]">

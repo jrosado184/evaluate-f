@@ -4,18 +4,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import UserCard from "@/components/UserCard";
 import { router } from "expo-router";
 import Search from "@/components/Search";
-import { useEmployeeContext } from "@/app/context/GlobalContext";
+import useEmployeeContext from "@/app/context/GlobalContext";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
+import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 const Users = () => {
   const { employees, setEmployees } = useEmployeeContext();
 
   useEffect(() => {
     const getusers = async () => {
-      const token = await AsyncStorage.getItem("authToken");
+      const token = await AsyncStorage.getItem("token");
       axios
-        .get("http://localhost:9000/api/users", {
+        .get("http://10.0.0.79:9000/api/employees", {
           headers: {
             Authorization: token,
           },
@@ -28,7 +28,7 @@ const Users = () => {
         });
     };
     getusers();
-  }, [employees]);
+  }, []);
 
   return (
     <SafeAreaView className="p-6 bg-neutral-50">
@@ -39,7 +39,7 @@ const Users = () => {
           {employees.map((employee, index) => (
             <TouchableOpacity
               key={index}
-              onPress={() => router.replace(`/users/${employee._id}`)}
+              onPress={() => router.push(`/users/${employee._id}`)}
               activeOpacity={0.8}
             >
               <UserCard
@@ -48,7 +48,7 @@ const Users = () => {
                 name={employee.employee_name}
                 department={employee.department}
                 employee_id={employee.employee_id}
-                last_update="January 24, 2024"
+                last_update={formatISODate(employee.last_updated)}
                 locker_number={employee.locker_number}
                 status=""
                 button="arrow"

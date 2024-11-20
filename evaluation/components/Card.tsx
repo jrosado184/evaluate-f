@@ -10,7 +10,7 @@ interface CardTypes {
 const Card: React.FC<CardTypes> = ({ title, icon, route }) => {
   return (
     <TouchableOpacity
-      onPress={() => router.push(route)}
+      onPress={() => router.replace(route)}
       activeOpacity={0.8}
       className="w-[48%] h-[9rem] rounded-lg border border-[#616161] items-center justify-center gap-2"
     >

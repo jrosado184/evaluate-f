@@ -1,28 +1,49 @@
 import { View, Text } from "react-native";
-import React from "react";
+import React, { useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useGlobalSearchParams } from "expo-router";
-import Header from "@/components/Header";
 import LeftButton from "@/components/LeftButton";
 import UserCard from "@/components/UserCard";
 import Activity from "@/components/Activity";
-import { useEmployeeContext } from "@/app/context/GlobalContext";
+import useEmployeeContext from "@/app/context/GlobalContext";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 
 const User = () => {
   const { id } = useGlobalSearchParams();
-  const { employees, setEmployees } = useEmployeeContext();
+  const { employee, setEmployee } = useEmployeeContext();
+
+  useEffect(() => {
+    const getUser = async () => {
+      const token = await AsyncStorage.getItem("token");
+      axios
+        .get(`http://10.0.0.79:9000/api/employees/${id}`, {
+          headers: {
+            Authorization: token,
+          },
+        })
+        .then((res) => {
+          setEmployee(res.data);
+        })
+        .catch((error) => {
+          throw new Error(error);
+        });
+    };
+    getUser();
+  }, []);
 
   return (
     <SafeAreaView className="p-6 bg-neutral-50">
       <LeftButton />
       <View>
         <UserCard
-          name="Javier Rosado"
+          name={employee?.employee_name}
           employee_id={3169322}
-          locker_number={98}
-          position="Trim Heel Meat"
-          department="Fabrication"
-          last_update="March 6, 2024"
+          locker_number={employee?.locker_number}
+          position={employee?.position}
+          department={employee?.department}
+          last_update={formatISODate(employee?.last_updated)}
           status="Damaged"
         />
       </View>
