@@ -1,15 +1,13 @@
-import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
+import { ActivityIndicator, StyleSheet } from "react-native";
 import React from "react";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-
-const SpinningCircle = () => {
+const SpinningCircle = ({ color }: any) => {
   return (
     <ActivityIndicator
       style={{
         height: 10,
       }}
       size="small"
-      color="#0000ff"
+      color={color}
     />
   );
 };

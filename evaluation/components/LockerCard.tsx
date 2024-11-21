@@ -5,13 +5,13 @@ import CheckIcon from "@/constants/icons/CheckIcon";
 import RightIcon from "@/constants/icons/RightIcon";
 
 interface LockerCardTypes {
-  button: string;
-  status?: string;
-  locker_number: string;
-  occupant: string;
-  assigned_by: string;
-  last_updated: string;
-  vacant?: boolean;
+  button: string | undefined;
+  status?: string | undefined;
+  locker_number: number | undefined;
+  occupant: string | undefined;
+  assigned_by: string | undefined;
+  last_updated: string | undefined;
+  vacant?: boolean | undefined;
 }
 
 /**
@@ -19,7 +19,7 @@ interface LockerCardTypes {
  *
  * @param {string} button - Arrow or Update button
  * @param {string} status - Current status of the user
- * @param {string} locker_number - Assigned locker number
+ * @param {number} locker_number - Assigned locker number
  * @param {string} occupant - Person who occupies the locker
  * @param {string} assigned_by - Person who assigned the locker
  * @param {string} last_updated - Last update timestamp

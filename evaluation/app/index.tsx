@@ -14,7 +14,7 @@ export default function Index() {
         if (!token) {
           router.replace("/sign-in");
         } else {
-          router.replace("/home");
+          router.replace("/sign-in");
         }
       }, 3000);
 
@@ -31,7 +31,7 @@ export default function Index() {
               resizeMode="contain"
               source={require("../constants/icons/logo.png")}
             />
-            <SpinningCircle />
+            <SpinningCircle color="#0000ff" />
           </View>
         </SafeAreaView>
       </SafeAreaProvider>

@@ -18,7 +18,7 @@ interface UserCardTypes {
   /** Unique employee ID */
   employee_id: number | undefined;
   /** Last update timestamp */
-  last_update: string | undefined;
+  last_update: string;
   /** Assigned locker number */
   locker_number: number | undefined;
   /** Status of the user */

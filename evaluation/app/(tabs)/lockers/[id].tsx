@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Header from "@/components/Header";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LeftButton from "@/components/LeftButton";
@@ -8,10 +8,22 @@ import Activity from "@/components/Activity";
 import RNPickerSelect from "react-native-picker-select";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import VacantCard from "@/components/VacantCard";
+import { useGlobalSearchParams } from "expo-router";
+import useEmployeeContext from "@/app/context/GlobalContext";
+import { getUser } from "@/app/requests/getUser";
+import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 
 const Locker = () => {
   const [status, setStatus] = useState("Functional");
   const pickerRef = useRef<RNPickerSelect | null>(null);
+
+  const { id } = useGlobalSearchParams();
+
+  const { employee, setEmployee } = useEmployeeContext();
+
+  useEffect(() => {
+    getUser(setEmployee, id);
+  }, []);
 
   return (
     <SafeAreaView className="p-6 bg-neutral-50 h-full">
@@ -20,10 +32,10 @@ const Locker = () => {
         <LockerCard
           vacant={false}
           button="update"
-          locker_number="456"
-          occupant="Javier Rosado"
-          assigned_by="Juan Guerrero"
-          last_update="May 11, 2008"
+          locker_number={employee?.locker_number}
+          occupant={employee?.employee_name}
+          assigned_by={employee?.assigned_by}
+          last_updated={formatISODate(employee?.last_updated)}
         />
         {/* <VacantCard
           status="Damaged"
@@ -50,7 +62,7 @@ const Locker = () => {
           }}
           activeOpacity={1}
         >
-          <View className="border border-black h-14 rounded-md my-3 flex-row items-center relative">
+          <View className="border border-gray-400 h-14 rounded-md my-3 flex-row items-center relative">
             <RNPickerSelect
               onValueChange={(value) => setStatus(value)}
               items={[

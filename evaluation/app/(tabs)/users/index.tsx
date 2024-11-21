@@ -5,35 +5,19 @@ import UserCard from "@/components/UserCard";
 import { router } from "expo-router";
 import Search from "@/components/Search";
 import useEmployeeContext from "@/app/context/GlobalContext";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
+import getusers from "@/app/requests/getUsers";
 const Users = () => {
   const { employees, setEmployees } = useEmployeeContext();
 
   useEffect(() => {
-    const getusers = async () => {
-      const token = await AsyncStorage.getItem("token");
-      axios
-        .get("http://10.0.0.79:9000/api/employees", {
-          headers: {
-            Authorization: token,
-          },
-        })
-        .then((res) => {
-          setEmployees(res.data);
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    };
-    getusers();
+    getusers(setEmployees);
   }, []);
 
   return (
     <SafeAreaView className="p-6 bg-neutral-50">
       <Text className="pl-2 font-inter-medium text-[2rem]">Users</Text>
-      <Search />
+      <Search total="users" />
       <ScrollView>
         <View className="pb-[10rem] gap-y-3">
           {employees.map((employee, index) => (

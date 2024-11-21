@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Image } from "react-native";
+import { View, ScrollView, Image } from "react-native";
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FormField from "@/components/FormField";
@@ -7,6 +7,7 @@ import { router } from "expo-router";
 import axios from "axios";
 import Error from "@/components/Error";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import getServerIP from "../requests/NetworkAddress";
 
 const SignIn = () => {
   const [form, setForm] = useState({
@@ -23,15 +24,19 @@ const SignIn = () => {
   const [isSigningIn, setIsSigningIn] = useState(false);
 
   const submit = async () => {
+    setIsSigningIn(true);
+    const baseUrl = await getServerIP();
     axios
-      .post("http://10.0.0.79:9000/api/auth/login", {
+      .post(`${baseUrl}/auth/login`, {
         ...form,
       })
       .then(async (res) => {
         AsyncStorage.setItem("token", res.data.token);
         if (res.status === 200) router.replace("/home");
+        setIsSigningIn(false);
       })
       .catch((error) => {
+        setIsSigningIn(false);
         setErrors({
           ...errors,
           emplyee_id: error.response.data.employee_id,
