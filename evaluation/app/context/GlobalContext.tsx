@@ -16,6 +16,8 @@ type Employee = {
 
 // Define the context type
 type EmployeeContextType = {
+  loading: boolean;
+  setLoading: (loading: boolean) => boolean;
   employee: Employee | undefined;
   employees: Employee[];
   addEmployee: (employee: Employee) => void;
@@ -34,6 +36,7 @@ const EmployeeContext = createContext<EmployeeContextType | undefined>(
 export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [employee, setEmployee] = useState<Employee | undefined>();
+  const [loading, setLoading] = useState<boolean>();
 
   const addEmployee = (employee: Employee) => {
     setEmployees((prev) => [...prev, employee]);
@@ -54,6 +57,8 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
   return (
     <EmployeeContext.Provider
       value={{
+        loading,
+        setLoading,
         employee,
         employees,
         addEmployee,

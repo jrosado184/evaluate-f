@@ -13,6 +13,7 @@ export const getUser = async (setEmployee: any, id: any) => {
     })
     .then((res) => {
       setEmployee(res.data);
+      return res.data;
     })
     .catch((error) => {
       throw new Error(error);

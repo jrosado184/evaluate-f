@@ -12,6 +12,10 @@ import { useGlobalSearchParams } from "expo-router";
 import useEmployeeContext from "@/app/context/GlobalContext";
 import { getUser } from "@/app/requests/getUser";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
+import CardSkeleton from "@/app/skeletons/CardSkeleton";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import getServerIP from "@/app/requests/NetworkAddress";
+import axios from "axios";
 
 const Locker = () => {
   const [status, setStatus] = useState("Functional");
@@ -21,22 +25,46 @@ const Locker = () => {
 
   const { employee, setEmployee } = useEmployeeContext();
 
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    getUser(setEmployee, id);
+    const getUser = async () => {
+      const token = await AsyncStorage.getItem("token");
+      const baseUrl = await getServerIP();
+      axios
+        .get(`${baseUrl}/employees/${id}`, {
+          headers: {
+            Authorization: token,
+          },
+        })
+        .then((res) => {
+          setLoading(false);
+          setEmployee(res.data);
+          return res.data;
+        })
+        .catch((error) => {
+          throw new Error(error);
+        });
+    };
+    getUser();
   }, []);
 
   return (
     <SafeAreaView className="p-6 bg-neutral-50 h-full">
       <LeftButton />
       <View>
-        <LockerCard
-          vacant={false}
-          button="update"
-          locker_number={employee?.locker_number}
-          occupant={employee?.employee_name}
-          assigned_by={employee?.assigned_by}
-          last_updated={formatISODate(employee?.last_updated)}
-        />
+        {loading ? (
+          <CardSkeleton amount={1} width="w-full" height="h-40" />
+        ) : (
+          <LockerCard
+            vacant={false}
+            button="update"
+            locker_number={employee?.locker_number}
+            occupant={employee?.employee_name}
+            assigned_by={employee?.assigned_by}
+            last_updated={formatISODate(employee?.last_updated)}
+          />
+        )}
         {/* <VacantCard
           status="Damaged"
           locker_number="0056"
@@ -47,12 +75,16 @@ const Locker = () => {
       </View>
       <View className="my-5">
         <Text className="font-inter-semibold text-[1.2rem]">History</Text>
-        <ScrollView>
-          <Activity
-            name="Brenda Perez"
-            title="Marked locker number 876 damaged"
-          />
-        </ScrollView>
+        {loading ? (
+          <CardSkeleton amount={1} width="w-full" height="h-[4.5rem]" />
+        ) : (
+          <ScrollView>
+            <Activity
+              name="Brenda Perez"
+              title="Marked locker number 876 damaged"
+            />
+          </ScrollView>
+        )}
       </View>
       <View>
         <Text className="font-inter-semibold text-[1.2rem]">Status</Text>

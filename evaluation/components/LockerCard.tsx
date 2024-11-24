@@ -58,16 +58,17 @@ const LockerCard: React.FC<LockerCardTypes> = ({
                 Last updated: {last_updated}
               </Text>
             </View>
-            <View className="h-full justify-between py-4 items-end pr-4">
+            <View className="h-full justify-around items-end pr-4">
               <View className="gap-y-2 items-end">
                 {status === "Damaged" ? <WarningIcon /> : <CheckIcon />}
+                <Text className="font-inter-regular"> {""}</Text>
               </View>
               {button === "arrow" ? (
                 <RightIcon />
               ) : (
                 <TouchableOpacity
                   activeOpacity={0.8}
-                  className="w-28 h-10 border border-gray-500 justify-center items-center rounded-md"
+                  className="w-28 h-10 border border-gray-500 justify-center items-center rounded-md my-2"
                 >
                   <Text>Update</Text>
                 </TouchableOpacity>

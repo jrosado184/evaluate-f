@@ -3,6 +3,8 @@ import { SplashScreen, Stack } from "expo-router";
 import "../global.css";
 import * as Font from "expo-font";
 import { EmployeeProvider } from "./context/GlobalContext";
+import "react-native-gesture-handler";
+import "react-native-reanimated";
 
 SplashScreen.preventAutoHideAsync();
 

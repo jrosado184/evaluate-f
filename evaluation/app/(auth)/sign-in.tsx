@@ -10,13 +10,16 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "../requests/NetworkAddress";
 
 const SignIn = () => {
-  const [form, setForm] = useState({
-    employee_id: "",
+  const [form, setForm] = useState<{
+    employee_id: any;
+    password: string;
+  }>({
+    employee_id: 0,
     password: "",
   });
 
   const [errors, setErrors] = useState({
-    emplyee_id: "",
+    emplyee_id: null,
     password: "",
     invalidCreddential: "",
   });
@@ -28,7 +31,8 @@ const SignIn = () => {
     const baseUrl = await getServerIP();
     axios
       .post(`${baseUrl}/auth/login`, {
-        ...form,
+        employee_id: parseInt(form.employee_id),
+        password: form.password,
       })
       .then(async (res) => {
         AsyncStorage.setItem("token", res.data.token);

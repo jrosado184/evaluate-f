@@ -10,41 +10,46 @@ import VacantCard from "@/components/VacantCard";
 import getusers from "@/app/requests/getUsers";
 import useEmployeeContext from "@/app/context/GlobalContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
+import CardSkeleton from "@/app/skeletons/CardSkeleton";
 
 const Lockers = () => {
-  const { employees, setEmployees } = useEmployeeContext();
+  const { employees, setEmployees, loading, setLoading } = useEmployeeContext();
   useEffect(() => {
-    getusers(setEmployees);
+    getusers(setEmployees, setLoading);
   }, []);
   return (
     <SafeAreaView className="p-6 bg-neutral-50">
       <Text className="pl-2 font-inter-medium text-[2rem]">Lockers</Text>
       <Search total="lockers" />
-      <ScrollView>
-        <View className="pb-[10rem] gap-y-3">
-          {employees.map((locker, index) => (
-            <TouchableOpacity
-              key={index}
-              onPress={() => router.push(`/lockers/${locker._id}`)}
-              activeOpacity={0.8}
-            >
-              <LockerCard
-                button="arrow"
-                locker_number={locker.locker_number}
-                occupant={locker.employee_name}
-                assigned_by={locker.assigned_by}
-                last_updated={formatISODate(locker.last_updated)}
-              />
-              {/* <VacantCard
+      {!loading ? (
+        <ScrollView>
+          <View className="pb-[10rem] gap-y-3">
+            {employees.map((locker, index) => (
+              <TouchableOpacity
+                key={index}
+                onPress={() => router.push(`/lockers/${locker._id}`)}
+                activeOpacity={0.8}
+              >
+                <LockerCard
+                  button="arrow"
+                  locker_number={locker.locker_number}
+                  occupant={locker.employee_name}
+                  assigned_by={locker.assigned_by}
+                  last_updated={formatISODate(locker.last_updated)}
+                />
+                {/* <VacantCard
                 button="Assign"
                 locker_number="456"
                 assigned_by="Juan Guerrero"
                 last_updated="May 11, 2008"
               /> */}
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      ) : (
+        <CardSkeleton amount={5} width="w-full" height="h-40" />
+      )}
     </SafeAreaView>
   );
 };
