@@ -15,14 +15,12 @@ const Users = () => {
     getusers(setEmployees, setLoading);
   }, []);
 
-  //continue skeleton loading
-
   return (
     <SafeAreaView className="p-6 bg-neutral-50">
       <Text className="pl-2 font-inter-medium text-[2rem]">Users</Text>
       <Search total="users" />
       {!loading ? (
-        <ScrollView>
+        <ScrollView className="h-full">
           <View className="pb-[10rem] gap-y-3">
             {employees.map((employee, index) => (
               <TouchableOpacity

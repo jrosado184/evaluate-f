@@ -22,7 +22,7 @@ const Lockers = () => {
       <Text className="pl-2 font-inter-medium text-[2rem]">Lockers</Text>
       <Search total="lockers" />
       {!loading ? (
-        <ScrollView>
+        <ScrollView className="h-full">
           <View className="pb-[10rem] gap-y-3">
             {employees.map((locker, index) => (
               <TouchableOpacity
