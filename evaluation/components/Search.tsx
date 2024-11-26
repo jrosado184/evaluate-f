@@ -52,6 +52,8 @@ const Search = ({ total }: any) => {
     debouncedFetch(value);
   };
 
+  //fix search be able to search by last name as well
+
   return (
     <View className="w-full items-center justify-start">
       <FormField

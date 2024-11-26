@@ -4,9 +4,9 @@ import React, { createContext, useState, useContext, ReactNode } from "react";
 type Employee = {
   _id: string;
   employee_name: string;
-  locker_number: number;
-  employee_id: number;
-  knife_number: number | null;
+  locker_number: string;
+  employee_id: string;
+  knife_number: string | null;
   department: string;
   position: string;
   assigned_by: string;
