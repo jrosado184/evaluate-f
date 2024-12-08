@@ -2,8 +2,12 @@ import { View, Text, Image, TouchableOpacity } from "react-native";
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { avatar_url } from "@/constants/links";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const Profile = () => {
+  const logout = async () => {
+    AsyncStorage.clear();
+  };
   return (
     <SafeAreaView className="p-6">
       <View className="items-center py-20 gap-6">

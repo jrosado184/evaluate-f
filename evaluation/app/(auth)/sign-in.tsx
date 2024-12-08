@@ -31,7 +31,7 @@ const SignIn = () => {
     const baseUrl = await getServerIP();
     axios
       .post(`${baseUrl}/auth/login`, {
-        employee_id: parseInt(form.employee_id),
+        employee_id: form.employee_id,
         password: form.password,
       })
       .then(async (res) => {
@@ -65,7 +65,7 @@ const SignIn = () => {
               title="Employee ID"
               value={form.employee_id}
               handleChangeText={(e: any) =>
-                setForm({ ...form, employee_id: e })
+                setForm({ ...form, employee_id: e.toLowerCase() })
               }
               styles="mt-7 w-[90%]"
               placeholder="Enter your ID"

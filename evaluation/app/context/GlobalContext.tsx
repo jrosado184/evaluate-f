@@ -1,6 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode } from "react";
 
-// Define the employee type
 type Employee = {
   _id: string;
   employee_name: string;
@@ -16,15 +15,14 @@ type Employee = {
 
 // Define the context type
 type EmployeeContextType = {
-  loading: boolean;
-  setLoading: (loading: boolean) => boolean;
+  loading: any;
   employee: Employee | undefined;
   employees: Employee[];
-  addEmployee: (employee: Employee) => void;
-  updateEmployee: (id: string, updateData: Partial<Employee>) => void;
-  deleteEmployee: (id: string) => void;
+  userDetails: any;
+  setLoading: (loading: boolean) => void;
   setEmployee: (employee: Employee) => void;
-  setEmployees: (employees: Employee[]) => void;
+  setEmployees: (employees: any) => void;
+  setUserDetails: (userDetails: any) => void;
 };
 
 // Create the context
@@ -34,38 +32,26 @@ const EmployeeContext = createContext<EmployeeContextType | undefined>(
 
 // Provider component
 export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<any>([]);
   const [employee, setEmployee] = useState<Employee | undefined>();
-  const [loading, setLoading] = useState<boolean>();
-
-  const addEmployee = (employee: Employee) => {
-    setEmployees((prev) => [...prev, employee]);
-  };
-
-  const updateEmployee = (id: string, updateData: Partial<Employee>) => {
-    setEmployees((prev) =>
-      prev.map((employee) =>
-        employee._id === id ? { ...employee, ...updateData } : employee
-      )
-    );
-  };
-
-  const deleteEmployee = (id: string) => {
-    setEmployees((prev) => prev.filter((employee) => employee._id !== id));
-  };
+  const [loading, setLoading] = useState<boolean | null>();
+  const [userDetails, setUserDetails] = useState<any>({
+    totalPages: null,
+    totalUsers: null,
+    currentPage: null,
+  });
 
   return (
     <EmployeeContext.Provider
       value={{
         loading,
-        setLoading,
         employee,
         employees,
-        addEmployee,
-        updateEmployee,
-        deleteEmployee,
-        setEmployees,
+        userDetails,
+        setLoading,
         setEmployee,
+        setEmployees,
+        setUserDetails,
       }}
     >
       {children}

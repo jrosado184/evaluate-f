@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity } from "react-native";
-import React from "react";
+import React, { memo, useCallback } from "react";
 import RightIcon from "@/constants/icons/RightIcon";
 import WarningIcon from "@/constants/icons/WarningIcon";
 import Entypo from "@expo/vector-icons/Entypo";
@@ -16,11 +16,11 @@ interface UserCardTypes {
   /** Department the user belongs to */
   department: string | undefined;
   /** Unique employee ID */
-  employee_id: number | undefined;
+  employee_id: string | undefined;
   /** Last update timestamp */
   last_update: string;
   /** Assigned locker number */
-  locker_number: number | undefined;
+  locker_number: string | undefined;
   /** Status of the user */
   status: string;
   button?: string;
@@ -32,9 +32,9 @@ interface UserCardTypes {
  * @param {string} position - Position of the user in the company
  * @param {string} name - Full name of the user
  * @param {string} department - Department the user belongs to
- * @param {number} employee_id - Unique employee ID
+ * @param {string} employee_id - Unique employee ID
  * @param {string} last_update - Last update timestamp
- * @param {number} locker_number - Assigned locker number
+ * @param {string} locker_number - Assigned locker number
  * @param {string} status - Current status of the user
  * @param {string} button - Arrow or update button
  */
@@ -49,7 +49,7 @@ const UserCard: React.FC<UserCardTypes> = ({
   button,
 }) => {
   return (
-    <View className="w-full items-center">
+    <View className="w-full items-center my-[.02rem]">
       <View className="border border-gray-400 w-[100%] h-40 rounded-lg">
         <View className="flex-row justify-between h-full">
           <View className="justify-around h-full pl-4">
@@ -90,4 +90,4 @@ const UserCard: React.FC<UserCardTypes> = ({
   );
 };
 
-export default UserCard;
+export default memo(UserCard);

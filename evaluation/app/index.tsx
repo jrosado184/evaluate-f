@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from "expo-router";
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import { Image, View } from "react-native";
 import SpinningCircle from "@/constants/animations/spinning-circle";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
@@ -28,6 +28,7 @@ export default function Index() {
       return () => clearTimeout(timer);
     }, [])
   );
+
   return (
     <SafeAreaProvider>
       <SafeAreaView className="h-full justify-center items-center bg-neutral-50">

@@ -5,13 +5,16 @@ import useEmployeeContext from "@/app/context/GlobalContext";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
-import debounce from "lodash.debounce"; // Optional, can use custom debounce
-import getusers from "@/app/requests/getUsers";
+import debounce from "lodash.debounce";
+import getusers from "@/app/requests/useGetUsers";
+import useGetUsers from "@/app/requests/useGetUsers";
 
-const Search = ({ total }: any) => {
-  const { employees, setEmployees } = useEmployeeContext();
+const Search = ({ total, onSearch }: any) => {
+  const { setEmployees, userDetails } = useEmployeeContext();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const { getUsers } = useGetUsers();
 
   const getSearchedUsers = async (user: any) => {
     setLoading(true);
@@ -24,8 +27,9 @@ const Search = ({ total }: any) => {
         },
       })
       .then((res) => {
-        setEmployees(res.data);
         setLoading(false);
+        setEmployees(res.data);
+        onSearch(true);
       })
       .catch((error: any) => {
         console.log(error);
@@ -34,9 +38,12 @@ const Search = ({ total }: any) => {
   };
 
   const debouncedFetch = useCallback(
-    debounce((searchTerm) => {
-      if (searchTerm.length >= 2)
-        getSearchedUsers(searchTerm).finally(() => setLoading(false)); // Trigger after 2+ chars
+    debounce(async (searchTerm) => {
+      if (searchTerm.length >= 2) {
+        getSearchedUsers(searchTerm).finally(() => setLoading(false));
+      } else {
+        onSearch(false);
+      }
     }, 300),
     []
   );
@@ -45,10 +52,12 @@ const Search = ({ total }: any) => {
     setQuery(value);
     if (value.trim() === "") {
       setLoading(true);
-      await getusers(setEmployees, setLoading).then(() => {
-        setLoading(false);
-      });
+      const data = await getUsers(1, 4);
+      if (data) {
+        setEmployees(data.results);
+      }
     }
+    onSearch(false);
     debouncedFetch(value);
   };
 
@@ -65,7 +74,7 @@ const Search = ({ total }: any) => {
         inputStyles="pl-5 text-[1.1rem]"
       />
       <View className="justify-between items-center w-[100%] flex-row my-4">
-        <Text className="pl-2 text-neutral-500">{`Total ${total}: ${employees.length}`}</Text>
+        <Text className="pl-2 text-neutral-500">{`Total ${total}: ${userDetails.totalUsers}`}</Text>
         <View className="gap-2 flex-row items-center">
           <Text>Sort By</Text>
           <TouchableOpacity className="w-24 mr-2 h-8 border border-gray-400 rounded-lg items-center justify-center">

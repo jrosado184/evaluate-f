@@ -7,7 +7,7 @@ import UserCard from "@/components/UserCard";
 import Search from "@/components/Search";
 import LockerCard from "@/components/LockerCard";
 import VacantCard from "@/components/VacantCard";
-import getusers from "@/app/requests/getUsers";
+import getusers from "@/app/requests/useGetUsers";
 import useEmployeeContext from "@/app/context/GlobalContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import CardSkeleton from "@/app/skeletons/CardSkeleton";
@@ -15,7 +15,7 @@ import CardSkeleton from "@/app/skeletons/CardSkeleton";
 const Lockers = () => {
   const { employees, setEmployees, loading, setLoading } = useEmployeeContext();
   useEffect(() => {
-    getusers(setEmployees, setLoading);
+    getusers(setEmployees);
   }, []);
   return (
     <SafeAreaView className="p-6 bg-neutral-50">
