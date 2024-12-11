@@ -4,7 +4,7 @@ import {
   FlatList,
   ActivityIndicator,
 } from "react-native";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import UserCard from "@/components/UserCard";
 import { router } from "expo-router";
@@ -17,23 +17,18 @@ import useGetUsers from "@/app/requests/useGetUsers";
 
 const Users = () => {
   const { getUsers } = useGetUsers();
-  //States
+  const { loading, employees, setUserDetails, setEmployees, setLoading } =
+    useEmployeeContext();
+
   const {
-    loading,
-    employees,
-    userDetails,
-    setUserDetails,
-    setEmployees,
-    setLoading,
-  } = useEmployeeContext();
+    limit,
+    page,
+    getMoreData,
+    setIsSearching,
+    isSearching,
+    fetchingMoreUsers,
+  } = usePagination(getUsers, setEmployees);
 
-  let page = 1;
-  const [fetchingMoreUsers, setFetchingMoreUsers] = useState<Boolean>(false);
-  const [nextPage, setNextPage] = useState(page + 1);
-  const [limit, setLimit] = useState(4);
-  const [isSearching, setIsSearching] = useState(false);
-
-  //User Card
   const renderUserCard = useCallback(({ item }: any) => {
     return (
       <TouchableOpacity
@@ -55,25 +50,12 @@ const Users = () => {
     );
   }, []);
 
-  //Functions
-  const getMoreData = async () => {
-    if (fetchingMoreUsers || isSearching) return; // Avoid multiple triggers
-    setFetchingMoreUsers(true);
-
-    const data = await getUsers(nextPage, limit);
-    if (data) {
-      setEmployees((prev: any) => [...prev, ...data.results]);
-      setNextPage((prev: number) => prev + 1);
-    }
-    setFetchingMoreUsers(false);
-  };
-
   const fetchAndSetUsers = async (page: number) => {
     const data = await getUsers(page, limit);
     if (data) {
       setUserDetails({
         totalUsers: data.totalEmployees,
-        pages: data.totalPages,
+        totalPages: data.totalPages,
         currentPage: data.currentPage,
       });
       setEmployees((prevEmployees: any) => {
@@ -87,10 +69,6 @@ const Users = () => {
 
   const handleSearch = (isSearchActive: boolean) => {
     setIsSearching(isSearchActive);
-    if (!isSearchActive) {
-      // fetchAndSetUsers(1);
-      // setNextPage(2);
-    }
   };
 
   useEffect(() => {
@@ -98,9 +76,10 @@ const Users = () => {
     !isSearching && fetchAndSetUsers(page);
   }, []);
 
-  //UI
   return (
-    <SafeAreaView className="p-6 bg-neutral-50">
+    <SafeAreaView
+      className={`p-6 bg-neutral-50 ${employees.length < 4 && "h-[100vh]"}`}
+    >
       <Text className="pl-2 font-inter-medium text-[2rem]">Users</Text>
       <Search total="users" onSearch={handleSearch} />
       {!loading ? (

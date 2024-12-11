@@ -51,7 +51,7 @@ const SignIn = () => {
       });
   };
   return (
-    <SafeAreaView className="h-full">
+    <SafeAreaView className="h-full bg-neutral-50">
       <ScrollView>
         <View className="w-full min-h-[85vh] justify-center">
           <Image

@@ -6,7 +6,6 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import debounce from "lodash.debounce";
-import getusers from "@/app/requests/useGetUsers";
 import useGetUsers from "@/app/requests/useGetUsers";
 
 const Search = ({ total, onSearch }: any) => {
@@ -60,8 +59,6 @@ const Search = ({ total, onSearch }: any) => {
     onSearch(false);
     debouncedFetch(value);
   };
-
-  //fix search be able to search by last name as well
 
   return (
     <View className="w-full items-center justify-start">

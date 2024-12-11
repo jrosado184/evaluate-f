@@ -49,7 +49,7 @@ const UserCard: React.FC<UserCardTypes> = ({
   button,
 }) => {
   return (
-    <View className="w-full items-center my-[.02rem]">
+    <View className="w-full items-center">
       <View className="border border-gray-400 w-[100%] h-40 rounded-lg">
         <View className="flex-row justify-between h-full">
           <View className="justify-around h-full pl-4">
