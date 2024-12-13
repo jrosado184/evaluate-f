@@ -17,8 +17,14 @@ import useGetUsers from "@/app/requests/useGetUsers";
 
 const Users = () => {
   const { getUsers } = useGetUsers();
-  const { loading, employees, setUserDetails, setEmployees, setLoading } =
-    useEmployeeContext();
+  const {
+    loading,
+    employees,
+    setUserDetails,
+    setEmployees,
+    setLoading,
+    userDetails,
+  } = useEmployeeContext();
 
   const {
     limit,
@@ -27,7 +33,7 @@ const Users = () => {
     setIsSearching,
     isSearching,
     fetchingMoreUsers,
-  } = usePagination(getUsers, setEmployees);
+  } = usePagination(getUsers, setEmployees, setUserDetails, userDetails);
 
   const renderUserCard = useCallback(({ item }: any) => {
     return (
@@ -58,7 +64,7 @@ const Users = () => {
         totalPages: data.totalPages,
         currentPage: data.currentPage,
       });
-      setEmployees((prevEmployees: any) => {
+      setEmployees(() => {
         setLoading(false);
         if (page === 1) {
           return data.results;

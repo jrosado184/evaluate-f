@@ -9,7 +9,7 @@ import debounce from "lodash.debounce";
 import useGetUsers from "@/app/requests/useGetUsers";
 
 const Search = ({ total, onSearch }: any) => {
-  const { setEmployees, userDetails } = useEmployeeContext();
+  const { setEmployees, userDetails, lockerDetails } = useEmployeeContext();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -71,7 +71,11 @@ const Search = ({ total, onSearch }: any) => {
         inputStyles="pl-5 text-[1.1rem]"
       />
       <View className="justify-between items-center w-[100%] flex-row my-4">
-        <Text className="pl-2 text-neutral-500">{`Total ${total}: ${userDetails.totalUsers}`}</Text>
+        <Text className="pl-2 text-neutral-500">{`Total ${total}: ${
+          total === "lockers"
+            ? lockerDetails.totalUsers
+            : userDetails.totalUsers
+        }`}</Text>
         <View className="gap-2 flex-row items-center">
           <Text>Sort By</Text>
           <TouchableOpacity className="w-24 mr-2 h-8 border border-gray-400 rounded-lg items-center justify-center">

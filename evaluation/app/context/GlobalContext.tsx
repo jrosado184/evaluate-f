@@ -13,15 +13,34 @@ type Employee = {
   last_updated: string;
 };
 
+type Locker = {
+  _id: string;
+  assigned_to: string;
+  locker_number: string;
+  employee_id: string;
+  knife_number: string | null;
+  department: string;
+  position: string;
+  assigned_by: string;
+  history: any[];
+  last_updated: string;
+  status: string;
+  vacant: boolean;
+};
+
 // Define the context type
 type EmployeeContextType = {
   loading: any;
   employee: Employee | undefined;
   employees: Employee[];
+  lockers: any;
   userDetails: any;
+  lockerDetails: any;
   setLoading: (loading: boolean) => void;
   setEmployee: (employee: Employee) => void;
   setEmployees: (employees: any) => void;
+  setLockers: (lockers: any) => void;
+  setLockerDetails: (lockers: any) => void;
   setUserDetails: (userDetails: any) => void;
 };
 
@@ -34,8 +53,14 @@ const EmployeeContext = createContext<EmployeeContextType | undefined>(
 export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
   const [employees, setEmployees] = useState<any>([]);
   const [employee, setEmployee] = useState<Employee | undefined>();
+  const [lockers, setLockers] = useState<any>();
   const [loading, setLoading] = useState<boolean | null>();
   const [userDetails, setUserDetails] = useState<any>({
+    totalPages: null,
+    totalUsers: null,
+    currentPage: null,
+  });
+  const [lockerDetails, setLockerDetails] = useState({
     totalPages: null,
     totalUsers: null,
     currentPage: null,
@@ -47,9 +72,13 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
         loading,
         employee,
         employees,
+        lockers,
+        lockerDetails,
         userDetails,
         setLoading,
         setEmployee,
+        setLockers,
+        setLockerDetails,
         setEmployees,
         setUserDetails,
       }}

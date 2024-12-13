@@ -1,20 +1,25 @@
 import useEmployeeContext from "@/app/context/GlobalContext";
 import { useState } from "react";
 
-const usePagination = (getData: any, setData: any) => {
+const usePagination = (
+  getData: any,
+  setData: any,
+  setDetails: any,
+  details: any
+) => {
   let page = 1;
   let limit = 4;
   const [fetchingMoreUsers, setFetchingMoreUsers] = useState<Boolean>(false);
   const [isSearching, setIsSearching] = useState(false);
   const [nextPage, setNextPage] = useState(page + 1);
 
-  const { userDetails, setUserDetails } = useEmployeeContext();
+  const { userDetails, setUserDetails, lockerDetails } = useEmployeeContext();
 
   const getMoreData = async () => {
     if (
       fetchingMoreUsers ||
       isSearching ||
-      userDetails.currentPage >= userDetails.totalPages
+      details.currentPage >= details.totalPages
     )
       return;
     setFetchingMoreUsers(true);
@@ -23,9 +28,9 @@ const usePagination = (getData: any, setData: any) => {
     if (data) {
       setData((prev: any) => [...prev, ...data.results]);
       setNextPage((prev: number) => prev + 1);
-      setUserDetails({
-        totalPages: userDetails.totalPages,
-        totalUsers: userDetails.totalUsers,
+      setDetails({
+        totalPages: details.totalPages,
+        totalUsers: details.totalUsers,
         currentPage: nextPage,
       });
     }
