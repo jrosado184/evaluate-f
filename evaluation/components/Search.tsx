@@ -6,28 +6,25 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import debounce from "lodash.debounce";
-import useGetUsers from "@/app/requests/useGetUsers";
 
-const Search = ({ total, onSearch }: any) => {
-  const { setEmployees, userDetails, lockerDetails } = useEmployeeContext();
+const Search = ({ total, onSearch, getData, setData, type }: any) => {
+  const { userDetails, lockerDetails } = useEmployeeContext();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const { getUsers } = useGetUsers();
 
   const getSearchedUsers = async (user: any) => {
     setLoading(true);
     const token = await AsyncStorage.getItem("token");
     const baseUrl = await getServerIP();
     axios
-      .get(`${baseUrl}/employees/search?query=${user}`, {
+      .get(`${baseUrl}/employees/search?query=${user}&type=${type}`, {
         headers: {
           Authorization: token,
         },
       })
       .then((res) => {
         setLoading(false);
-        setEmployees(res.data);
+        setData(res.data);
         onSearch(true);
       })
       .catch((error: any) => {
@@ -51,9 +48,9 @@ const Search = ({ total, onSearch }: any) => {
     setQuery(value);
     if (value.trim() === "") {
       setLoading(true);
-      const data = await getUsers(1, 4);
+      const data = await getData(1, 4);
       if (data) {
-        setEmployees(data.results);
+        setData(data.results);
       }
     }
     onSearch(false);

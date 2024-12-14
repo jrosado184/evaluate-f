@@ -73,10 +73,6 @@ const Users = () => {
     }
   };
 
-  const handleSearch = (isSearchActive: boolean) => {
-    setIsSearching(isSearchActive);
-  };
-
   useEffect(() => {
     setLoading(true);
     !isSearching && fetchAndSetUsers(page);
@@ -87,7 +83,13 @@ const Users = () => {
       className={`p-6 bg-neutral-50 ${employees.length < 4 && "h-[100vh]"}`}
     >
       <Text className="pl-2 font-inter-medium text-[2rem]">Users</Text>
-      <Search total="users" onSearch={handleSearch} />
+      <Search
+        total="users"
+        setData={setEmployees}
+        getData={getUsers}
+        onSearch={(value: any) => setIsSearching(value)}
+        type="employees"
+      />
       {!loading ? (
         <FlatList
           data={employees}

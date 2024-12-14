@@ -1,23 +1,16 @@
 import {
-  View,
   Text,
-  ScrollView,
   TouchableOpacity,
   ActivityIndicator,
   FlatList,
 } from "react-native";
 import React, { useCallback, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Header from "@/components/Header";
 import { router } from "expo-router";
-import UserCard from "@/components/UserCard";
 import Search from "@/components/Search";
 import LockerCard from "@/components/LockerCard";
-import VacantCard from "@/components/VacantCard";
-import getusers from "@/app/requests/useGetUsers";
 import useEmployeeContext from "@/app/context/GlobalContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
-import CardSkeleton from "@/app/skeletons/CardSkeleton";
 import useGetLockers from "@/app/requests/useGetLockers";
 import usePagination from "@/hooks/usePagination";
 import UserCardSkeleton from "@/app/skeletons/CardSkeleton";
@@ -54,12 +47,8 @@ const Lockers = () => {
     lockerDetails,
   } = useEmployeeContext();
 
-  const { page, limit, getMoreData, fetchingMoreUsers } = usePagination(
-    getLockers,
-    setLockers,
-    setLockerDetails,
-    lockerDetails
-  );
+  const { page, limit, getMoreData, fetchingMoreUsers, setIsSearching } =
+    usePagination(getLockers, setLockers, setLockerDetails, lockerDetails);
 
   const fetchAndSetLockers = async () => {
     const data = await getLockers(page, limit);
@@ -83,13 +72,20 @@ const Lockers = () => {
     fetchAndSetLockers();
   }, []);
 
-  //everything working great, hook and gettting more redesign vacant lockers and hook it up to the data
   //conect the search and link up lockers and users
 
   return (
-    <SafeAreaView className={`p-6 bg-neutral-50`}>
+    <SafeAreaView
+      className={`p-6 bg-neutral-50 ${lockers?.length < 4 && "h-[100vh]"}`}
+    >
       <Text className="pl-2 font-inter-medium text-[2rem]">Lockers</Text>
-      <Search total="lockers" onSearch={null} />
+      <Search
+        total="lockers"
+        getData={getLockers}
+        setData={setLockers}
+        onSearch={(value: any) => setIsSearching(value)}
+        type="lockers"
+      />
       {!loading ? (
         <FlatList
           data={lockers}

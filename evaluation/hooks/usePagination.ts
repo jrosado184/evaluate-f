@@ -1,4 +1,3 @@
-import useEmployeeContext from "@/app/context/GlobalContext";
 import { useState } from "react";
 
 const usePagination = (
@@ -12,8 +11,6 @@ const usePagination = (
   const [fetchingMoreUsers, setFetchingMoreUsers] = useState<Boolean>(false);
   const [isSearching, setIsSearching] = useState(false);
   const [nextPage, setNextPage] = useState(page + 1);
-
-  const { userDetails, setUserDetails, lockerDetails } = useEmployeeContext();
 
   const getMoreData = async () => {
     if (
