@@ -1,6 +1,5 @@
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
-import Header from "@/components/Header";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LeftButton from "@/components/LeftButton";
 import LockerCard from "@/components/LockerCard";
@@ -10,12 +9,12 @@ import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityI
 import VacantCard from "@/components/VacantCard";
 import { useGlobalSearchParams } from "expo-router";
 import useEmployeeContext from "@/app/context/GlobalContext";
-import { getUser } from "@/app/requests/getUser";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import CardSkeleton from "@/app/skeletons/CardSkeleton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import axios from "axios";
+import SortBy from "@/components/SortBy";
 
 const Locker = () => {
   const [status, setStatus] = useState("Functional");
@@ -23,7 +22,7 @@ const Locker = () => {
 
   const { id } = useGlobalSearchParams();
 
-  const { employee, setEmployee } = useEmployeeContext();
+  const { locker, setLocker } = useEmployeeContext();
 
   const [loading, setLoading] = useState(true);
 
@@ -32,14 +31,14 @@ const Locker = () => {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
       axios
-        .get(`${baseUrl}/employees/${id}`, {
+        .get(`${baseUrl}/lockers/${id}`, {
           headers: {
             Authorization: token,
           },
         })
         .then((res) => {
           setLoading(false);
-          setEmployee(res.data);
+          setLocker(res.data);
           return res.data;
         })
         .catch((error) => {
@@ -59,10 +58,10 @@ const Locker = () => {
           <LockerCard
             vacant={false}
             button="update"
-            locker_number={employee?.locker_number}
-            occupant={employee?.employee_name}
-            assigned_by={employee?.assigned_by}
-            last_updated={formatISODate(employee?.last_updated)}
+            locker_number={locker?.locker_number}
+            Assigned_to={locker?.Assigned_to}
+            assigned_by={locker?.assigned_by}
+            last_updated={formatISODate(locker?.last_updated)}
           />
         )}
         {/* <VacantCard
@@ -88,54 +87,7 @@ const Locker = () => {
       </View>
       <View>
         <Text className="font-inter-semibold text-[1.2rem]">Status</Text>
-        <TouchableOpacity
-          onPress={() => {
-            pickerRef.current && pickerRef.current.togglePicker();
-          }}
-          activeOpacity={1}
-        >
-          <View className="border border-gray-400 h-14 rounded-md my-3 flex-row items-center relative">
-            <RNPickerSelect
-              onValueChange={(value) => setStatus(value)}
-              items={[
-                { label: "Functional", value: "Functional" },
-                { label: "Damaged", value: "Damaged" },
-              ]}
-              value={status}
-              useNativeAndroidPickerStyle={false}
-              ref={pickerRef}
-              style={{
-                inputIOS: {
-                  paddingVertical: 22,
-                  paddingHorizontal: 10,
-                  color: "black",
-                  flex: 1,
-                  textAlign: "center",
-                },
-                inputAndroid: {
-                  paddingVertical: 12,
-                  paddingHorizontal: 10,
-                  color: "black",
-                  flex: 1,
-                  textAlign: "center",
-                },
-              }}
-              Icon={() => null}
-            />
-            <View
-              style={{
-                position: "absolute",
-                right: 10,
-              }}
-            >
-              <MaterialCommunityIcons
-                name="chevron-down"
-                size={24}
-                color="gray"
-              />
-            </View>
-          </View>
-        </TouchableOpacity>
+        <View className="border border-gray-400 h-14 rounded-md my-3 flex-row items-center relative"></View>
       </View>
       <View className="py-36 items-center justify-center">
         <TouchableOpacity

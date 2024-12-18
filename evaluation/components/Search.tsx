@@ -1,16 +1,23 @@
-import { View, Text, TouchableOpacity } from "react-native";
-import React, { useCallback, useState } from "react";
+import { View, Text, TouchableOpacity, Modal } from "react-native";
+import React, { useCallback, useRef, useState } from "react";
 import FormField from "./FormField";
 import useEmployeeContext from "@/app/context/GlobalContext";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import debounce from "lodash.debounce";
+import RNPickerSelect from "react-native-picker-select";
 
 const Search = ({ total, onSearch, getData, setData, type }: any) => {
-  const { userDetails, lockerDetails } = useEmployeeContext();
+  const { employees, setEmployees, userDetails, lockerDetails } =
+    useEmployeeContext();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [modal, setModal] = useState(false);
+  const sortingOptions = ["Default", "Lockers", "Unassigned"];
+  const [sortingBy, setSortingBy] = useState(sortingOptions[0]);
+
+  const pickerRef = useRef<RNPickerSelect>(null);
 
   const getSearchedUsers = async (user: any) => {
     setLoading(true);
@@ -73,10 +80,31 @@ const Search = ({ total, onSearch, getData, setData, type }: any) => {
             ? lockerDetails.totalUsers
             : userDetails.totalUsers
         }`}</Text>
+
         <View className="gap-2 flex-row items-center">
-          <Text>Sort By</Text>
-          <TouchableOpacity className="w-24 mr-2 h-8 border border-gray-400 rounded-lg items-center justify-center">
-            <Text className="text-sm">Last Name</Text>
+          <Text className="text-neutral-500 font-inter-regular">Sort By</Text>
+          <TouchableOpacity
+            onPress={() => setModal(!modal)}
+            className="border border-neutral-400 w-24 h-8 rounded-lg mr-2 justify-center items-center z-10"
+          >
+            <Text className="font-inter-regular text-sm">{sortingBy}</Text>
+            {modal && (
+              <View className="relative right-24 top-2 bg-neutral-100">
+                <View className="w-36 h-24 border border-neutral-400 bg-neutral-50 absolute rounded-lg justify-around p-2">
+                  {sortingOptions.map((option, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      onPress={() => setSortingBy(option)}
+                    >
+                      <Text className="font-inter-regular text-sm">
+                        {option}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <View className="justify-center absolute left-14 bottom-[1px] w-0 h-0"></View>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>

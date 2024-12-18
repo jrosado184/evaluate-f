@@ -33,11 +33,13 @@ type EmployeeContextType = {
   loading: any;
   employee: Employee | undefined;
   employees: Employee[];
+  locker: any;
   lockers: any;
   userDetails: any;
   lockerDetails: any;
   setLoading: (loading: boolean) => void;
   setEmployee: (employee: Employee) => void;
+  setLocker: (locker: any) => void;
   setEmployees: (employees: any) => void;
   setLockers: (lockers: any) => void;
   setLockerDetails: (lockers: any) => void;
@@ -53,6 +55,7 @@ const EmployeeContext = createContext<EmployeeContextType | undefined>(
 export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
   const [employees, setEmployees] = useState<any>([]);
   const [employee, setEmployee] = useState<Employee | undefined>();
+  const [locker, setLocker] = useState();
   const [lockers, setLockers] = useState<any>();
   const [loading, setLoading] = useState<boolean | null>();
   const [userDetails, setUserDetails] = useState<any>({
@@ -72,11 +75,13 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
         loading,
         employee,
         employees,
+        locker,
         lockers,
         lockerDetails,
         userDetails,
         setLoading,
         setEmployee,
+        setLocker,
         setLockers,
         setLockerDetails,
         setEmployees,

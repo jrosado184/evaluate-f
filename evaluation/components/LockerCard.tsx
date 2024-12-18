@@ -7,8 +7,8 @@ import RightIcon from "@/constants/icons/RightIcon";
 interface LockerCardTypes {
   button: string | undefined;
   status?: string | undefined;
-  locker_number: number | undefined;
-  assigned_to: string | undefined;
+  locker_number: any;
+  Assigned_to: string | undefined;
   assigned_by: string | undefined;
   last_updated: string | undefined;
   vacant?: boolean | undefined;
@@ -30,7 +30,7 @@ interface LockerCardTypes {
 const LockerCard: React.FC<LockerCardTypes> = ({
   button,
   locker_number,
-  assigned_to,
+  Assigned_to,
   status,
   assigned_by,
   last_updated,
@@ -49,7 +49,7 @@ const LockerCard: React.FC<LockerCardTypes> = ({
               <View className="flex-row items-center">
                 <Text
                   className={`${vacant && "invisible"}`}
-                >{`Occupied by ${assigned_to}`}</Text>
+                >{`Occupied by ${Assigned_to}`}</Text>
               </View>
               <Text
                 className={`text-neutral-600 text-sm ${vacant && "invisible"}`}

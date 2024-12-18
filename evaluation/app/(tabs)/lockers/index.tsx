@@ -20,13 +20,13 @@ const Lockers = () => {
     return (
       <TouchableOpacity
         key={item._id}
-        onPress={() => router.push(`/lockers/${item._id}`)}
+        onPress={() => router.push(`/lockers/${String(item._id)}`)}
         activeOpacity={0.8}
       >
         <LockerCard
           button={"arrow"}
           locker_number={item.locker_number}
-          assigned_to={item.Assigned_to}
+          Assigned_to={item.Assigned_to}
           assigned_by={item.assigned_by}
           last_updated={formatISODate(item.last_updated)}
           vacant={item.vacant}
@@ -71,8 +71,6 @@ const Lockers = () => {
     setLoading(true);
     fetchAndSetLockers();
   }, []);
-
-  //conect the search and link up lockers and users
 
   return (
     <SafeAreaView

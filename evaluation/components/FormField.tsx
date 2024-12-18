@@ -6,11 +6,11 @@ import Entypo from "@expo/vector-icons/Entypo";
 
 interface FormFieldProps {
   title?: string;
-  value: string;
-  handleChangeText: any;
+  value?: string;
+  handleChangeText?: any;
   keyboadtype?: string;
   styles?: string;
-  placeholder: string;
+  placeholder?: string;
   rounded?: string;
   inputStyles?: string;
 }

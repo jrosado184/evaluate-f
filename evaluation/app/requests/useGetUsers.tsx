@@ -8,15 +8,18 @@ const useGetUsers = () => {
     const baseUrl = await getServerIP();
 
     try {
-      const response = await axios.get(`${baseUrl}/employees`, {
-        headers: {
-          Authorization: token,
-        },
-        params: {
-          page,
-          limit,
-        },
-      });
+      const response = await axios.get(
+        `${baseUrl}/employees?sort=locker_number&order=asc`,
+        {
+          headers: {
+            Authorization: token,
+          },
+          params: {
+            page,
+            limit,
+          },
+        }
+      );
       return response.data;
     } catch (error) {
       console.error("Error fetching employees:", error);
