@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import "@/global.css";
+import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { SplashScreen, Stack } from "expo-router";
 import "../global.css";
 import * as Font from "expo-font";
@@ -32,33 +34,33 @@ export default function RootLayout() {
     return null;
   }
   return (
-    <EmployeeProvider>
-      <Stack>
-        <Stack.Screen
-          name="index"
+    <GluestackUIProvider mode="light"><EmployeeProvider>
+        <Stack>
+          <Stack.Screen
+            name="index"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="(auth)"
+            options={{
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="(tabs)"
+            options={{
+              headerShown: false,
+            }}
+          />
+          {/* <Stack.Screen
+          name="/search/[query]"
           options={{
             headerShown: false,
           }}
-        />
-        <Stack.Screen
-          name="(auth)"
-          options={{
-            headerShown: false,
-          }}
-        />
-        <Stack.Screen
-          name="(tabs)"
-          options={{
-            headerShown: false,
-          }}
-        />
-        {/* <Stack.Screen
-        name="/search/[query]"
-        options={{
-          headerShown: false,
-        }}
-      /> */}
-      </Stack>
-    </EmployeeProvider>
+        /> */}
+        </Stack>
+      </EmployeeProvider></GluestackUIProvider>
   );
 }

@@ -9,6 +9,7 @@ const useGetUsers = () => {
 
     try {
       const response = await axios.get(
+        //configure hard coded sort and order !!!!!
         `${baseUrl}/employees?sort=locker_number&order=asc`,
         {
           headers: {
