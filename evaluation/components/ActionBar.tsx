@@ -8,28 +8,38 @@ import {
   ActionsheetItem,
   ActionsheetItemText,
 } from "./ui/actionsheet";
+import useEmployeeContext from "@/app/context/GlobalContext";
 
 function ActionBar({ showActionSheet, setShowActionSheet }: any) {
-  const handleClose = () => setShowActionSheet(false);
+  const { setSortingBy } = useEmployeeContext();
+
+  const handlePress = (value?: any) => {
+    setSortingBy(value);
+    setShowActionSheet(false);
+    !value && setSortingBy("Default");
+  };
   return (
     <>
-      <Actionsheet isOpen={showActionSheet} onClose={handleClose}>
+      <Actionsheet isOpen={showActionSheet} onClose={handlePress}>
         <ActionsheetBackdrop />
         <ActionsheetContent>
           <ActionsheetDragIndicatorWrapper>
             <ActionsheetDragIndicator />
           </ActionsheetDragIndicatorWrapper>
-          <ActionsheetItem onPress={handleClose}>
-            <ActionsheetItemText>Default</ActionsheetItemText>
+          <ActionsheetItem onPress={() => handlePress("Default")}>
+            <ActionsheetItemText className="font-inter-regular">
+              Default
+            </ActionsheetItemText>
           </ActionsheetItem>
-          <ActionsheetItem onPress={handleClose}>
-            <ActionsheetItemText>{"Last Name (Z - A)"}</ActionsheetItemText>
+          <ActionsheetItem onPress={() => handlePress("Lockers")}>
+            <ActionsheetItemText className="font-inter-regular">
+              Lockers
+            </ActionsheetItemText>
           </ActionsheetItem>
-          <ActionsheetItem onPress={handleClose}>
-            <ActionsheetItemText>{"First Name (A - Z"}</ActionsheetItemText>
-          </ActionsheetItem>
-          <ActionsheetItem onPress={handleClose}>
-            <ActionsheetItemText>Lockers</ActionsheetItemText>
+          <ActionsheetItem onPress={() => handlePress("Unassigned")}>
+            <ActionsheetItemText className="font-inter-regular">
+              Unassigned
+            </ActionsheetItemText>
           </ActionsheetItem>
         </ActionsheetContent>
       </Actionsheet>

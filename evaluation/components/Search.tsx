@@ -6,6 +6,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import debounce from "lodash.debounce";
+import Sort from "./Sort";
 
 const Search = ({ total, onSearch, getData, setData, type }: any) => {
   const { userDetails, lockerDetails } = useEmployeeContext();
@@ -75,6 +76,7 @@ const Search = ({ total, onSearch, getData, setData, type }: any) => {
             ? lockerDetails.totalUsers
             : userDetails.totalUsers
         }`}</Text>
+        <Sort />
       </View>
     </View>
   );

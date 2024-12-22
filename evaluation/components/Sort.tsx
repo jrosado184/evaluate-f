@@ -1,11 +1,12 @@
 import { View, Text, TouchableOpacity } from "react-native";
-import React, { useState } from "react";
+import React from "react";
 import ActionBar from "./ActionBar";
+import useEmployeeContext from "@/app/context/GlobalContext";
 
 const Sort = () => {
-  const sortingOptions = ["Default", "Lockers", "Unassigned"];
   const [showActionsheet, setShowActionsheet] = React.useState(false);
-  const [sortingBy, setSortingBy] = useState(sortingOptions[0]);
+
+  const { sortingBy } = useEmployeeContext();
 
   return (
     <View className="gap-2 flex-row items-center">

@@ -37,6 +37,7 @@ type EmployeeContextType = {
   lockers: any;
   userDetails: any;
   lockerDetails: any;
+  sortingBy: string;
   setLoading: (loading: boolean) => void;
   setEmployee: (employee: Employee) => void;
   setLocker: (locker: any) => void;
@@ -44,6 +45,7 @@ type EmployeeContextType = {
   setLockers: (lockers: any) => void;
   setLockerDetails: (lockers: any) => void;
   setUserDetails: (userDetails: any) => void;
+  setSortingBy: (sortingBy: string) => void;
 };
 
 // Create the context
@@ -68,6 +70,7 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
     totalUsers: null,
     currentPage: null,
   });
+  const [sortingBy, setSortingBy] = useState("Default");
 
   return (
     <EmployeeContext.Provider
@@ -79,6 +82,7 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
         lockers,
         lockerDetails,
         userDetails,
+        sortingBy,
         setLoading,
         setEmployee,
         setLocker,
@@ -86,6 +90,7 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
         setLockerDetails,
         setEmployees,
         setUserDetails,
+        setSortingBy,
       }}
     >
       {children}
