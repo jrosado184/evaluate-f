@@ -5,7 +5,6 @@ import LeftButton from "@/components/LeftButton";
 import LockerCard from "@/components/LockerCard";
 import Activity from "@/components/Activity";
 import RNPickerSelect from "react-native-picker-select";
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import VacantCard from "@/components/VacantCard";
 import { useGlobalSearchParams } from "expo-router";
 import useEmployeeContext from "@/app/context/GlobalContext";
@@ -14,7 +13,6 @@ import CardSkeleton from "@/app/skeletons/CardSkeleton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import axios from "axios";
-import SortBy from "@/components/SortBy";
 
 const Locker = () => {
   const [status, setStatus] = useState("Functional");
@@ -71,6 +69,9 @@ const Locker = () => {
           last_updated="June 4, 2022"
           assigned_by="Juan Guerrero"
         /> */}
+        {
+          //decide on using vacant card or not
+        }
       </View>
       <View className="my-5">
         <Text className="font-inter-semibold text-[1.2rem]">History</Text>

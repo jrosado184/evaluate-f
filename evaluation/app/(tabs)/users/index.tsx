@@ -3,6 +3,7 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  View,
 } from "react-native";
 import React, { useCallback, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -76,7 +77,7 @@ const Users = () => {
   useEffect(() => {
     setLoading(true);
     !isSearching && fetchAndSetUsers(page);
-  }, []);
+  }, [getUsers]);
 
   return (
     <SafeAreaView
@@ -90,7 +91,13 @@ const Users = () => {
         onSearch={(value: any) => setIsSearching(value)}
         type="employees"
       />
-      {!loading ? (
+      {employees.length === 0 && !loading ? (
+        <View className="h-[40vh] justify-center items-center">
+          <Text className="font-inter-regular text-neutral-500">
+            No Employees
+          </Text>
+        </View>
+      ) : !loading ? (
         <FlatList
           data={employees}
           keyExtractor={(item) => item._id.toString()}
