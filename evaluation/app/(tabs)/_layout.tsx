@@ -8,6 +8,7 @@ import { TabIcon } from "@/components/navigation/TabBarIcon";
 
 // Create a context for tab bar visibility
 const TabBarContext = createContext({
+  isTabBarVisible: true,
   toggleTabBar: (visible: boolean) => {},
 });
 
@@ -21,7 +22,7 @@ const TabsLayout = () => {
   };
 
   return (
-    <TabBarContext.Provider value={{ toggleTabBar }}>
+    <TabBarContext.Provider value={{ isTabBarVisible, toggleTabBar }}>
       <Tabs
         screenOptions={{
           tabBarShowLabel: false,

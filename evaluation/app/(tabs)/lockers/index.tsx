@@ -15,6 +15,8 @@ import useGetLockers from "@/app/requests/useGetLockers";
 import usePagination from "@/hooks/usePagination";
 import UserCardSkeleton from "@/app/skeletons/CardSkeleton";
 import useScrollHandler from "@/hooks/useScrollHandler";
+import Fab from "@/components/Fab";
+import { View } from "moti";
 
 const Lockers = () => {
   const renderLockerCard = useCallback(({ item }: any) => {
@@ -48,12 +50,18 @@ const Lockers = () => {
     lockerDetails,
   } = useEmployeeContext();
 
-  const { page, limit, getMoreData, fetchingMoreUsers, setIsSearching } =
-    usePagination(getLockers, setLockers, setLockerDetails, lockerDetails);
+  const {
+    page,
+    isSearching,
+    limit,
+    getMoreData,
+    fetchingMoreUsers,
+    setIsSearching,
+  } = usePagination(getLockers, setLockers, setLockerDetails, lockerDetails);
 
   const { onScrollHandler } = useScrollHandler();
 
-  const fetchAndSetLockers = async () => {
+  const fetchAndSetLockers = async (page: any) => {
     const data = await getLockers(page, limit);
     if (data) {
       setLockerDetails({
@@ -72,14 +80,17 @@ const Lockers = () => {
 
   useEffect(() => {
     setLoading(true);
-    fetchAndSetLockers();
+    !isSearching && !loading && fetchAndSetLockers(page);
   }, []);
 
   return (
     <SafeAreaView
-      className={`p-6 bg-white ${lockers?.length < 4 && "h-[100vh]"}`}
+      className={`p-6 bg-white h-[105vh] ${lockers?.length < 4 && "h-[105vh]"}`}
     >
-      <Text className="pl-2 font-inter-medium text-[2rem]">Lockers</Text>
+      <View className="flex-row justify-between items-center w-full">
+        <Text className="pl-2 font-inter-regular text-[1.9rem]">Lockers</Text>
+      </View>
+      <Fab icon="unlock" />
       <Search
         total="lockers"
         getData={getLockers}
@@ -87,10 +98,16 @@ const Lockers = () => {
         onSearch={(value: any) => setIsSearching(value)}
         type="lockers"
       />
-      {!loading ? (
+      {lockers?.length === 0 && !loading ? (
+        <View className="h-[40vh] justify-center items-center">
+          <Text className="font-inter-regular text-neutral-500">
+            No Lockers
+          </Text>
+        </View>
+      ) : !loading ? (
         <FlatList
-          scrollEventThrottle={16}
           onScroll={onScrollHandler}
+          scrollEventThrottle={16}
           data={lockers}
           keyExtractor={(item) => item._id.toString()}
           renderItem={renderLockerCard}
@@ -101,7 +118,7 @@ const Lockers = () => {
               <ActivityIndicator size="small" color="#0000ff" />
             )
           }
-          contentContainerStyle={{ paddingBottom: 130, gap: 14 }}
+          contentContainerStyle={{ paddingBottom: 8, gap: 14 }}
         />
       ) : (
         <UserCardSkeleton amount={5} width="w-full" height="h-40" />

@@ -5,19 +5,19 @@ import {
   ActivityIndicator,
   View,
 } from "react-native";
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import UserCard from "@/components/UserCard";
-import { router, useNavigation } from "expo-router";
+import { router } from "expo-router";
 import Search from "@/components/Search";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import UserCardSkeleton from "@/app/skeletons/CardSkeleton";
 import usePagination from "@/hooks/usePagination";
 import useGetUsers from "@/app/requests/useGetUsers";
-import Icon from "react-native-vector-icons/Feather";
-import { useTabBar } from "../_layout";
 import useScrollHandler from "@/hooks/useScrollHandler";
+import Fab from "@/components/Fab";
+import { useTabBar } from "../_layout";
 
 const Users = () => {
   const { getUsers } = useGetUsers();
@@ -40,6 +40,8 @@ const Users = () => {
   } = usePagination(getUsers, setEmployees, setUserDetails, userDetails);
 
   const { onScrollHandler } = useScrollHandler();
+
+  const { isTabBarVisible } = useTabBar();
 
   const renderUserCard = useCallback(({ item }: any) => {
     return (
@@ -93,21 +95,16 @@ const Users = () => {
       <View className="flex-row justify-between items-center w-full">
         <Text className="pl-2 font-inter-regular text-[1.9rem]">Users</Text>
       </View>
-      {!loading && (
-        <View
-          className={`bg-[#1a237e] justify-center items-center absolute z-10 right-10 bottom-[6rem] w-12 h-12 rounded-full shadow-sm`}
-        >
-          <Icon name="user-plus" size={19} color="white" />
-        </View>
+      <Fab icon="user-plus" />
+      {isTabBarVisible && (
+        <Search
+          total="users"
+          setData={setEmployees}
+          getData={getUsers}
+          onSearch={(value: any) => setIsSearching(value)}
+          type="employees"
+        />
       )}
-      {/* make this a reusable component to add users and lockers, etc**/}
-      <Search
-        total="users"
-        setData={setEmployees}
-        getData={getUsers}
-        onSearch={(value: any) => setIsSearching(value)}
-        type="employees"
-      />
       {employees.length === 0 && !loading ? (
         <View className="h-[40vh] justify-center items-center">
           <Text className="font-inter-regular text-neutral-500">
