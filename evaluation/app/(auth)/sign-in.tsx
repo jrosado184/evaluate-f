@@ -8,6 +8,7 @@ import axios from "axios";
 import Error from "@/components/Error";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "../requests/NetworkAddress";
+import useAuthContext from "../context/AuthContext";
 
 const SignIn = () => {
   const [form, setForm] = useState<{
@@ -26,6 +27,8 @@ const SignIn = () => {
 
   const [isSigningIn, setIsSigningIn] = useState(false);
 
+  const { currentUser, setCurrentUser } = useAuthContext();
+
   const submit = async () => {
     setIsSigningIn(true);
     const baseUrl = await getServerIP();
@@ -38,6 +41,7 @@ const SignIn = () => {
         AsyncStorage.setItem("token", res.data.token);
         if (res.status === 200) router.replace("/home");
         setIsSigningIn(false);
+        setCurrentUser(res.data);
       })
       .catch((error) => {
         setIsSigningIn(false);

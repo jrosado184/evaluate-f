@@ -5,16 +5,19 @@ import {
   ActivityIndicator,
   View,
 } from "react-native";
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import UserCard from "@/components/UserCard";
-import { router } from "expo-router";
+import { router, useNavigation } from "expo-router";
 import Search from "@/components/Search";
-import useEmployeeContext from "@/app/context/GlobalContext";
+import useEmployeeContext from "@/app/context/EmployeeContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import UserCardSkeleton from "@/app/skeletons/CardSkeleton";
 import usePagination from "@/hooks/usePagination";
 import useGetUsers from "@/app/requests/useGetUsers";
+import Icon from "react-native-vector-icons/Feather";
+import { useTabBar } from "../_layout";
+import useScrollHandler from "@/hooks/useScrollHandler";
 
 const Users = () => {
   const { getUsers } = useGetUsers();
@@ -35,6 +38,8 @@ const Users = () => {
     isSearching,
     fetchingMoreUsers,
   } = usePagination(getUsers, setEmployees, setUserDetails, userDetails);
+
+  const { onScrollHandler } = useScrollHandler();
 
   const renderUserCard = useCallback(({ item }: any) => {
     return (
@@ -81,9 +86,21 @@ const Users = () => {
 
   return (
     <SafeAreaView
-      className={`p-6 bg-neutral-50 ${employees.length < 4 && "h-[100vh]"}`}
+      className={`p-6 bg-white h-[105vh] ${
+        employees.length < 4 && "h-[105vh]"
+      }`}
     >
-      <Text className="pl-2 font-inter-medium text-[2rem]">Users</Text>
+      <View className="flex-row justify-between items-center w-full">
+        <Text className="pl-2 font-inter-regular text-[1.9rem]">Users</Text>
+      </View>
+      {!loading && (
+        <View
+          className={`bg-[#1a237e] justify-center items-center absolute z-10 right-10 bottom-[6rem] w-12 h-12 rounded-full shadow-sm`}
+        >
+          <Icon name="user-plus" size={19} color="white" />
+        </View>
+      )}
+      {/* make this a reusable component to add users and lockers, etc**/}
       <Search
         total="users"
         setData={setEmployees}
@@ -99,6 +116,8 @@ const Users = () => {
         </View>
       ) : !loading ? (
         <FlatList
+          onScroll={onScrollHandler}
+          scrollEventThrottle={16}
           data={employees}
           keyExtractor={(item) => item._id.toString()}
           renderItem={renderUserCard}
@@ -109,7 +128,7 @@ const Users = () => {
               <ActivityIndicator size="small" color="#0000ff" />
             )
           }
-          contentContainerStyle={{ paddingBottom: 130, gap: 14 }}
+          contentContainerStyle={{ paddingBottom: 8, gap: 14 }}
         />
       ) : (
         <UserCardSkeleton amount={5} width="w-full" height="h-40" />

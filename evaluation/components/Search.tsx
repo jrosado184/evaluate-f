@@ -1,7 +1,7 @@
 import { View, Text } from "react-native";
 import React, { useCallback, useState } from "react";
 import FormField from "./FormField";
-import useEmployeeContext from "@/app/context/GlobalContext";
+import useEmployeeContext from "@/app/context/EmployeeContext";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";

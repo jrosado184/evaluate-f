@@ -7,7 +7,7 @@ import Activity from "@/components/Activity";
 import RNPickerSelect from "react-native-picker-select";
 import VacantCard from "@/components/VacantCard";
 import { useGlobalSearchParams } from "expo-router";
-import useEmployeeContext from "@/app/context/GlobalContext";
+import useEmployeeContext from "@/app/context/EmployeeContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import CardSkeleton from "@/app/skeletons/CardSkeleton";
 import AsyncStorage from "@react-native-async-storage/async-storage";

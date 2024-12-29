@@ -4,9 +4,10 @@ import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { SplashScreen, Stack } from "expo-router";
 import "../global.css";
 import * as Font from "expo-font";
-import { EmployeeProvider } from "./context/GlobalContext";
+import { EmployeeProvider } from "./context/EmployeeContext";
 import "react-native-gesture-handler";
 import "react-native-reanimated";
+import { AuthProvider } from "./context/AuthContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -34,33 +35,31 @@ export default function RootLayout() {
     return null;
   }
   return (
-    <GluestackUIProvider mode="light"><EmployeeProvider>
-        <Stack>
-          <Stack.Screen
-            name="index"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="(auth)"
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen
-            name="(tabs)"
-            options={{
-              headerShown: false,
-            }}
-          />
-          {/* <Stack.Screen
-          name="/search/[query]"
-          options={{
-            headerShown: false,
-          }}
-        /> */}
-        </Stack>
-      </EmployeeProvider></GluestackUIProvider>
+    <GluestackUIProvider mode="light">
+      <AuthProvider>
+        <EmployeeProvider>
+          <Stack>
+            <Stack.Screen
+              name="index"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="(auth)"
+              options={{
+                headerShown: false,
+              }}
+            />
+            <Stack.Screen
+              name="(tabs)"
+              options={{
+                headerShown: false,
+              }}
+            />
+          </Stack>
+        </EmployeeProvider>
+      </AuthProvider>
+    </GluestackUIProvider>
   );
 }

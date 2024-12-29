@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, createContext, useContext } from "react";
 import { Tabs } from "expo-router";
 import HomeIcon from "@/constants/icons/HomeIcon";
 import UsersIcon from "@/constants/icons/UsersIcon";
@@ -6,19 +6,34 @@ import LockIcon from "@/constants/icons/LockIcon";
 import ProfileIcon from "@/constants/icons/ProfileIcon";
 import { TabIcon } from "@/components/navigation/TabBarIcon";
 
+// Create a context for tab bar visibility
+const TabBarContext = createContext({
+  toggleTabBar: (visible: boolean) => {},
+});
+
+export const useTabBar = () => useContext(TabBarContext);
+
 const TabsLayout = () => {
+  const [isTabBarVisible, setTabBarVisible] = useState(true);
+
+  const toggleTabBar = (visible: boolean) => {
+    setTabBarVisible(visible);
+  };
+
   return (
-    <>
+    <TabBarContext.Provider value={{ toggleTabBar }}>
       <Tabs
         screenOptions={{
           tabBarShowLabel: false,
           tabBarStyle: {
+            display: isTabBarVisible ? "flex" : "none",
             paddingBottom: 20,
             paddingTop: 19,
             height: 90,
           },
         }}
       >
+        {/* Screen configurations */}
         <Tabs.Screen
           name="home"
           options={{
@@ -108,7 +123,7 @@ const TabsLayout = () => {
           }}
         />
       </Tabs>
-    </>
+    </TabBarContext.Provider>
   );
 };
 

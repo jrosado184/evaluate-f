@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import getServerIP from "./NetworkAddress";
-import useEmployeeContext from "../context/GlobalContext";
+import useEmployeeContext from "../context/EmployeeContext";
 import { useCallback, useEffect, useState } from "react";
 
 const useGetUsers = () => {

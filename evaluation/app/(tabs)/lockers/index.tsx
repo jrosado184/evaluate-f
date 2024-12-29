@@ -9,11 +9,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import Search from "@/components/Search";
 import LockerCard from "@/components/LockerCard";
-import useEmployeeContext from "@/app/context/GlobalContext";
+import useEmployeeContext from "@/app/context/EmployeeContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import useGetLockers from "@/app/requests/useGetLockers";
 import usePagination from "@/hooks/usePagination";
 import UserCardSkeleton from "@/app/skeletons/CardSkeleton";
+import useScrollHandler from "@/hooks/useScrollHandler";
 
 const Lockers = () => {
   const renderLockerCard = useCallback(({ item }: any) => {
@@ -50,6 +51,8 @@ const Lockers = () => {
   const { page, limit, getMoreData, fetchingMoreUsers, setIsSearching } =
     usePagination(getLockers, setLockers, setLockerDetails, lockerDetails);
 
+  const { onScrollHandler } = useScrollHandler();
+
   const fetchAndSetLockers = async () => {
     const data = await getLockers(page, limit);
     if (data) {
@@ -74,7 +77,7 @@ const Lockers = () => {
 
   return (
     <SafeAreaView
-      className={`p-6 bg-neutral-50 ${lockers?.length < 4 && "h-[100vh]"}`}
+      className={`p-6 bg-white ${lockers?.length < 4 && "h-[100vh]"}`}
     >
       <Text className="pl-2 font-inter-medium text-[2rem]">Lockers</Text>
       <Search
@@ -86,6 +89,8 @@ const Lockers = () => {
       />
       {!loading ? (
         <FlatList
+          scrollEventThrottle={16}
+          onScroll={onScrollHandler}
           data={lockers}
           keyExtractor={(item) => item._id.toString()}
           renderItem={renderLockerCard}

@@ -5,7 +5,7 @@ import { useGlobalSearchParams } from "expo-router";
 import LeftButton from "@/components/LeftButton";
 import UserCard from "@/components/UserCard";
 import Activity from "@/components/Activity";
-import useEmployeeContext from "@/app/context/GlobalContext";
+import useEmployeeContext from "@/app/context/EmployeeContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import { getUser } from "@/app/requests/getUser";
 import CardSkeleton from "@/app/skeletons/CardSkeleton";

@@ -14,10 +14,13 @@
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@ant-design/icons-react-native": "^2.3.2",
+    "@ant-design/react-native": "^5.3.2",
     "@expo-google-fonts/inter": "^0.2.3",
     "@expo/html-elements": "^0.4.2",
     "@expo/vector-icons": "^14.0.4",
     "@gluestack-ui/actionsheet": "^0.2.46",
+    "@gluestack-ui/fab": "^0.1.22",
     "@gluestack-ui/icon": "^0.1.25",
     "@gluestack-ui/nativewind-utils": "^1.0.26",
     "@gluestack-ui/overlay": "^0.1.16",
@@ -63,6 +66,7 @@
     "@babel/core": "^7.20.0",
     "@types/jest": "^29.5.12",
     "@types/lodash.debounce": "^4.0.9",
+    "@types/lodash.throttle": "^4.1.9",
     "@types/react": "~18.3.12",
     "@types/react-native-vector-icons": "^6.4.18",
     "@types/react-test-renderer": "^18.0.7",

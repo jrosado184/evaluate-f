@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import React from "react";
 import ActionBar from "./ActionBar";
-import useEmployeeContext from "@/app/context/GlobalContext";
+import useEmployeeContext from "@/app/context/EmployeeContext";
 
 const Sort = () => {
   const [showActionsheet, setShowActionsheet] = React.useState(false);

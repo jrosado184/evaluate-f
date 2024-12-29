@@ -8,7 +8,7 @@ import {
   ActionsheetItem,
   ActionsheetItemText,
 } from "./ui/actionsheet";
-import useEmployeeContext from "@/app/context/GlobalContext";
+import useEmployeeContext from "@/app/context/EmployeeContext";
 
 function ActionBar({ showActionSheet, setShowActionSheet }: any) {
   const { setSortingBy } = useEmployeeContext();

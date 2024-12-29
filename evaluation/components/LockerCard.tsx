@@ -37,7 +37,7 @@ const LockerCard: React.FC<LockerCardTypes> = ({
   vacant,
 }) => {
   return (
-    <View className="w-full items-center bg-neutral-50">
+    <View className="w-full items-center bg-white">
       <View className="border border-gray-400 w-[100%] h-40 rounded-lg">
         <View className="flex-row justify-between h-full">
           <View className="justify-around h-full pl-4">
