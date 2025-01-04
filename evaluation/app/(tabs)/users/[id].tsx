@@ -51,6 +51,7 @@ const User = () => {
             name={employee?.employee_name}
             employee_id={employee?.employee_id}
             locker_number={employee?.locker_number}
+            knife_number={employee?.knife_number}
             position={employee?.position}
             department={employee?.department}
             last_update={formatISODate(employee?.last_updated)}

@@ -34,6 +34,7 @@ const Lockers = () => {
           last_updated={formatISODate(item.last_updated)}
           vacant={item.vacant}
           status={item.status}
+          location={item.location}
         />
       </TouchableOpacity>
     );
@@ -57,7 +58,13 @@ const Lockers = () => {
     getMoreData,
     fetchingMoreUsers,
     setIsSearching,
-  } = usePagination(getLockers, setLockers, setLockerDetails, lockerDetails);
+  } = usePagination(
+    lockers,
+    getLockers,
+    setLockers,
+    setLockerDetails,
+    lockerDetails
+  );
 
   const { onScrollHandler } = useScrollHandler();
 
@@ -78,10 +85,12 @@ const Lockers = () => {
     }
   };
 
+  //fix lockers not loading
+
   useEffect(() => {
     setLoading(true);
-    !isSearching && !loading && fetchAndSetLockers(page);
-  }, []);
+    !isSearching && fetchAndSetLockers(page);
+  }, [getLockers]);
 
   return (
     <SafeAreaView
@@ -90,7 +99,7 @@ const Lockers = () => {
       <View className="flex-row justify-between items-center w-full">
         <Text className="pl-2 font-inter-regular text-[1.9rem]">Lockers</Text>
       </View>
-      <Fab icon="unlock" />
+      <Fab icon="unlock" route="lockers/add_locker" />
       <Search
         total="lockers"
         getData={getLockers}

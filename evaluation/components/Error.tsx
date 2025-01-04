@@ -3,7 +3,7 @@ import React from "react";
 
 interface ErrorTypes {
   styles?: string;
-  title: string;
+  title: string | null;
   hidden: boolean;
 }
 

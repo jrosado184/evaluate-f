@@ -13,7 +13,21 @@ interface FormFieldProps {
   placeholder?: string;
   rounded?: string;
   inputStyles?: string;
+  icon?: any;
+  optional?: boolean;
 }
+/**
+ * Form fields that take props.
+ *
+ * @param {string} inputStyles - Styles for the input box
+ * @param {string} title - Title for input label
+ * @param {string} value - Input value
+ * @param {string} handleChangeText - Function that triggers the inputs onChange
+ * @param {string} styles - Parent container styles
+ * @param {string} placeholder - Placeholder text
+ * @param {string} icon - Icon
+ * @param {string} rounded - Rounded styles
+ */
 
 const FormField: React.FC<FormFieldProps> = ({
   title,
@@ -23,14 +37,20 @@ const FormField: React.FC<FormFieldProps> = ({
   placeholder,
   rounded,
   inputStyles,
+  icon,
+  optional,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   return (
     <View className={`space-y-2 gap-2 ${styles}`}>
-      <Text className="text-base font-inter-medium">{title}</Text>
+      <Text className="text-base font-inter-medium">
+        {title}{" "}
+        {optional && <Text className="text-neutral-400">(Optional)</Text>}
+      </Text>
       <View
         className={`border border-gray-400 w-full h-16 flex-row items-center ${rounded}`}
       >
+        {icon && <View className="pl-4">{icon}</View>}
         <TextInput
           className={`font-inter-semibold flex-1 ${inputStyles}`}
           value={value}

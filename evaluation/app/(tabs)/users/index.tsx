@@ -37,7 +37,13 @@ const Users = () => {
     setIsSearching,
     isSearching,
     fetchingMoreUsers,
-  } = usePagination(getUsers, setEmployees, setUserDetails, userDetails);
+  } = usePagination(
+    employees,
+    getUsers,
+    setEmployees,
+    setUserDetails,
+    userDetails
+  );
 
   const { onScrollHandler } = useScrollHandler();
 
@@ -57,6 +63,7 @@ const Users = () => {
           employee_id={item.employee_id}
           last_update={formatISODate(item.last_updated)}
           locker_number={item.locker_number}
+          knife_number={item.knife_number}
           status={item.status}
           button="arrow"
         />
@@ -92,10 +99,10 @@ const Users = () => {
         employees.length < 4 && "h-[105vh]"
       }`}
     >
-      <View className="flex-row justify-between items-center w-full">
-        <Text className="pl-2 font-inter-regular text-[1.9rem]">Users</Text>
+      <View className="flex-row h-10 justify-between items-center w-full">
+        <Text className="pl-2 font-inter-regular text-[1.6rem]">Users</Text>
       </View>
-      <Fab icon="user-plus" />
+      <Fab icon="user-plus" route="users/add_user" />
       {isTabBarVisible && (
         <Search
           total="users"

@@ -2,6 +2,7 @@ import useEmployeeContext from "@/app/context/EmployeeContext";
 import { useState } from "react";
 
 const usePagination = (
+  lockerOrUser: any,
   getData?: any,
   setData?: any,
   setDetails?: any,
@@ -13,11 +14,9 @@ const usePagination = (
   const [isSearching, setIsSearching] = useState(false);
   const [nextPage, setNextPage] = useState(2);
 
-  const { employees } = useEmployeeContext();
-
   const getMoreData = async () => {
     if (
-      employees.length < 4 ||
+      lockerOrUser.length < 4 ||
       fetchingMoreUsers ||
       isSearching ||
       details.currentPage >= details.totalPages

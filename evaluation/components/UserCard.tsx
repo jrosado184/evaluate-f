@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity } from "react-native";
-import React, { memo, useCallback } from "react";
+import React, { memo } from "react";
 import RightIcon from "@/constants/icons/RightIcon";
 import WarningIcon from "@/constants/icons/WarningIcon";
 import Entypo from "@expo/vector-icons/Entypo";
@@ -24,6 +24,7 @@ interface UserCardTypes {
   /** Status of the user */
   status: string;
   button?: string;
+  knife_number: number | any;
 }
 
 /**
@@ -47,6 +48,7 @@ const UserCard: React.FC<UserCardTypes> = ({
   locker_number,
   status,
   button,
+  knife_number,
 }) => {
   return (
     <View className="w-full items-center">
@@ -66,23 +68,26 @@ const UserCard: React.FC<UserCardTypes> = ({
               Last updated: {last_update}
             </Text>
           </View>
-          <View className="h-full justify-around items-end pr-4">
-            <View className="gap-y-2 items-end">
+          <View className="h-full justify-around items-end pr-4 my-2">
+            <View className="gap-y-1 items-end">
               {status === "Damaged" ? <WarningIcon /> : <CheckIcon />}
-              <Text className="font-inter-regular">
+              <Text>
                 Locker: <Text className="font-inter-bold">{locker_number}</Text>
               </Text>
+              <Text></Text>
             </View>
-            {button === "arrow" ? (
-              <RightIcon />
-            ) : (
-              <TouchableOpacity
-                activeOpacity={0.8}
-                className="w-28 h-10 border border-gray-500 justify-center items-center rounded-md my-2"
-              >
-                <Text>Update</Text>
-              </TouchableOpacity>
-            )}
+            <View className="mb-2">
+              {button === "arrow" ? (
+                <RightIcon />
+              ) : (
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  className="w-28 h-10 border border-gray-500 justify-center items-center rounded-md my-2"
+                >
+                  <Text>Update</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
       </View>

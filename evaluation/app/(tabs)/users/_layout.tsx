@@ -13,6 +13,7 @@ const UserLayout = () => {
     >
       <Stack.Screen name="index" />
       <Stack.Screen name="[id]" />
+      <Stack.Screen name="add_user" />
     </Stack>
   );
 };

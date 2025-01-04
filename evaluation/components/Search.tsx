@@ -17,7 +17,7 @@ const Search = ({ total, onSearch, getData, setData, type }: any) => {
     setLoading(true);
     const token = await AsyncStorage.getItem("token");
     const baseUrl = await getServerIP();
-    //user us the person being searched
+    //user is the person being searched
     //type is "lockers" or "users", passed in through props
     axios
       .get(`${baseUrl}/employees/search?query=${user}&type=${type}`, {
@@ -63,7 +63,7 @@ const Search = ({ total, onSearch, getData, setData, type }: any) => {
   return (
     <View className="w-full items-center justify-start">
       <FormField
-        styles="rounded-full w-full"
+        styles="rounded-full w-full gap-0"
         value={query}
         placeholder="Search..."
         handleChangeText={(e: any) => handleSearch(e)}

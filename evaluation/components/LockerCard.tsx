@@ -3,6 +3,7 @@ import React from "react";
 import WarningIcon from "@/constants/icons/WarningIcon";
 import CheckIcon from "@/constants/icons/CheckIcon";
 import RightIcon from "@/constants/icons/RightIcon";
+import Gender from "react-native-vector-icons/MaterialIcons";
 
 interface LockerCardTypes {
   button: string | undefined;
@@ -12,6 +13,7 @@ interface LockerCardTypes {
   assigned_by: string | undefined;
   last_updated: string | undefined;
   vacant?: boolean | undefined;
+  location?: string;
 }
 
 /**
@@ -24,6 +26,7 @@ interface LockerCardTypes {
  * @param {string} assigned_by - Person who assigned the locker
  * @param {string} last_updated - Last update timestamp
  * @param {boolean} vacant - Current status of occupancy
+ * @param {boolean} location - Location of locker
  *
  */
 
@@ -35,6 +38,7 @@ const LockerCard: React.FC<LockerCardTypes> = ({
   assigned_by,
   last_updated,
   vacant,
+  location,
 }) => {
   return (
     <View className="w-full items-center bg-white">
@@ -57,8 +61,9 @@ const LockerCard: React.FC<LockerCardTypes> = ({
                 {`Assigned by ${assigned_by}`}
               </Text>
             </View>
-            <Text className="text-[.9rem] text-neutral-700">
-              Last updated: {last_updated}
+            <Text className="text-[1rem] text-neutral-900 font-inter-medium">
+              <Text className="font-inter-medium">Location: </Text>
+              <Text className="font-inter-bold">{location}</Text>
             </Text>
           </View>
           <View className="h-full justify-around items-end pr-4">
@@ -70,6 +75,17 @@ const LockerCard: React.FC<LockerCardTypes> = ({
                   }`}
                 >
                   <Text className={`font-inter-medium text-sm`}>Vacant</Text>
+                </View>
+                <View>
+                  <Gender
+                    color={
+                      location?.split(" ")[1] === "Mens" ? "#005FCC" : "#E91E63"
+                    }
+                    name={
+                      location?.split(" ")[1] === "Mens" ? "male" : "female"
+                    }
+                    size={24}
+                  />
                 </View>
                 {status === "Damaged" ? <WarningIcon /> : <CheckIcon />}
               </View>
