@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useEffect, useCallback } from "react";
 import {
   Modal,
   View,
@@ -8,23 +8,36 @@ import {
   StyleSheet,
   Dimensions,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
 import Icon from "react-native-vector-icons/EvilIcons";
-import FormField from "./FormField";
 import useEmployeeContext from "@/app/context/EmployeeContext";
-import Checkbox from "expo-checkbox"; // Install this with `expo install expo-checkbox`
-import Sort from "./Sort";
-import WarningIcon from "@/constants/icons/WarningIcon";
-import Gender from "react-native-vector-icons/MaterialIcons";
-import CheckIcon from "@/constants/icons/CheckIcon";
+import useGetLockers from "@/app/requests/useGetLockers";
+import usePagination from "@/hooks/usePagination";
+import AssignCard from "./AssignCard";
 
 const SlideUpModal = ({ visible, onClose }: any) => {
   const screenHeight = Dimensions.get("window").height; // Get screen height
   const slideAnim = useRef(new Animated.Value(screenHeight)).current; // Start animation off-screen
 
-  const list = ["Locker Number", "Designation", "Location"];
-
-  const { lockers } = useEmployeeContext();
+  const {
+    lockers,
+    setLoading,
+    setLockers,
+    loading,
+    setLockerDetails,
+    lockerDetails,
+  } = useEmployeeContext();
+  const { fetchAndSetLockers, getLockers } = useGetLockers();
+  const { limit, page, isSearching, getMoreData, fetchingMoreUsers } =
+    usePagination(
+      lockers,
+      getLockers,
+      setLockers,
+      setLockerDetails,
+      lockerDetails,
+      8
+    );
 
   useEffect(() => {
     if (visible) {
@@ -44,11 +57,22 @@ const SlideUpModal = ({ visible, onClose }: any) => {
     }
   }, [visible]);
 
-  const renderItem = () => (
-    <View className="flex-row items-center py-3 border-b border-gray-300"></View>
-  );
+  useEffect(() => {
+    setLoading(true);
+    !isSearching && fetchAndSetLockers(page, limit);
+  }, [getLockers]);
 
-  console.log(lockers);
+  const renderItem = useCallback(
+    ({ item }: any) => (
+      <TouchableOpacity key={item._id} activeOpacity={0.8}>
+        <AssignCard
+          locker_number={item.locker_number}
+          location={item.location}
+        />
+      </TouchableOpacity>
+    ),
+    []
+  );
 
   return (
     <Modal transparent visible={visible} animationType="slide">
@@ -63,7 +87,7 @@ const SlideUpModal = ({ visible, onClose }: any) => {
             { transform: [{ translateY: slideAnim }] },
           ]}
         >
-          <View className="gap-2">
+          <View className="gap-1 flex-row items-center">
             <View className="flex-row items-center w-full justify-between">
               <View className="flex-row items-center">
                 <TouchableOpacity onPress={onClose}>
@@ -73,66 +97,26 @@ const SlideUpModal = ({ visible, onClose }: any) => {
               </View>
               <View className="pr-2 flex-row items-center gap-2">
                 <Text>Filter by</Text>
-                <View className="w-16 h-7 rounded-lg border border-black"></View>
+                <View className="w-16 h-7 rounded-lg border border-gray-400"></View>
               </View>
             </View>
           </View>
-          <View className="h-full my-8 gap-4">
-            {/* List */}
-            {/* <FlatList
-              data={lockers}
-              renderItem={renderItem}
-              keyExtractor={(item) => item.locker_umber}
-            /> */}
-            <View className="h-28 w-[100%] flex-row justify-between p-4 py-1 border border-gray-300 rounded-lg">
-              <View className="my-2 gap-1 flex-row justify-between w-full">
-                <View className="w-[50%] gap-1">
-                  <Text className="font-inter-medium text-[1.2rem]">
-                    Locker:{" "}
-                    <Text className="font-inter-bold text-[1.2rem]">34</Text>
-                  </Text>
-                  <Text>Fabriaction Mens C</Text>
-                </View>
-                <View className="justify-between items-end gap-4">
-                  <View className="flex-row gap-2 items-center">
-                    <Gender color="#005FCC" name="male" size={24} />
-                    <CheckIcon />
-                  </View>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    className="w-20 h-8 border border-gray-400 justify-center items-center rounded-md my-2"
-                  >
-                    <Text className="text-sm">Assign</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-
-            <View className="h-28 w-[100%] flex-row justify-between p-4 py-1 border border-gray-300 rounded-lg">
-              <View className="my-2 gap-1 flex-row justify-between w-full">
-                <View className="w-[50%] gap-1">
-                  <Text className="font-inter-medium text-[1.2rem]">
-                    Locker:{" "}
-                    <Text className="font-inter-bold text-[1.2rem]">34</Text>
-                  </Text>
-                  <Text className="font-inter-regular">
-                    Fabriaction Womens A
-                  </Text>
-                </View>
-                <View className="justify-between items-end gap-4">
-                  <View className="flex-row gap-2 items-center">
-                    <Gender color="#E91E63" name="female" size={24} />
-                    <CheckIcon />
-                  </View>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    className="w-20 h-8 border border-gray-400 justify-center items-center rounded-md my-2"
-                  >
-                    <Text className="text-sm">Assign</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
+          <View className="flex-1 my-4">
+            {!loading && (
+              <FlatList
+                data={lockers}
+                keyExtractor={(item) => item._id.toString()}
+                renderItem={renderItem}
+                onEndReached={getMoreData} // Trigger when the user scrolls near the bottom
+                onEndReachedThreshold={0.5} // Trigger when halfway to the end
+                ListFooterComponent={
+                  fetchingMoreUsers && (
+                    <ActivityIndicator size="small" color="#0000ff" />
+                  )
+                }
+                contentContainerStyle={{ paddingBottom: 20 }}
+              />
+            )}
           </View>
         </Animated.View>
       </View>

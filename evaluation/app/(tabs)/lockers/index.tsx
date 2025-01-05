@@ -40,7 +40,7 @@ const Lockers = () => {
     );
   }, []);
 
-  const { getLockers } = useGetLockers();
+  const { getLockers, fetchAndSetLockers } = useGetLockers();
 
   const {
     lockers,
@@ -51,45 +51,21 @@ const Lockers = () => {
     lockerDetails,
   } = useEmployeeContext();
 
-  const {
-    page,
-    isSearching,
-    limit,
-    getMoreData,
-    fetchingMoreUsers,
-    setIsSearching,
-  } = usePagination(
-    lockers,
-    getLockers,
-    setLockers,
-    setLockerDetails,
-    lockerDetails
-  );
+  const { page, isSearching, getMoreData, fetchingMoreUsers, setIsSearching } =
+    usePagination(
+      lockers,
+      getLockers,
+      setLockers,
+      setLockerDetails,
+      lockerDetails,
+      4
+    );
 
   const { onScrollHandler } = useScrollHandler();
 
-  const fetchAndSetLockers = async (page: any) => {
-    const data = await getLockers(page, limit);
-    if (data) {
-      setLockerDetails({
-        totalUsers: data.totalEmployees,
-        totalPages: data.totalPages,
-        currentPage: data.currentPage,
-      });
-      setLockers(() => {
-        setLoading(false);
-        if (page === 1) {
-          return data.results;
-        }
-      });
-    }
-  };
-
-  //fix lockers not loading
-
   useEffect(() => {
     setLoading(true);
-    !isSearching && fetchAndSetLockers(page);
+    !isSearching && fetchAndSetLockers(page, 4);
   }, [getLockers]);
 
   return (

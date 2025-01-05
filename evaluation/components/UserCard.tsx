@@ -68,25 +68,35 @@ const UserCard: React.FC<UserCardTypes> = ({
               Last updated: {last_update}
             </Text>
           </View>
-          <View className="h-full justify-around items-end pr-4 my-2">
-            <View className="gap-y-1 items-end">
-              {status === "Damaged" ? <WarningIcon /> : <CheckIcon />}
-              <Text>
-                Locker: <Text className="font-inter-bold">{locker_number}</Text>
-              </Text>
-              <Text></Text>
-            </View>
-            <View className="mb-2">
-              {button === "arrow" ? (
-                <RightIcon />
-              ) : (
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  className="w-28 h-10 border border-gray-500 justify-center items-center rounded-md my-2"
-                >
-                  <Text>Update</Text>
+          <View className="flex-row justify-between h-full">
+            <View className="justify-around items-end h-full pr-4">
+              <View className="gap-y-1 items-end">
+                <View className="h-[1.7rem]">
+                  {status === "Damaged" ? <WarningIcon /> : <CheckIcon />}
+                </View>
+                <View className="flex-row items-center">
+                  <Text className="font-inter-regular">
+                    Locker:{" "}
+                    <Text className="font-inter-semibold">{locker_number}</Text>
+                  </Text>
+                  <Text></Text>
+                </View>
+                <Text></Text>
+              </View>
+              <View className="">
+                <TouchableOpacity>
+                  {button === "arrow" ? (
+                    <RightIcon />
+                  ) : (
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      className="w-28 h-8 border border-gray-500 justify-center items-center rounded-md my-2"
+                    >
+                      <Text>Update</Text>
+                    </TouchableOpacity>
+                  )}
                 </TouchableOpacity>
-              )}
+              </View>
             </View>
           </View>
         </View>

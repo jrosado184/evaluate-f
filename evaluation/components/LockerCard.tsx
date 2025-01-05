@@ -67,7 +67,7 @@ const LockerCard: React.FC<LockerCardTypes> = ({
             </Text>
           </View>
           <View className="h-full justify-around items-end pr-4">
-            <View className="gap-y-2 items-end">
+            <View className="gap-y-2 items-end my-2">
               <View className="flex-row gap-3 items-center">
                 <View
                   className={`w-20 h-7 rounded-lg items-center justify-center border border-neutral-500 ${
@@ -96,7 +96,7 @@ const LockerCard: React.FC<LockerCardTypes> = ({
             ) : (
               <TouchableOpacity
                 activeOpacity={0.8}
-                className="w-28 h-10 border border-gray-500 justify-center items-center rounded-md my-2"
+                className="w-24 h-9 border border-gray-500 justify-center items-center rounded-md my-2"
               >
                 <Text>{vacant ? "Assign" : "Update"}</Text>
               </TouchableOpacity>

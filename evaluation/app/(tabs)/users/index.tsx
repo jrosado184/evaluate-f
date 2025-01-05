@@ -20,7 +20,7 @@ import Fab from "@/components/Fab";
 import { useTabBar } from "../_layout";
 
 const Users = () => {
-  const { getUsers } = useGetUsers();
+  const { getUsers, fetchAndSetUsers } = useGetUsers();
   const {
     loading,
     employees,
@@ -70,23 +70,6 @@ const Users = () => {
       </TouchableOpacity>
     );
   }, []);
-
-  const fetchAndSetUsers = async (page: number) => {
-    const data = await getUsers(page, limit);
-    if (data) {
-      setUserDetails({
-        totalUsers: data.totalEmployees,
-        totalPages: data.totalPages,
-        currentPage: data.currentPage,
-      });
-      setEmployees(() => {
-        setLoading(false);
-        if (page === 1) {
-          return data.results;
-        }
-      });
-    }
-  };
 
   useEffect(() => {
     setLoading(true);

@@ -3,9 +3,13 @@ import axios from "axios";
 import getServerIP from "./NetworkAddress";
 import useEmployeeContext from "../context/EmployeeContext";
 import { useCallback, useEffect, useState } from "react";
+import usePagination from "@/hooks/usePagination";
 
 const useGetUsers = () => {
-  const { sortingBy } = useEmployeeContext();
+  const { sortingBy, setUserDetails, setEmployees, setLoading } =
+    useEmployeeContext();
+
+  const { limit } = usePagination();
 
   const [sort, setSort] = useState("default");
 
@@ -46,7 +50,24 @@ const useGetUsers = () => {
     [sort]
   );
 
-  return { getUsers };
+  const fetchAndSetUsers = async (page: number) => {
+    const data = await getUsers(page, limit);
+    if (data) {
+      setUserDetails({
+        totalUsers: data.totalEmployees,
+        totalPages: data.totalPages,
+        currentPage: data.currentPage,
+      });
+      setEmployees(() => {
+        setLoading(false);
+        if (page === 1) {
+          return data.results;
+        }
+      });
+    }
+  };
+
+  return { getUsers, fetchAndSetUsers };
 };
 
 export default useGetUsers;

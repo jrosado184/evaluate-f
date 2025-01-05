@@ -1,18 +1,17 @@
-import useEmployeeContext from "@/app/context/EmployeeContext";
 import { useState } from "react";
 
 const usePagination = (
-  lockerOrUser: any,
+  lockerOrUser?: any,
   getData?: any,
   setData?: any,
   setDetails?: any,
-  details?: any
+  details?: any,
+  limit: any = 8
 ) => {
   let page = 1;
-  let limit = 4;
   const [fetchingMoreUsers, setFetchingMoreUsers] = useState<Boolean>(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [nextPage, setNextPage] = useState(2);
+  const [nextPage, setNextPage] = useState(2); //work on formula for this, its broken
 
   const getMoreData = async () => {
     if (
