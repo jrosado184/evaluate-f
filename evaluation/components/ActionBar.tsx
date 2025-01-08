@@ -40,10 +40,10 @@ const ActionBar: React.FC<ActionBarProps> = ({
         <ActionsheetBackdrop />
         <ActionsheetContent
           style={{
-            marginBottom: 30, // Adjust position
+            marginBottom: 30,
             borderTopLeftRadius: 20,
             borderTopRightRadius: 20,
-            ...style, // Apply custom styles if provided
+            ...style,
           }}
         >
           <ActionsheetDragIndicatorWrapper>
