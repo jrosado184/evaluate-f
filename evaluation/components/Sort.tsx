@@ -1,12 +1,24 @@
 import { View, Text, TouchableOpacity } from "react-native";
-import React from "react";
+import React, { useState } from "react";
 import ActionBar from "./ActionBar";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 
 const Sort = () => {
   const [showActionsheet, setShowActionsheet] = React.useState(false);
 
-  const { sortingBy } = useEmployeeContext();
+  const { sortingBy, setSortingBy } = useEmployeeContext();
+  const [selectedSort, setSelectedSort] = useState<string>("Default");
+
+  const sortOptions = [
+    { label: "Default", value: "Default" },
+    { label: "Lockers", value: "Lockers" },
+    { label: "Unassigned", value: "Unassigned" },
+  ];
+
+  const handleSortSelect = (value: string) => {
+    setSelectedSort(value);
+    setSortingBy(value);
+  };
 
   return (
     <View className="gap-2 flex-row items-center">
@@ -19,7 +31,10 @@ const Sort = () => {
         <Text className="font-inter-regular text-sm">{sortingBy}</Text>
         <ActionBar
           showActionSheet={showActionsheet}
-          setShowActionSheet={setShowActionsheet}
+          setShowActionsheet={setShowActionsheet}
+          options={sortOptions}
+          onSelect={handleSortSelect}
+          title="Sort By"
         />
       </TouchableOpacity>
     </View>

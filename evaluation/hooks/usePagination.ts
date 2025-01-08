@@ -11,7 +11,7 @@ const usePagination = (
   let page = 1;
   const [fetchingMoreUsers, setFetchingMoreUsers] = useState<Boolean>(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [nextPage, setNextPage] = useState(2); //work on formula for this, its broken
+  const [nextPage, setNextPage] = useState(2);
 
   const getMoreData = async () => {
     if (

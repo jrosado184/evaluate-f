@@ -98,6 +98,7 @@ const SignIn = () => {
               isLoading={isSigningIn}
               title="Sign in"
               styles="my-12 w-full rounded-[0.625rem]"
+              inputStyles="w-[90%]"
             />
           </View>
         </View>

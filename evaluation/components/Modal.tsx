@@ -15,8 +15,11 @@ import useEmployeeContext from "@/app/context/EmployeeContext";
 import useGetLockers from "@/app/requests/useGetLockers";
 import usePagination from "@/hooks/usePagination";
 import AssignCard from "./AssignCard";
+import ActionBar from "./ActionBar";
 
 const SlideUpModal = ({ visible, onClose }: any) => {
+  const [showActionsheet, setShowActionsheet] = React.useState(false);
+
   const screenHeight = Dimensions.get("window").height; // Get screen height
   const slideAnim = useRef(new Animated.Value(screenHeight)).current; // Start animation off-screen
 
@@ -74,6 +77,12 @@ const SlideUpModal = ({ visible, onClose }: any) => {
     []
   );
 
+  const vacantLockers = lockers?.filter((locker: any) => {
+    if (locker.vacant) {
+      return locker;
+    }
+  });
+
   return (
     <Modal transparent visible={visible} animationType="slide">
       <View style={styles.overlay}>
@@ -95,26 +104,22 @@ const SlideUpModal = ({ visible, onClose }: any) => {
                 </TouchableOpacity>
                 <Text className="font-inter-medium">Choose Locker</Text>
               </View>
-              <View className="pr-2 flex-row items-center gap-2">
-                <Text>Filter by</Text>
-                <View className="w-16 h-7 rounded-lg border border-gray-400"></View>
-              </View>
             </View>
           </View>
-          <View className="flex-1 my-4">
+          <View className="flex-1 my-3">
             {!loading && (
               <FlatList
-                data={lockers}
+                data={vacantLockers}
                 keyExtractor={(item) => item._id.toString()}
                 renderItem={renderItem}
-                onEndReached={getMoreData} // Trigger when the user scrolls near the bottom
-                onEndReachedThreshold={0.5} // Trigger when halfway to the end
+                onEndReached={getMoreData}
+                onEndReachedThreshold={0.5}
                 ListFooterComponent={
                   fetchingMoreUsers && (
                     <ActivityIndicator size="small" color="#0000ff" />
                   )
                 }
-                contentContainerStyle={{ paddingBottom: 20 }}
+                contentContainerStyle={{ paddingBottom: 8 }}
               />
             )}
           </View>
@@ -129,7 +134,7 @@ const SlideUpModal = ({ visible, onClose }: any) => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.3)", // Semi-transparent background
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
     justifyContent: "flex-end",
   },
   modalContent: {

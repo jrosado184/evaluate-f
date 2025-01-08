@@ -8,43 +8,71 @@ import {
   ActionsheetItem,
   ActionsheetItemText,
 } from "./ui/actionsheet";
-import useEmployeeContext from "@/app/context/EmployeeContext";
 
-function ActionBar({ showActionSheet, setShowActionSheet }: any) {
-  const { setSortingBy } = useEmployeeContext();
+interface ActionBarProps {
+  showActionSheet: boolean;
+  setShowActionsheet: (value: boolean) => void;
+  options: Array<{ label: string; value: string }>;
+  onSelect: (value: string) => void; //
+  style?: object;
+  title: string;
+}
 
-  const handlePress = (value?: any) => {
-    setSortingBy(value);
-    setShowActionSheet(false);
-    !value && setSortingBy("Default");
+const ActionBar: React.FC<ActionBarProps> = ({
+  showActionSheet,
+  setShowActionsheet,
+  options,
+  onSelect,
+  title = "Select an Option",
+  style,
+}) => {
+  const handlePress = (value: string) => {
+    onSelect(value);
+    setShowActionsheet(false);
   };
+
   return (
     <>
-      <Actionsheet isOpen={showActionSheet} onClose={handlePress}>
+      <Actionsheet
+        isOpen={showActionSheet}
+        onClose={() => setShowActionsheet(false)}
+      >
         <ActionsheetBackdrop />
-        <ActionsheetContent>
+        <ActionsheetContent
+          style={{
+            marginBottom: 30, // Adjust position
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            ...style, // Apply custom styles if provided
+          }}
+        >
           <ActionsheetDragIndicatorWrapper>
             <ActionsheetDragIndicator />
           </ActionsheetDragIndicatorWrapper>
-          <ActionsheetItem onPress={() => handlePress("Default")}>
-            <ActionsheetItemText className="font-inter-regular">
-              Default
+
+          {title && (
+            <ActionsheetItemText
+              className="font-inter-bold"
+              style={{ padding: 10 }}
+            >
+              {title}
             </ActionsheetItemText>
-          </ActionsheetItem>
-          <ActionsheetItem onPress={() => handlePress("Lockers")}>
-            <ActionsheetItemText className="font-inter-regular">
-              Lockers
-            </ActionsheetItemText>
-          </ActionsheetItem>
-          <ActionsheetItem onPress={() => handlePress("Unassigned")}>
-            <ActionsheetItemText className="font-inter-regular">
-              Unassigned
-            </ActionsheetItemText>
-          </ActionsheetItem>
+          )}
+
+          {options?.map((option, index) => (
+            <ActionsheetItem
+              key={index}
+              onPress={() => handlePress(option.value)}
+            >
+              <ActionsheetItemText className="font-inter-regular">
+                {option.label}
+              </ActionsheetItemText>
+            </ActionsheetItem>
+          ))}
         </ActionsheetContent>
       </Actionsheet>
     </>
   );
-}
+};
 
 export default ActionBar;

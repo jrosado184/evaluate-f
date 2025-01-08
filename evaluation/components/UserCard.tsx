@@ -4,6 +4,7 @@ import RightIcon from "@/constants/icons/RightIcon";
 import WarningIcon from "@/constants/icons/WarningIcon";
 import Entypo from "@expo/vector-icons/Entypo";
 import CheckIcon from "@/constants/icons/CheckIcon";
+import Icon from "react-native-vector-icons/Feather";
 
 /**
  * Props for the UserCard component
@@ -70,8 +71,8 @@ const UserCard: React.FC<UserCardTypes> = ({
           </View>
           <View className="flex-row justify-between h-full">
             <View className="justify-around items-end h-full pr-4">
-              <View className="gap-y-1 items-end">
-                <View className="h-[1.7rem]">
+              <View className="gap-y-1 items-end my-1">
+                <View className="h-[1.7rem] items-center justify-center pr-1">
                   {status === "Damaged" ? <WarningIcon /> : <CheckIcon />}
                 </View>
                 <View className="flex-row items-center">
@@ -83,19 +84,16 @@ const UserCard: React.FC<UserCardTypes> = ({
                 </View>
                 <Text></Text>
               </View>
-              <View className="">
-                <TouchableOpacity>
+              <View>
+                <View className="pb-1">
                   {button === "arrow" ? (
                     <RightIcon />
                   ) : (
-                    <TouchableOpacity
-                      activeOpacity={0.8}
-                      className="w-28 h-8 border border-gray-500 justify-center items-center rounded-md my-2"
-                    >
-                      <Text>Update</Text>
+                    <TouchableOpacity activeOpacity={0.8}>
+                      <Icon name="edit-3" size={20} />
                     </TouchableOpacity>
                   )}
-                </TouchableOpacity>
+                </View>
               </View>
             </View>
           </View>
