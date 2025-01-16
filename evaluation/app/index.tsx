@@ -6,23 +6,21 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 import { isTokenExpired } from "@/constants/utilities/isTokenExpired";
+import useEmployeeContext from "./context/EmployeeContext";
+import useAuthContext from "./context/AuthContext";
 
 export default function Index() {
   useFocusEffect(
     useCallback(() => {
       const timer = setTimeout(async () => {
-        AsyncStorage.getItem("token")
-          .then((token: any) => {
-            const decodedToken = jwtDecode(token);
-            if (isTokenExpired(decodedToken)) {
-              router.replace("/sign-in");
-            } else {
-              router.replace("/home");
-            }
-          })
-          .catch((error: any) => {
-            console.log(error);
-          });
+        AsyncStorage.getItem("token").then((token: any) => {
+          const decodedToken = jwtDecode(token);
+          if (isTokenExpired(decodedToken)) {
+            router.replace("/sign-in");
+          } else {
+            router.replace("/home");
+          }
+        });
       }, 3000);
 
       return () => clearTimeout(timer);

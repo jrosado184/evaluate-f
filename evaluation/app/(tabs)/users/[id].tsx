@@ -1,17 +1,16 @@
-import { View, Text } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import React, { Ref, useCallback, useEffect, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useGlobalSearchParams } from "expo-router";
-import LeftButton from "@/components/LeftButton";
+import { router, useGlobalSearchParams } from "expo-router";
 import UserCard from "@/components/UserCard";
 import Activity from "@/components/Activity";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
-import { getUser } from "@/app/requests/getUser";
 import CardSkeleton from "@/app/skeletons/CardSkeleton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import axios from "axios";
+import Icon from "react-native-vector-icons/Feather";
 
 const User = () => {
   const { id } = useGlobalSearchParams();
@@ -42,8 +41,14 @@ const User = () => {
 
   return (
     <SafeAreaView className="p-6 bg-neutral-50 h-full">
-      <LeftButton />
-      <View>
+      <TouchableOpacity
+        onPress={router.back}
+        className="flex-row items-center h-10"
+      >
+        <Icon name="chevron-left" size={29} />
+        <Text className="text-[1.3rem]">Back</Text>
+      </TouchableOpacity>
+      <View className="my-4">
         {loading ? (
           <CardSkeleton amount={1} width="w-full" height="h-40" />
         ) : (

@@ -1,17 +1,19 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import ActionBar from "./ActionBar";
+import SlideUpModal from "./SlideUpModal";
 
 interface SelectInputProps {
-  title: string; // Title displayed above the select input
-  placeholder: string; // Placeholder text for the select
-  options?: Array<{ label: string; value: string }>; // List of options for the select
-  onSelect: (value: string) => void; // Callback when an option is selected
-  modalVisible?: boolean; // Whether a modal is visible
-  onModalOpen?: () => void; // Function to trigger modal opening
-  containerStyles?: string; // Optional custom styles for the container
-  borderColor?: string; // Border color for the input
-  rounded?: string; // Rounded border styles
+  title: string;
+  placeholder: string;
+  options?: Array<{ label: string; value: string; children?: any }>;
+  onSelect: (value: any) => void;
+  toggleModal: any;
+  setMOdalVisible: any;
+  containerStyles?: string;
+  borderColor?: string;
+  rounded?: string;
+  loadData?: any;
 }
 
 const SelectInput: React.FC<SelectInputProps> = ({
@@ -19,26 +21,32 @@ const SelectInput: React.FC<SelectInputProps> = ({
   placeholder,
   options = [],
   onSelect,
-  modalVisible = false,
-  onModalOpen,
+  toggleModal,
   containerStyles,
   borderColor = "border-gray-400",
   rounded = "rounded-[0.625rem]",
+  loadData,
 }) => {
   const [selectedValue, setSelectedValue] = useState<string | null>(null);
   const [showActionSheet, setShowActionSheet] = useState(false);
 
-  const handlePress = () => {
-    if (modalVisible && onModalOpen) {
-      onModalOpen(); // Open modal if modalVisible is true
+  const handlePress = async () => {
+    if (loadData) await loadData();
+    if (toggleModal) {
+      toggleModal();
     } else {
-      setShowActionSheet(true); // Show ActionBar otherwise
+      setShowActionSheet(true);
     }
   };
 
-  const handleSelect = (value: string) => {
-    setSelectedValue(value);
-    onSelect(value);
+  const handleSelect = (value: any) => {
+    if (typeof value === "object" && value.position) {
+      setSelectedValue(value.position);
+      onSelect(value);
+    } else {
+      setSelectedValue(value);
+      onSelect(value);
+    }
     setShowActionSheet(false);
   };
 
@@ -49,11 +57,14 @@ const SelectInput: React.FC<SelectInputProps> = ({
         onPress={handlePress}
         className={`border ${borderColor} w-full h-16 flex-row items-center ${rounded}`}
       >
-        <Text className="pl-4 text-[#929292] font-inter-semibold flex-1">
+        <Text
+          className={`pl-4 font-inter-semibold flex-1 ${
+            selectedValue !== null ? "text-neutral-700" : "text-[#929292]"
+          }`}
+        >
           {selectedValue || placeholder}
         </Text>
       </TouchableOpacity>
-
       <ActionBar
         showActionSheet={showActionSheet}
         setShowActionsheet={setShowActionSheet}

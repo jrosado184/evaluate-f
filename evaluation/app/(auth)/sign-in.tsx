@@ -38,10 +38,12 @@ const SignIn = () => {
         password: form.password,
       })
       .then(async (res) => {
+        const userName = res.data;
+        setCurrentUser(userName);
+        AsyncStorage.setItem("currentUser", userName.name);
         AsyncStorage.setItem("token", res.data.token);
         if (res.status === 200) router.replace("/home");
         setIsSigningIn(false);
-        setCurrentUser(res.data);
       })
       .catch((error) => {
         setIsSigningIn(false);

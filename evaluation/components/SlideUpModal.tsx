@@ -15,11 +15,8 @@ import useEmployeeContext from "@/app/context/EmployeeContext";
 import useGetLockers from "@/app/requests/useGetLockers";
 import usePagination from "@/hooks/usePagination";
 import AssignCard from "./AssignCard";
-import ActionBar from "./ActionBar";
 
 const SlideUpModal = ({ visible, onClose }: any) => {
-  const [showActionsheet, setShowActionsheet] = React.useState(false);
-
   const screenHeight = Dimensions.get("window").height; // Get screen height
   const slideAnim = useRef(new Animated.Value(screenHeight)).current; // Start animation off-screen
 
@@ -41,6 +38,8 @@ const SlideUpModal = ({ visible, onClose }: any) => {
       lockerDetails,
       8
     );
+
+  const { addEmployeeInfo } = useEmployeeContext();
 
   useEffect(() => {
     if (visible) {
@@ -71,6 +70,7 @@ const SlideUpModal = ({ visible, onClose }: any) => {
         <AssignCard
           locker_number={item.locker_number}
           location={item.location}
+          onClose={onClose}
         />
       </TouchableOpacity>
     ),
@@ -78,7 +78,7 @@ const SlideUpModal = ({ visible, onClose }: any) => {
   );
 
   const vacantLockers = lockers?.filter((locker: any) => {
-    if (locker.vacant) {
+    if (locker.vacant && locker.location === addEmployeeInfo?.location) {
       return locker;
     }
   });

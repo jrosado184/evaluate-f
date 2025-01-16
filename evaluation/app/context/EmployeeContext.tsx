@@ -1,4 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode } from "react";
+import useAuthContext from "./AuthContext";
+import formatISODate from "../conversions/ConvertIsoDate";
 
 type Employee = {
   _id: string;
@@ -10,28 +12,15 @@ type Employee = {
   position: string;
   assigned_by: string;
   history: any[];
+  location: string;
   last_updated: string;
-};
-
-type Locker = {
-  _id: string;
-  assigned_to: string;
-  locker_number: string;
-  employee_id: string;
-  knife_number: string | null;
-  department: string;
-  position: string;
-  assigned_by: string;
-  history: any[];
-  last_updated: string;
-  status: string;
-  vacant: boolean;
 };
 
 // Define the context type
 type EmployeeContextType = {
   loading: any;
   employee: Employee | undefined;
+  addEmployeeInfo: Employee | undefined;
   employees: Employee[];
   locker: any;
   lockers: any;
@@ -40,6 +29,7 @@ type EmployeeContextType = {
   sortingBy: string;
   setLoading: (loading: boolean) => void;
   setEmployee: (employee: Employee) => void;
+  setAddEmployeeInfo: (addEmployeeInfo: any) => void;
   setLocker: (locker: any) => void;
   setEmployees: (employees: any) => void;
   setLockers: (lockers: any) => void;
@@ -55,8 +45,23 @@ const EmployeeContext = createContext<EmployeeContextType | undefined>(
 
 // Provider component
 export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
+  const { currentUser } = useAuthContext();
   const [employees, setEmployees] = useState<any>([]);
   const [employee, setEmployee] = useState<Employee | undefined>();
+  const [addEmployeeInfo, setAddEmployeeInfo] = useState<any>({
+    employee_name: "",
+    locker_number: "",
+    employee_id: "",
+    knife_number: "N/A",
+    department: "",
+    assigned_by: "",
+    history: [],
+    last_updated: formatISODate(Date.now()),
+    position: "",
+    createdAt: formatISODate(Date.now()),
+    unassigned: true,
+    location: "",
+  });
   const [locker, setLocker] = useState();
   const [lockers, setLockers] = useState<any>();
   const [loading, setLoading] = useState<boolean | null>();
@@ -77,6 +82,8 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
       value={{
         loading,
         employee,
+        addEmployeeInfo,
+        setAddEmployeeInfo,
         employees,
         locker,
         lockers,

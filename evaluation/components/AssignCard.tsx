@@ -2,13 +2,29 @@ import { View, Text, TouchableOpacity } from "react-native";
 import React from "react";
 import Gender from "react-native-vector-icons/MaterialIcons";
 import CheckIcon from "@/constants/icons/CheckIcon";
+import useEmployeeContext from "@/app/context/EmployeeContext";
 
 interface AssignCardTypes {
   locker_number: string | undefined;
   location: string;
+  onClose?: any;
 }
 
-const AssignCard: React.FC<AssignCardTypes> = ({ locker_number, location }) => {
+const AssignCard: React.FC<AssignCardTypes> = ({
+  locker_number,
+  location,
+  onClose,
+}) => {
+  const { addEmployeeInfo, setAddEmployeeInfo } = useEmployeeContext();
+
+  const handleAssign = (close: any) => {
+    setAddEmployeeInfo((prev: any) => ({
+      ...prev,
+      locker_number: locker_number,
+    }));
+    close();
+  };
+
   return (
     <View className="h-28 w-[100%] my-2 flex-row justify-between p-4 py-1 border border-gray-400 rounded-lg">
       <View className="my-2 gap-1 flex-row justify-between w-full">
@@ -33,6 +49,7 @@ const AssignCard: React.FC<AssignCardTypes> = ({ locker_number, location }) => {
             <CheckIcon />
           </View>
           <TouchableOpacity
+            onPress={() => handleAssign(onClose)}
             activeOpacity={0.8}
             className="w-20 h-8 border border-gray-400 justify-center items-center rounded-md my-2"
           >

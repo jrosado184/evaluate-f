@@ -1,11 +1,12 @@
-export const formatISODate = (isoDate?: string): string => {
-  if (!isoDate) {
-    return "Invalid date"; // Return a fallback value for undefined/null input
+export const formatISODate = (input?: string | number): string => {
+  if (!input) {
+    return "Invalid date"; // Handle undefined/null input
   }
 
-  const date = new Date(isoDate);
+  const date = typeof input === "number" ? new Date(input) : new Date(input);
+
   if (isNaN(date.getTime())) {
-    return "Invalid date"; // Handle invalid date strings
+    return "Invalid date"; // Handle invalid date strings or timestamps
   }
 
   return new Intl.DateTimeFormat("en-US", {

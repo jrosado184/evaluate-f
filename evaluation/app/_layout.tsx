@@ -8,6 +8,7 @@ import { EmployeeProvider } from "./context/EmployeeContext";
 import "react-native-gesture-handler";
 import "react-native-reanimated";
 import { AuthProvider } from "./context/AuthContext";
+import { JobsProvider } from "./context/JobsContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -38,26 +39,28 @@ export default function RootLayout() {
     <GluestackUIProvider mode="light">
       <AuthProvider>
         <EmployeeProvider>
-          <Stack>
-            <Stack.Screen
-              name="index"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="(auth)"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="(tabs)"
-              options={{
-                headerShown: false,
-              }}
-            />
-          </Stack>
+          <JobsProvider>
+            <Stack>
+              <Stack.Screen
+                name="index"
+                options={{
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen
+                name="(auth)"
+                options={{
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen
+                name="(tabs)"
+                options={{
+                  headerShown: false,
+                }}
+              />
+            </Stack>
+          </JobsProvider>
         </EmployeeProvider>
       </AuthProvider>
     </GluestackUIProvider>

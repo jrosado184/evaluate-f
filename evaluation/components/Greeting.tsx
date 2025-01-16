@@ -1,10 +1,20 @@
 import { View, Text } from "react-native";
-import React from "react";
+import React, { useEffect } from "react";
 import useAuthContext from "@/app/context/AuthContext";
-import formatISODate from "@/app/conversions/ConvertIsoDate";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const Greeting = () => {
-  const { currentUser } = useAuthContext();
+  const { currentUser, setCurrentUser } = useAuthContext();
+
+  useEffect(() => {
+    AsyncStorage.getItem("currentUser").then((name) => {
+      setCurrentUser((prev: any) => ({
+        ...prev,
+        name: name?.replace(/^"(.*)"$/, "$1"),
+      }));
+    });
+  }, []);
+
   const today = new Date();
   const options: any = { year: "numeric", month: "long", day: "numeric" };
   const formattedDate = today.toLocaleDateString("en-US", options);
