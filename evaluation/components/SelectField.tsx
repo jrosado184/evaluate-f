@@ -1,15 +1,15 @@
-import React, { useState } from "react";
+import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import ActionBar from "./ActionBar";
-import SlideUpModal from "./SlideUpModal";
+import useSelect from "@/hooks/useSelect";
 
 interface SelectInputProps {
   title: string;
   placeholder: string;
   options?: Array<{ label: string; value: string; children?: any }>;
-  onSelect: (value: any) => void;
-  toggleModal: any;
-  setMOdalVisible: any;
+  onSelect?: (value: any) => void;
+  selectedValue: any;
+  toggleModal?: any;
   containerStyles?: string;
   borderColor?: string;
   rounded?: string;
@@ -21,34 +21,15 @@ const SelectInput: React.FC<SelectInputProps> = ({
   placeholder,
   options = [],
   onSelect,
+  selectedValue,
   toggleModal,
   containerStyles,
   borderColor = "border-gray-400",
   rounded = "rounded-[0.625rem]",
   loadData,
 }) => {
-  const [selectedValue, setSelectedValue] = useState<string | null>(null);
-  const [showActionSheet, setShowActionSheet] = useState(false);
-
-  const handlePress = async () => {
-    if (loadData) await loadData();
-    if (toggleModal) {
-      toggleModal();
-    } else {
-      setShowActionSheet(true);
-    }
-  };
-
-  const handleSelect = (value: any) => {
-    if (typeof value === "object" && value.position) {
-      setSelectedValue(value.position);
-      onSelect(value);
-    } else {
-      setSelectedValue(value);
-      onSelect(value);
-    }
-    setShowActionSheet(false);
-  };
+  const { handlePress, handleSelect, showActionSheet, setShowActionSheet } =
+    useSelect(loadData, toggleModal, onSelect);
 
   return (
     <View className={`gap-y-2 ${containerStyles}`}>
@@ -59,7 +40,7 @@ const SelectInput: React.FC<SelectInputProps> = ({
       >
         <Text
           className={`pl-4 font-inter-semibold flex-1 ${
-            selectedValue !== null ? "text-neutral-700" : "text-[#929292]"
+            selectedValue ? "text-neutral-700" : "text-[#929292]"
           }`}
         >
           {selectedValue || placeholder}

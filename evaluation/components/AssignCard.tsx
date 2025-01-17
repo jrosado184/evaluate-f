@@ -15,7 +15,7 @@ const AssignCard: React.FC<AssignCardTypes> = ({
   location,
   onClose,
 }) => {
-  const { addEmployeeInfo, setAddEmployeeInfo } = useEmployeeContext();
+  const { setAddEmployeeInfo } = useEmployeeContext();
 
   const handleAssign = (close: any) => {
     setAddEmployeeInfo((prev: any) => ({

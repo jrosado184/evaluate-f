@@ -11,6 +11,7 @@ import useJobsContext from "@/app/context/JobsContext";
 import useGetJobs from "@/app/requests/useGetJobs";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import useAuthContext from "@/app/context/AuthContext";
+import useSelect from "@/hooks/useSelect";
 
 const AddUser = () => {
   const { jobs } = useJobsContext();
@@ -20,6 +21,7 @@ const AddUser = () => {
 
   const { setAddEmployeeInfo, addEmployeeInfo } = useEmployeeContext();
   const { currentUser } = useAuthContext();
+  const { setSelectedValue } = useSelect();
 
   useEffect(() => {
     fetchJobs();
@@ -48,6 +50,11 @@ const AddUser = () => {
       );
     }
   }, [jobs]);
+  useEffect(() => {
+    return () => {
+      setAddEmployeeInfo({}); // Reset the context state
+    };
+  }, [setAddEmployeeInfo]);
 
   return (
     <SafeAreaView className="bg-white h-full p-6">
@@ -88,6 +95,7 @@ const AddUser = () => {
               department: value.department,
             }));
           }}
+          selectedValue={addEmployeeInfo?.position}
           loadData={fetchJobs}
         />
         <SelectField
@@ -101,18 +109,22 @@ const AddUser = () => {
             setAddEmployeeInfo((prev: any) => ({
               ...prev,
               location: value,
+              locker_number: "",
             }));
           }}
+          selectedValue={addEmployeeInfo?.location}
         />
         <SelectField
           title="Locker Number"
           placeholder="Select Locker"
           onSelect={(value: any) => {
+            setSelectedValue(value);
             setAddEmployeeInfo((prev: any) => ({
               ...prev,
-              location: value,
+              locker_number: value,
             }));
           }}
+          selectedValue={addEmployeeInfo?.locker_number}
           toggleModal={() => setModalVisible(true)}
         />
         <View>
