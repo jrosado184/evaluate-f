@@ -12,6 +12,7 @@ import useGetJobs from "@/app/requests/useGetJobs";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import useAuthContext from "@/app/context/AuthContext";
 import useSelect from "@/hooks/useSelect";
+import addEmployee from "@/app/requests/addEmployee";
 
 const AddUser = () => {
   const { jobs } = useJobsContext();
@@ -19,7 +20,14 @@ const AddUser = () => {
   const [options, setOptions] = useState<any>([]);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const { setAddEmployeeInfo, addEmployeeInfo } = useEmployeeContext();
+  const {
+    setAddEmployeeInfo,
+    addEmployeeInfo,
+    setEmployees,
+    setSuccessfullyAddedEmployee,
+    successfullyAddedEmployee,
+    loading,
+  } = useEmployeeContext();
   const { currentUser } = useAuthContext();
   const { setSelectedValue } = useSelect();
 
@@ -50,11 +58,21 @@ const AddUser = () => {
       );
     }
   }, [jobs]);
+
   useEffect(() => {
     return () => {
-      setAddEmployeeInfo({}); // Reset the context state
+      setAddEmployeeInfo({});
     };
   }, [setAddEmployeeInfo]);
+
+  useEffect(() => {
+    if (successfullyAddedEmployee) {
+      const timer = setTimeout(() => {
+        setSuccessfullyAddedEmployee(false);
+      }, 3000); // Hide after 3 seconds
+      return () => clearTimeout(timer); // Cleanup timer on unmount
+    }
+  }, [successfullyAddedEmployee]);
 
   return (
     <SafeAreaView className="bg-white h-full p-6">
@@ -118,7 +136,7 @@ const AddUser = () => {
           title="Locker Number"
           placeholder="Select Locker"
           onSelect={(value: any) => {
-            setSelectedValue(value);
+            setSelectedValue(parseInt(value));
             setAddEmployeeInfo((prev: any) => ({
               ...prev,
               locker_number: value,
@@ -130,6 +148,17 @@ const AddUser = () => {
         <View>
           <View className="w-full items-center">
             <Button
+              handlePress={async () => {
+                try {
+                  const result = await addEmployee(addEmployeeInfo);
+                  setEmployees({ result });
+                  router.replace("/(tabs)/users");
+                  !loading && setSuccessfullyAddedEmployee(true);
+                  //work on this transition
+                } catch (error: any) {
+                  console.error("Failed to add employee:", error.message);
+                }
+              }}
               title="Add User"
               styles="my-8 w-full rounded-[0.625rem]"
               inputStyles="w-full"

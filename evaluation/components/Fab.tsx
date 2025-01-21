@@ -15,7 +15,7 @@ const Fab = ({ icon, route }: any) => {
         <TouchableOpacity
           onPress={() => router.push(`/${route}`)}
           activeOpacity={0.8}
-          className={`bg-[#1a237e] justify-center items-center absolute z-10 right-8 w-14 h-14 rounded-full shadow-sm ${
+          className={`bg-[#1a237e] justify-center items-center absolute z-10 right-7 w-14 h-14 rounded-full shadow-sm ${
             isTabBarVisible ? "bottom-[10.5rem]" : "bottom-[7rem]"
           }`}
         >

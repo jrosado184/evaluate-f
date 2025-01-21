@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity } from "react-native";
-import React, { memo } from "react";
+import React, { memo, useEffect } from "react";
 import RightIcon from "@/constants/icons/RightIcon";
 import WarningIcon from "@/constants/icons/WarningIcon";
 import Entypo from "@expo/vector-icons/Entypo";

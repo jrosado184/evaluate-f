@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 const useSelect = (loadData?: any, toggleModal?: any, onSelect?: any) => {
-  const [selectedValue, setSelectedValue] = useState<string | null>(null);
+  const [selectedValue, setSelectedValue] = useState<any | null>(null);
   const [showActionSheet, setShowActionSheet] = useState(false);
 
   const handlePress = async () => {

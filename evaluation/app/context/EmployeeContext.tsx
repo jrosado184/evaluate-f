@@ -1,5 +1,4 @@
 import React, { createContext, useState, useContext, ReactNode } from "react";
-import useAuthContext from "./AuthContext";
 import formatISODate from "../conversions/ConvertIsoDate";
 
 type Employee = {
@@ -27,6 +26,7 @@ type EmployeeContextType = {
   userDetails: any;
   lockerDetails: any;
   sortingBy: string;
+  successfullyAddedEmployee: any;
   setLoading: (loading: boolean) => void;
   setEmployee: (employee: Employee) => void;
   setAddEmployeeInfo: (addEmployeeInfo: any) => void;
@@ -36,6 +36,7 @@ type EmployeeContextType = {
   setLockerDetails: (lockers: any) => void;
   setUserDetails: (userDetails: any) => void;
   setSortingBy: (sortingBy: string) => void;
+  setSuccessfullyAddedEmployee: (successfullyAddedEmployee: boolean) => void;
 };
 
 // Create the context
@@ -45,7 +46,6 @@ const EmployeeContext = createContext<EmployeeContextType | undefined>(
 
 // Provider component
 export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
-  const { currentUser } = useAuthContext();
   const [employees, setEmployees] = useState<any>([]);
   const [employee, setEmployee] = useState<Employee | undefined>();
   const [addEmployeeInfo, setAddEmployeeInfo] = useState<any>({
@@ -76,6 +76,8 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
     currentPage: null,
   });
   const [sortingBy, setSortingBy] = useState("Default");
+  const [successfullyAddedEmployee, setSuccessfullyAddedEmployee] =
+    useState<boolean>(false);
 
   return (
     <EmployeeContext.Provider
@@ -90,6 +92,7 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
         lockerDetails,
         userDetails,
         sortingBy,
+        successfullyAddedEmployee,
         setLoading,
         setEmployee,
         setLocker,
@@ -98,6 +101,7 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
         setEmployees,
         setUserDetails,
         setSortingBy,
+        setSuccessfullyAddedEmployee,
       }}
     >
       {children}

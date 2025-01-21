@@ -1,14 +1,25 @@
 import { useRef } from "react";
 import { useTabBar } from "@/app/(tabs)/_layout";
 import usePagination from "./usePagination";
+import debounce from "lodash.debounce";
 
 const useScrollHandler = () => {
   const { fetchingMoreUsers, getMoreData } = usePagination();
   const { toggleTabBar } = useTabBar();
 
   const scrollOffsetY = useRef(0);
+  const isTabBarVisible = useRef(true);
 
-  const SCROLL_THRESHOLD = 10; // Minimum scroll movement to toggle the bar
+  const SCROLL_THRESHOLD = 30; // Minimum scroll movement to toggle the bar
+  const BOTTOM_THRESHOLD = 50; // Distance from the bottom to trigger fetching
+
+  // Debounced function for toggling the tab bar
+  const debouncedToggleTabBar = debounce((show) => {
+    if (isTabBarVisible.current !== show) {
+      toggleTabBar(show);
+      isTabBarVisible.current = show;
+    }
+  }, 100);
 
   const onScrollHandler = (event: any) => {
     const currentOffsetY = event.nativeEvent.contentOffset.y;
@@ -16,26 +27,29 @@ const useScrollHandler = () => {
     const layoutHeight = event.nativeEvent.layoutMeasurement.height;
 
     // Check if user is near the bottom of the list
-    const isNearBottom = currentOffsetY + layoutHeight >= contentHeight - 50;
+    const isNearBottom =
+      currentOffsetY + layoutHeight >= contentHeight - BOTTOM_THRESHOLD;
 
-    // Fetch more data if near the bottom
-    if (isNearBottom && !fetchingMoreUsers) {
-      getMoreData();
+    if (isNearBottom) {
+      // Fetch more data and prevent tab bar toggling when near bottom
+      if (!fetchingMoreUsers) {
+        getMoreData();
+      }
+      return; // Prevent tab bar toggling while near the bottom
     }
 
     // Handle tab bar visibility
     if (currentOffsetY <= SCROLL_THRESHOLD) {
       // Show tab bar if at the very top
-      toggleTabBar(true);
+      debouncedToggleTabBar(true);
     } else if (
-      !fetchingMoreUsers &&
       Math.abs(currentOffsetY - scrollOffsetY.current) > SCROLL_THRESHOLD
     ) {
       // Toggle tab bar based on scroll direction
       if (currentOffsetY > scrollOffsetY.current) {
-        toggleTabBar(false); // Hide tab bar on scroll down
+        debouncedToggleTabBar(false); // Hide tab bar on scroll down
       } else {
-        toggleTabBar(true); // Show tab bar on scroll up
+        debouncedToggleTabBar(true); // Show tab bar on scroll up
       }
     }
 

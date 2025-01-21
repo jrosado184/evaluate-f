@@ -4,8 +4,9 @@ import {
   FlatList,
   ActivityIndicator,
   View,
+  Animated,
 } from "react-native";
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import UserCard from "@/components/UserCard";
 import { router } from "expo-router";
@@ -18,6 +19,8 @@ import useGetUsers from "@/app/requests/useGetUsers";
 import useScrollHandler from "@/hooks/useScrollHandler";
 import Fab from "@/components/Fab";
 import { useTabBar } from "../_layout";
+import { Alert, AlertText } from "@/components/ui/alert";
+import Icon from "react-native-vector-icons/Octicons";
 
 const Users = () => {
   const { getUsers, fetchAndSetUsers } = useGetUsers();
@@ -30,55 +33,77 @@ const Users = () => {
     userDetails,
   } = useEmployeeContext();
 
-  const {
-    limit,
-    page,
-    getMoreData,
-    setIsSearching,
-    isSearching,
-    fetchingMoreUsers,
-  } = usePagination(
-    employees,
-    getUsers,
-    setEmployees,
-    setUserDetails,
-    userDetails
-  );
+  const { page, getMoreData, setIsSearching, isSearching, fetchingMoreUsers } =
+    usePagination(
+      employees,
+      getUsers,
+      setEmployees,
+      setUserDetails,
+      userDetails
+    );
 
   const { onScrollHandler } = useScrollHandler();
 
   const { isTabBarVisible } = useTabBar();
 
-  const renderUserCard = useCallback(({ item }: any) => {
-    return (
-      <TouchableOpacity
-        key={item._id}
-        onPress={() => router.push(`/users/${item._id}`)}
-        activeOpacity={0.8}
-      >
-        <UserCard
-          position={item.position}
-          name={item.employee_name}
-          department={item.department}
-          employee_id={item.employee_id}
-          last_update={formatISODate(item.last_updated)}
-          locker_number={item.locker_number}
-          knife_number={item.knife_number}
-          status={item.status}
-          button="arrow"
-        />
-      </TouchableOpacity>
-    );
-  }, []);
+  const { successfullyAddedEmployee, setSuccessfullyAddedEmployee } =
+    useEmployeeContext();
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     setLoading(true);
     !isSearching && fetchAndSetUsers(page);
   }, [getUsers]);
 
+  useEffect(() => {
+    if (successfullyAddedEmployee) {
+      // Fade in the alert
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+
+      const timer = setTimeout(() => {
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: true,
+        }).start(() => {
+          setSuccessfullyAddedEmployee(false);
+        });
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [successfullyAddedEmployee, fadeAnim]);
+
+  const renderUserCard = useCallback(({ item }: any) => {
+    return (
+      <TouchableOpacity
+        key={item?._id}
+        onPress={() => router.push(`/users/${item?._id}`)}
+        activeOpacity={0.8}
+      >
+        <UserCard
+          position={item?.position}
+          name={item?.employee_name}
+          department={item?.department}
+          employee_id={item?.employee_id}
+          last_update={formatISODate(item?.last_updated)}
+          locker_number={item?.locker_number}
+          knife_number={item?.knife_number}
+          status={item?.status}
+          button="arrow"
+        />
+      </TouchableOpacity>
+    );
+  }, []);
+
   return (
     <SafeAreaView
-      className={`p-6 bg-white h-[105vh] ${
+      className={`p-6 pb-16 bg-white h-[105vh] ${
         employees.length < 4 && "h-[105vh]"
       }`}
     >
@@ -106,10 +131,10 @@ const Users = () => {
           onScroll={onScrollHandler}
           scrollEventThrottle={16}
           data={employees}
-          keyExtractor={(item) => item._id.toString()}
+          keyExtractor={(item) => item?._id?.toString()}
           renderItem={renderUserCard}
-          onEndReached={getMoreData} // Trigger when the user scrolls near the bottom
-          onEndReachedThreshold={0.5} // Trigger when halfway to the end
+          onEndReached={getMoreData}
+          onEndReachedThreshold={0.5}
           ListFooterComponent={
             fetchingMoreUsers && (
               <ActivityIndicator size="small" color="#0000ff" />
@@ -119,6 +144,30 @@ const Users = () => {
         />
       ) : (
         <UserCardSkeleton amount={5} width="w-full" height="h-40" />
+      )}
+
+      {successfullyAddedEmployee && (
+        <Animated.View
+          className="w-full"
+          style={{
+            opacity: fadeAnim,
+            zIndex: 9999,
+            position: "absolute",
+            bottom: 0,
+            left: 20,
+          }}
+        >
+          <Alert
+            className="mb-48 w-full border border-neutral-300 justify-center items-center"
+            action="success"
+            variant="solid"
+          >
+            <Icon name="check-circle" size={16} color="#28a745" />
+            <AlertText className="font-inter-bold">
+              Successfully added user!
+            </AlertText>
+          </Alert>
+        </Animated.View>
       )}
     </SafeAreaView>
   );

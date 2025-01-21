@@ -6,7 +6,7 @@ const usePagination = (
   setData?: any,
   setDetails?: any,
   details?: any,
-  limit: any = 8
+  limit: any = 4
 ) => {
   let page = 1;
   const [fetchingMoreUsers, setFetchingMoreUsers] = useState<Boolean>(false);
@@ -21,15 +21,26 @@ const usePagination = (
       details.currentPage >= details.totalPages
     )
       return;
+
     setFetchingMoreUsers(true);
 
     const data = await getData(nextPage, limit);
     if (data) {
-      setData((prev: any) => [...prev, ...data.results]);
+      setData((prev: any) => {
+        const combined = [...prev, ...data.results];
+        const uniqueUsers = combined.reduce((acc: any[], user: any) => {
+          if (!acc.some((item) => item._id === user._id)) {
+            acc.push(user);
+          }
+          return acc;
+        }, []);
+        return uniqueUsers;
+      });
+
       setNextPage((prev: number) => prev + 1);
+
       setDetails({
-        totalPages: details.totalPages,
-        totalUsers: details.totalUsers,
+        ...details,
         currentPage: nextPage,
       });
     }
