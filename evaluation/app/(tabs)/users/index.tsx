@@ -104,7 +104,7 @@ const Users = () => {
   return (
     <SafeAreaView
       className={`p-6 pb-16 bg-white h-[105vh] ${
-        employees.length < 4 && "h-[105vh]"
+        employees?.length < 4 && "h-[105vh]"
       }`}
     >
       <View className="flex-row h-10 justify-between items-center w-full">
@@ -120,7 +120,7 @@ const Users = () => {
           type="employees"
         />
       )}
-      {employees.length === 0 && !loading ? (
+      {employees?.length === 0 && !loading ? (
         <View className="h-[40vh] justify-center items-center">
           <Text className="font-inter-regular text-neutral-500">
             No Employees

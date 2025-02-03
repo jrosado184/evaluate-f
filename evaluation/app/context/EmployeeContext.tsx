@@ -19,7 +19,7 @@ type Employee = {
 type EmployeeContextType = {
   loading: any;
   employee: Employee | undefined;
-  addEmployeeInfo: Employee | undefined;
+  addEmployeeInfo: Employee | undefined | any;
   employees: Employee[];
   locker: any;
   lockers: any;
@@ -50,8 +50,8 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
   const [employee, setEmployee] = useState<Employee | undefined>();
   const [addEmployeeInfo, setAddEmployeeInfo] = useState<any>({
     employee_name: "",
-    locker_number: "",
-    employee_id: "",
+    locker_number: 0,
+    employee_id: 0,
     knife_number: "N/A",
     department: "",
     assigned_by: "",
