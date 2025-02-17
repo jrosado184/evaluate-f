@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity } from "react-native";
-import React, { Ref, useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useGlobalSearchParams } from "expo-router";
 import UserCard from "@/components/UserCard";

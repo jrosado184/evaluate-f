@@ -21,6 +21,7 @@ import Fab from "@/components/Fab";
 import { useTabBar } from "../_layout";
 import { Alert, AlertText } from "@/components/ui/alert";
 import Icon from "react-native-vector-icons/Octicons";
+import SuccessModal from "@/components/SuccessModal";
 
 const Users = () => {
   const { getUsers, fetchAndSetUsers } = useGetUsers();
@@ -55,29 +56,6 @@ const Users = () => {
     setLoading(true);
     !isSearching && fetchAndSetUsers(page);
   }, [getUsers]);
-
-  useEffect(() => {
-    if (successfullyAddedEmployee) {
-      // Fade in the alert
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-
-      const timer = setTimeout(() => {
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 1000,
-          useNativeDriver: true,
-        }).start(() => {
-          setSuccessfullyAddedEmployee(false);
-        });
-      }, 3000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [successfullyAddedEmployee, fadeAnim]);
 
   const renderUserCard = useCallback(({ item }: any) => {
     return (
@@ -147,27 +125,10 @@ const Users = () => {
       )}
 
       {successfullyAddedEmployee && (
-        <Animated.View
-          className="w-full"
-          style={{
-            opacity: fadeAnim,
-            zIndex: 9999,
-            position: "absolute",
-            bottom: 0,
-            left: 20,
-          }}
-        >
-          <Alert
-            className="mb-48 w-full border border-neutral-300 justify-center items-center"
-            action="success"
-            variant="solid"
-          >
-            <Icon name="check-circle" size={16} color="#28a745" />
-            <AlertText className="font-inter-bold">
-              Successfully added user!
-            </AlertText>
-          </Alert>
-        </Animated.View>
+        <SuccessModal
+          isVisible={successfullyAddedEmployee}
+          message="Successfully added user!"
+        />
       )}
     </SafeAreaView>
   );

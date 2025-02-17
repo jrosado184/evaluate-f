@@ -5,7 +5,7 @@ type Employee = {
   _id: string;
   employee_name: string;
   locker_number: string;
-  employee_id: string;
+  employee_id: number;
   knife_number: string | null;
   department: string;
   position: string;
@@ -50,8 +50,8 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
   const [employee, setEmployee] = useState<Employee | undefined>();
   const [addEmployeeInfo, setAddEmployeeInfo] = useState<any>({
     employee_name: "",
-    locker_number: 0,
-    employee_id: 0,
+    locker_number: null,
+    employee_id: null,
     knife_number: "N/A",
     department: "",
     assigned_by: "",

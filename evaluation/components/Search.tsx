@@ -1,5 +1,5 @@
 import { View, Text } from "react-native";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import FormField from "./FormField";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import axios from "axios";
@@ -35,6 +35,8 @@ const Search = ({ total, onSearch, getData, setData, type }: any) => {
         throw Error(error);
       });
   };
+
+  useEffect(() => {}, [total]);
 
   const debouncedFetch = useCallback(
     debounce(async (searchTerm) => {

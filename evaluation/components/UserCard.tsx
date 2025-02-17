@@ -5,6 +5,7 @@ import WarningIcon from "@/constants/icons/WarningIcon";
 import Entypo from "@expo/vector-icons/Entypo";
 import CheckIcon from "@/constants/icons/CheckIcon";
 import Icon from "react-native-vector-icons/Feather";
+import { router, useGlobalSearchParams } from "expo-router";
 
 /**
  * Props for the UserCard component
@@ -17,7 +18,7 @@ interface UserCardTypes {
   /** Department the user belongs to */
   department: string | undefined;
   /** Unique employee ID */
-  employee_id: string | undefined;
+  employee_id: any;
   /** Last update timestamp */
   last_update: string;
   /** Assigned locker number */
@@ -89,7 +90,10 @@ const UserCard: React.FC<UserCardTypes> = ({
                   {button === "arrow" ? (
                     <RightIcon />
                   ) : (
-                    <TouchableOpacity activeOpacity={0.8}>
+                    <TouchableOpacity
+                      onPress={() => router.push(`/(tabs)/users/update_user`)}
+                      activeOpacity={0.8}
+                    >
                       <Icon name="edit-3" size={20} />
                     </TouchableOpacity>
                   )}
