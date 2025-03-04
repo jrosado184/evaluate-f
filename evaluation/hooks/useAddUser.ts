@@ -8,6 +8,7 @@ import useAuthContext from "@/app/context/AuthContext";
 import useSelect from "./useSelect";
 import addEmployee from "@/app/requests/addEmployee";
 import { router } from "expo-router";
+import useActionContext from "@/app/context/ActionsContext";
 
 const useAddUser = () => {
   const { jobs } = useJobsContext();
@@ -32,13 +33,13 @@ const useAddUser = () => {
   } = useEmployeeContext();
   const { newErrors } = useValidation(errors);
   const { currentUser } = useAuthContext();
+  const { setActionsMessage } = useActionContext();
 
   useEffect(() => {
     fetchJobs();
   }, []);
 
   const handleEmployeeInfo = (field: string, value: any) => {
-    //handle employee id string val here
     setAddEmployeeInfo({
       ...addEmployeeInfo,
       assigned_by: currentUser.name,
@@ -62,14 +63,15 @@ const useAddUser = () => {
     const result = await addEmployee(addEmployeeInfo);
     if (
       result.status === 400 &&
-      result.data.message === "Employee already exists"
+      result.data.message === "Employee with that ID already exists"
     ) {
       setErrors({
-        existing_employee: "Employee already exists",
+        existing_employee: "Employee with that ID already exists",
       });
     }
     if (result.status === 201) {
       setLoading(false);
+      setActionsMessage("Added user successfully");
       router.replace("/(tabs)/users");
       setEmployees(result.data);
       if (!loading) setSuccessfullyAddedEmployee(true);

@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity } from "react-native";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router, useGlobalSearchParams } from "expo-router";
+import { router, useFocusEffect, useGlobalSearchParams } from "expo-router";
 import UserCard from "@/components/UserCard";
 import Activity from "@/components/Activity";
 import useEmployeeContext from "@/app/context/EmployeeContext";
@@ -14,30 +14,33 @@ import Icon from "react-native-vector-icons/Feather";
 
 const User = () => {
   const { id } = useGlobalSearchParams();
-  const { employee, setEmployee } = useEmployeeContext();
+  const { employee, setEmployee, setAddEmployeeInfo } = useEmployeeContext();
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const getUser = async () => {
-      const token = await AsyncStorage.getItem("token");
-      const baseUrl = await getServerIP();
-      axios
-        .get(`${baseUrl}/employees/${id}`, {
-          headers: {
-            Authorization: token,
-          },
-        })
-        .then((res) => {
-          setLoading(false);
-          setEmployee(res.data);
-          return res.data;
-        })
-        .catch((error) => {
-          throw new Error(error);
-        });
-    };
-    getUser();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const getUser = async () => {
+        const token = await AsyncStorage.getItem("token");
+        const baseUrl = await getServerIP();
+        axios
+          .get(`${baseUrl}/employees/${id}`, {
+            headers: {
+              Authorization: token,
+            },
+          })
+          .then((res) => {
+            setLoading(false);
+            setEmployee(res.data);
+            setAddEmployeeInfo(res.data);
+            return res.data;
+          })
+          .catch((error) => {
+            throw new Error(error);
+          });
+      };
+      getUser();
+    }, [])
+  );
 
   return (
     <SafeAreaView className="p-6 bg-neutral-50 h-full">

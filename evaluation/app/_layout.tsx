@@ -9,6 +9,7 @@ import "react-native-gesture-handler";
 import "react-native-reanimated";
 import { AuthProvider } from "./context/AuthContext";
 import { JobsProvider } from "./context/JobsContext";
+import { ActionsProvider } from "./context/ActionsContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -40,26 +41,28 @@ export default function RootLayout() {
       <AuthProvider>
         <EmployeeProvider>
           <JobsProvider>
-            <Stack>
-              <Stack.Screen
-                name="index"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="(auth)"
-                options={{
-                  headerShown: false,
-                }}
-              />
-              <Stack.Screen
-                name="(tabs)"
-                options={{
-                  headerShown: false,
-                }}
-              />
-            </Stack>
+            <ActionsProvider>
+              <Stack>
+                <Stack.Screen
+                  name="index"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="(auth)"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+                <Stack.Screen
+                  name="(tabs)"
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+              </Stack>
+            </ActionsProvider>
           </JobsProvider>
         </EmployeeProvider>
       </AuthProvider>

@@ -40,7 +40,10 @@ const Search = ({ total, onSearch, getData, setData, type }: any) => {
 
   const debouncedFetch = useCallback(
     debounce(async (searchTerm) => {
-      if (searchTerm.length >= 2) {
+      if (
+        /^\d+$/.test(searchTerm) ||
+        (searchTerm.length >= 3 && typeof searchTerm === "string")
+      ) {
         getSearchedUsers(searchTerm).finally(() => setLoading(false));
       } else {
         onSearch(false);

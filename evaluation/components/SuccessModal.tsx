@@ -2,17 +2,15 @@ import React, { useEffect, useRef } from "react";
 import { Animated } from "react-native";
 import { Alert, AlertText } from "@/components/ui/alert";
 import Icon from "react-native-vector-icons/Octicons";
+import useEmployeeContext from "@/app/context/EmployeeContext";
 
-const SuccessModal = ({
-  isVisible,
-}: {
-  isVisible: boolean;
-  message: string;
-}) => {
+const SuccessModal = ({ message }: any) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  const { successfullyAddedEmployee } = useEmployeeContext();
+
   useEffect(() => {
-    if (isVisible) {
+    if (successfullyAddedEmployee) {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 300,
@@ -27,7 +25,7 @@ const SuccessModal = ({
         }).start();
       }, 3000);
     }
-  }, [isVisible]);
+  }, [successfullyAddedEmployee]);
 
   return (
     <Animated.View
@@ -41,12 +39,14 @@ const SuccessModal = ({
       }}
     >
       <Alert
-        className="mb-48 w-full border border-neutral-300 justify-center items-center"
+        className="mb-48 w-full bg-[#008000] justify-center items-center"
         action="success"
         variant="solid"
       >
-        <Icon name="check-circle" size={16} color="#28a745" />
-        <AlertText className="font-inter-bold">{message}</AlertText>
+        <Icon name="check-circle" size={16} color="#ffffff" />
+        <AlertText className="font-inter-bold text-neutral-50">
+          {message}
+        </AlertText>
       </Alert>
     </Animated.View>
   );

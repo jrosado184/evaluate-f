@@ -57,8 +57,9 @@ const Locker = () => {
             vacant={false}
             button="update"
             locker_number={locker?.locker_number}
-            Assigned_to={locker?.Assigned_to}
+            Assigned_to={locker?.assigned_to}
             assigned_by={locker?.assigned_by}
+            location={locker?.location}
             last_updated={formatISODate(locker?.last_updated)}
           />
         )}

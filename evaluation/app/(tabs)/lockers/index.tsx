@@ -6,7 +6,7 @@ import {
 } from "react-native";
 import React, { useCallback, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import Search from "@/components/Search";
 import LockerCard from "@/components/LockerCard";
 import useEmployeeContext from "@/app/context/EmployeeContext";
@@ -63,10 +63,18 @@ const Lockers = () => {
 
   const { onScrollHandler } = useScrollHandler();
 
-  useEffect(() => {
+  const fetchAndSetLockersMemo = useCallback(() => {
     setLoading(true);
-    !isSearching && fetchAndSetLockers(page, 4);
-  }, [getLockers]);
+    if (!isSearching) {
+      fetchAndSetLockers(page, 4);
+    }
+  }, [page]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchAndSetLockersMemo();
+    }, [fetchAndSetLockersMemo])
+  );
 
   return (
     <SafeAreaView

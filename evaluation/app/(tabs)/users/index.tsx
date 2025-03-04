@@ -4,12 +4,11 @@ import {
   FlatList,
   ActivityIndicator,
   View,
-  Animated,
 } from "react-native";
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import UserCard from "@/components/UserCard";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import Search from "@/components/Search";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
@@ -19,9 +18,8 @@ import useGetUsers from "@/app/requests/useGetUsers";
 import useScrollHandler from "@/hooks/useScrollHandler";
 import Fab from "@/components/Fab";
 import { useTabBar } from "../_layout";
-import { Alert, AlertText } from "@/components/ui/alert";
-import Icon from "react-native-vector-icons/Octicons";
 import SuccessModal from "@/components/SuccessModal";
+import useActionContext from "@/app/context/ActionsContext";
 
 const Users = () => {
   const { getUsers, fetchAndSetUsers } = useGetUsers();
@@ -49,13 +47,20 @@ const Users = () => {
 
   const { successfullyAddedEmployee, setSuccessfullyAddedEmployee } =
     useEmployeeContext();
-
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const { actionsMessage } = useActionContext();
 
   useEffect(() => {
     setLoading(true);
     !isSearching && fetchAndSetUsers(page);
   }, [getUsers]);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        setSuccessfullyAddedEmployee(false);
+      };
+    }, [])
+  );
 
   const renderUserCard = useCallback(({ item }: any) => {
     return (
@@ -124,12 +129,7 @@ const Users = () => {
         <UserCardSkeleton amount={5} width="w-full" height="h-40" />
       )}
 
-      {successfullyAddedEmployee && (
-        <SuccessModal
-          isVisible={successfullyAddedEmployee}
-          message="Successfully added user!"
-        />
-      )}
+      <SuccessModal message={actionsMessage} />
     </SafeAreaView>
   );
 };
