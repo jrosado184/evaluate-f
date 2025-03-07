@@ -1,5 +1,6 @@
-import React, { useState, createContext, useContext } from "react";
-import { Tabs } from "expo-router";
+import React, { useState, createContext, useContext, useRef } from "react";
+import { Animated } from "react-native";
+import { Tabs, useNavigation } from "expo-router";
 import HomeIcon from "@/constants/icons/HomeIcon";
 import UsersIcon from "@/constants/icons/UsersIcon";
 import LockIcon from "@/constants/icons/LockIcon";
@@ -9,32 +10,49 @@ import { TabIcon } from "@/components/navigation/TabBarIcon";
 // Create a context for tab bar visibility
 const TabBarContext = createContext({
   isTabBarVisible: true,
-  toggleTabBar: (visible: boolean) => {},
+  setIsTabBarVisible: (visible: boolean) => {},
+  scrollY: new Animated.Value(0), // Track scroll position
 });
 
 export const useTabBar = () => useContext(TabBarContext);
 
 const TabsLayout = () => {
-  const [isTabBarVisible, setTabBarVisible] = useState(true);
+  const [isTabBarVisible, setIsTabBarVisible] = useState(true);
+  const scrollY = useRef(new Animated.Value(0)).current;
 
-  const toggleTabBar = (visible: boolean) => {
-    setTabBarVisible(visible);
-  };
+  // Faster animation for hiding
+  const tabBarTranslateY = scrollY.interpolate({
+    inputRange: [0, 100],
+    outputRange: [0, 90],
+    extrapolate: "clamp",
+  });
+
+  const tabBarOpacity = scrollY.interpolate({
+    inputRange: [0, 80],
+    outputRange: [4, 0],
+    extrapolate: "clamp",
+  });
 
   return (
-    <TabBarContext.Provider value={{ isTabBarVisible, toggleTabBar }}>
+    <TabBarContext.Provider
+      value={{ isTabBarVisible, setIsTabBarVisible, scrollY }}
+    >
       <Tabs
         screenOptions={{
           tabBarShowLabel: false,
           tabBarStyle: {
-            display: isTabBarVisible ? "flex" : "none",
+            position: "absolute",
+            bottom: isTabBarVisible ? 0 : -100,
+            width: "100%",
+            transform: [{ translateY: tabBarTranslateY }],
+            opacity: tabBarOpacity,
+            height: 90,
             paddingBottom: 20,
             paddingTop: 19,
-            height: 90,
+            display: isTabBarVisible ? "flex" : "none",
           },
         }}
       >
-        {/* Screen configurations */}
         <Tabs.Screen
           name="home"
           options={{

@@ -1,60 +1,46 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
+import { Animated } from "react-native";
 import { useTabBar } from "@/app/(tabs)/_layout";
 import usePagination from "./usePagination";
-import debounce from "lodash.debounce";
 
 const useScrollHandler = () => {
   const { fetchingMoreUsers, getMoreData } = usePagination();
-  const { toggleTabBar } = useTabBar();
+  const { scrollY, setIsTabBarVisible } = useTabBar(); // Get tab bar state and setter
 
-  const scrollOffsetY = useRef(0);
-  const isTabBarVisible = useRef(true);
+  const onScrollHandler = Animated.event(
+    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+    { useNativeDriver: false } // Set to false if debugging; change to true for production
+  );
 
-  const SCROLL_THRESHOLD = 30; // Minimum scroll movement to toggle the bar
-  const BOTTOM_THRESHOLD = 50; // Distance from the bottom to trigger fetching
+  useEffect(() => {
+    let timeout: any;
 
-  // Debounced function for toggling the tab bar
-  const debouncedToggleTabBar = debounce((show) => {
-    if (isTabBarVisible.current !== show) {
-      toggleTabBar(show);
-      isTabBarVisible.current = show;
-    }
-  }, 100);
+    const listener = scrollY.addListener(({ value }) => {
+      if (timeout) clearTimeout(timeout); // Reset timeout on new scroll event
 
-  const onScrollHandler = (event: any) => {
-    const currentOffsetY = event.nativeEvent.contentOffset.y;
-    const contentHeight = event.nativeEvent.contentSize.height;
-    const layoutHeight = event.nativeEvent.layoutMeasurement.height;
-
-    // Check if user is near the bottom of the list
-    const isNearBottom =
-      currentOffsetY + layoutHeight >= contentHeight - BOTTOM_THRESHOLD;
-
-    if (isNearBottom) {
-      // Fetch more data and prevent tab bar toggling when near bottom
-      if (!fetchingMoreUsers) {
-        getMoreData();
-      }
-      return; // Prevent tab bar toggling while near the bottom
-    }
-
-    // Handle tab bar visibility
-    if (currentOffsetY <= SCROLL_THRESHOLD) {
-      // Show tab bar if at the very top
-      debouncedToggleTabBar(true);
-    } else if (
-      Math.abs(currentOffsetY - scrollOffsetY.current) > SCROLL_THRESHOLD
-    ) {
-      // Toggle tab bar based on scroll direction
-      if (currentOffsetY > scrollOffsetY.current) {
-        debouncedToggleTabBar(false); // Hide tab bar on scroll down
+      if (value > 80) {
+        setIsTabBarVisible(false); // Hide tab bar when scrolling down past 80px
       } else {
-        debouncedToggleTabBar(true); // Show tab bar on scroll up
+        setIsTabBarVisible(true); // Show tab bar when near top
       }
-    }
 
-    scrollOffsetY.current = currentOffsetY;
-  };
+      timeout = setTimeout(() => {
+        if (value < 80) {
+          // If user stops near the top, restore tab bar
+          Animated.timing(scrollY, {
+            toValue: 0,
+            duration: 500, // Faster reset
+            useNativeDriver: false, // Set to true for production
+          }).start();
+        }
+      }, 100); // Short delay before resetting
+    });
+
+    return () => {
+      scrollY.removeListener(listener);
+      if (timeout) clearTimeout(timeout);
+    };
+  }, [scrollY, setIsTabBarVisible]);
 
   return { onScrollHandler };
 };

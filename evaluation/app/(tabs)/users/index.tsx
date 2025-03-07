@@ -1,11 +1,11 @@
+import React, { useCallback, useEffect } from "react";
 import {
   Text,
   TouchableOpacity,
-  FlatList,
   ActivityIndicator,
   View,
-} from "react-native";
-import React, { useCallback, useEffect } from "react";
+  Animated,
+} from "react-native"; // Import Animated from react-native
 import { SafeAreaView } from "react-native-safe-area-context";
 import UserCard from "@/components/UserCard";
 import { router, useFocusEffect } from "expo-router";
@@ -42,9 +42,7 @@ const Users = () => {
     );
 
   const { onScrollHandler } = useScrollHandler();
-
   const { isTabBarVisible } = useTabBar();
-
   const { successfullyAddedEmployee, setSuccessfullyAddedEmployee } =
     useEmployeeContext();
   const { actionsMessage } = useActionContext();
@@ -85,24 +83,21 @@ const Users = () => {
   }, []);
 
   return (
-    <SafeAreaView
-      className={`p-6 pb-16 bg-white h-[105vh] ${
-        employees?.length < 4 && "h-[105vh]"
-      }`}
-    >
+    <SafeAreaView className="p-6 pb-1 bg-white h-[105vh]">
       <View className="flex-row h-10 justify-between items-center w-full">
         <Text className="pl-2 font-inter-regular text-[1.6rem]">Users</Text>
       </View>
+
       <Fab icon="user-plus" route="users/add_user" />
-      {isTabBarVisible && (
-        <Search
-          total="users"
-          setData={setEmployees}
-          getData={getUsers}
-          onSearch={(value: any) => setIsSearching(value)}
-          type="employees"
-        />
-      )}
+
+      <Search
+        total="users"
+        setData={setEmployees}
+        getData={getUsers}
+        onSearch={(value: any) => setIsSearching(value)}
+        type="employees"
+      />
+
       {employees?.length === 0 && !loading ? (
         <View className="h-[40vh] justify-center items-center">
           <Text className="font-inter-regular text-neutral-500">
@@ -110,7 +105,7 @@ const Users = () => {
           </Text>
         </View>
       ) : !loading ? (
-        <FlatList
+        <Animated.FlatList // ✅ Use Animated.FlatList instead of FlatList
           onScroll={onScrollHandler}
           scrollEventThrottle={16}
           data={employees}
