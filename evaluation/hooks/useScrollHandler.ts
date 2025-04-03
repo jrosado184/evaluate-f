@@ -1,46 +1,40 @@
-import { useEffect, useRef } from "react";
-import { Animated } from "react-native";
+import { useRef } from "react";
 import { useTabBar } from "@/app/(tabs)/_layout";
 import usePagination from "./usePagination";
+import useEmployeeContext from "@/app/context/EmployeeContext";
 
 const useScrollHandler = () => {
-  const { fetchingMoreUsers, getMoreData } = usePagination();
-  const { scrollY, setIsTabBarVisible } = useTabBar(); // Get tab bar state and setter
+  const { setIsTabBarVisible } = useTabBar();
+  const { fetchingMoreUsers } = usePagination();
+  const { employees } = useEmployeeContext();
+  const prevScrollPos = useRef(0);
 
-  const onScrollHandler = Animated.event(
-    [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-    { useNativeDriver: false } // Set to false if debugging; change to true for production
-  );
+  const onScrollHandler = (event: any) => {
+    const value = event.nativeEvent.contentOffset.y;
 
-  useEffect(() => {
-    let timeout: any;
+    const hardScrollIndicator = 25;
 
-    const listener = scrollY.addListener(({ value }) => {
-      if (timeout) clearTimeout(timeout); // Reset timeout on new scroll event
+    // When fetching more users, ignore scroll events to avoid jump-induced state changes.
+    if (fetchingMoreUsers) {
+      prevScrollPos.current = value;
+      return;
+    }
 
-      if (value > 80) {
-        setIsTabBarVisible(false); // Hide tab bar when scrolling down past 80px
-      } else {
-        setIsTabBarVisible(true); // Show tab bar when near top
-      }
+    // If scrolling down (value increases) and past a threshold (80), hide the tab bar.
+    if (value > prevScrollPos.current && value > 165 && employees.length > 4) {
+      setIsTabBarVisible(false);
+    }
+    // If scrolling up (value decreases), show the tab bar immediately.
+    //hard scroll indicator prevents tab bar from showing due to fetching more users
+    else if (
+      value < prevScrollPos.current &&
+      prevScrollPos.current - value > hardScrollIndicator
+    ) {
+      setIsTabBarVisible(true);
+    }
 
-      timeout = setTimeout(() => {
-        if (value < 80) {
-          // If user stops near the top, restore tab bar
-          Animated.timing(scrollY, {
-            toValue: 0,
-            duration: 500, // Faster reset
-            useNativeDriver: false, // Set to true for production
-          }).start();
-        }
-      }, 100); // Short delay before resetting
-    });
-
-    return () => {
-      scrollY.removeListener(listener);
-      if (timeout) clearTimeout(timeout);
-    };
-  }, [scrollY, setIsTabBarVisible]);
+    prevScrollPos.current = value;
+  };
 
   return { onScrollHandler };
 };

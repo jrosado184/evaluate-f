@@ -29,10 +29,7 @@ const Fab = ({ icon, route }: any) => {
     <>
       {!loading && (
         <Animated.View
-          style={[
-            styles.fabContainer,
-            { bottom: bottomPosition }, // Apply animated bottom position
-          ]}
+          style={[styles.fabContainer, { bottom: bottomPosition }]}
         >
           <TouchableOpacity
             onPress={() => router.push(`/${route}`)}

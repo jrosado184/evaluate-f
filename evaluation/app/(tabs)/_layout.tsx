@@ -1,6 +1,5 @@
-import React, { useState, createContext, useContext, useRef } from "react";
-import { Animated } from "react-native";
-import { Tabs, useNavigation } from "expo-router";
+import React, { useState, createContext, useContext } from "react";
+import { Tabs } from "expo-router";
 import HomeIcon from "@/constants/icons/HomeIcon";
 import UsersIcon from "@/constants/icons/UsersIcon";
 import LockIcon from "@/constants/icons/LockIcon";
@@ -11,27 +10,14 @@ import { TabIcon } from "@/components/navigation/TabBarIcon";
 const TabBarContext = createContext({
   isTabBarVisible: true,
   setIsTabBarVisible: (visible: boolean) => {},
-  scrollY: new Animated.Value(0), // Track scroll position
+  scrollY: 0,
 });
 
 export const useTabBar = () => useContext(TabBarContext);
 
 const TabsLayout = () => {
   const [isTabBarVisible, setIsTabBarVisible] = useState(true);
-  const scrollY = useRef(new Animated.Value(0)).current;
-
-  // Faster animation for hiding
-  const tabBarTranslateY = scrollY.interpolate({
-    inputRange: [0, 100],
-    outputRange: [0, 90],
-    extrapolate: "clamp",
-  });
-
-  const tabBarOpacity = scrollY.interpolate({
-    inputRange: [0, 80],
-    outputRange: [4, 0],
-    extrapolate: "clamp",
-  });
+  const scrollY = 0;
 
   return (
     <TabBarContext.Provider
@@ -44,12 +30,10 @@ const TabsLayout = () => {
             position: "absolute",
             bottom: isTabBarVisible ? 0 : -100,
             width: "100%",
-            transform: [{ translateY: tabBarTranslateY }],
-            opacity: tabBarOpacity,
+            opacity: isTabBarVisible ? 1 : 0,
             height: 90,
             paddingBottom: 20,
             paddingTop: 19,
-            display: isTabBarVisible ? "flex" : "none",
           },
         }}
       >
