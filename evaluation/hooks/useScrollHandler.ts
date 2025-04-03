@@ -1,59 +1,39 @@
 import { useRef } from "react";
 import { useTabBar } from "@/app/(tabs)/_layout";
 import usePagination from "./usePagination";
-import debounce from "lodash.debounce";
+import useEmployeeContext from "@/app/context/EmployeeContext";
 
 const useScrollHandler = () => {
-  const { fetchingMoreUsers, getMoreData } = usePagination();
-  const { toggleTabBar } = useTabBar();
-
-  const scrollOffsetY = useRef(0);
-  const isTabBarVisible = useRef(true);
-
-  const SCROLL_THRESHOLD = 30; // Minimum scroll movement to toggle the bar
-  const BOTTOM_THRESHOLD = 50; // Distance from the bottom to trigger fetching
-
-  // Debounced function for toggling the tab bar
-  const debouncedToggleTabBar = debounce((show) => {
-    if (isTabBarVisible.current !== show) {
-      toggleTabBar(show);
-      isTabBarVisible.current = show;
-    }
-  }, 100);
+  const { setIsTabBarVisible } = useTabBar();
+  const { fetchingMoreUsers } = usePagination();
+  const { employees } = useEmployeeContext();
+  const prevScrollPos = useRef(0);
 
   const onScrollHandler = (event: any) => {
-    const currentOffsetY = event.nativeEvent.contentOffset.y;
-    const contentHeight = event.nativeEvent.contentSize.height;
-    const layoutHeight = event.nativeEvent.layoutMeasurement.height;
+    const value = event.nativeEvent.contentOffset.y;
 
-    // Check if user is near the bottom of the list
-    const isNearBottom =
-      currentOffsetY + layoutHeight >= contentHeight - BOTTOM_THRESHOLD;
+    const hardScrollIndicator = 25;
 
-    if (isNearBottom) {
-      // Fetch more data and prevent tab bar toggling when near bottom
-      if (!fetchingMoreUsers) {
-        getMoreData();
-      }
-      return; // Prevent tab bar toggling while near the bottom
+    // When fetching more users, ignore scroll events to avoid jump-induced state changes.
+    if (fetchingMoreUsers) {
+      prevScrollPos.current = value;
+      return;
     }
 
-    // Handle tab bar visibility
-    if (currentOffsetY <= SCROLL_THRESHOLD) {
-      // Show tab bar if at the very top
-      debouncedToggleTabBar(true);
-    } else if (
-      Math.abs(currentOffsetY - scrollOffsetY.current) > SCROLL_THRESHOLD
+    // If scrolling down (value increases) and past a threshold (80), hide the tab bar.
+    if (value > prevScrollPos.current && value > 165 && employees.length > 4) {
+      setIsTabBarVisible(false);
+    }
+    // If scrolling up (value decreases), show the tab bar immediately.
+    //hard scroll indicator prevents tab bar from showing due to fetching more users
+    else if (
+      value < prevScrollPos.current &&
+      prevScrollPos.current - value > hardScrollIndicator
     ) {
-      // Toggle tab bar based on scroll direction
-      if (currentOffsetY > scrollOffsetY.current) {
-        debouncedToggleTabBar(false); // Hide tab bar on scroll down
-      } else {
-        debouncedToggleTabBar(true); // Show tab bar on scroll up
-      }
+      setIsTabBarVisible(true);
     }
 
-    scrollOffsetY.current = currentOffsetY;
+    prevScrollPos.current = value;
   };
 
   return { onScrollHandler };

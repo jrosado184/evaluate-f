@@ -9,32 +9,34 @@ import { TabIcon } from "@/components/navigation/TabBarIcon";
 // Create a context for tab bar visibility
 const TabBarContext = createContext({
   isTabBarVisible: true,
-  toggleTabBar: (visible: boolean) => {},
+  setIsTabBarVisible: (visible: boolean) => {},
+  scrollY: 0,
 });
 
 export const useTabBar = () => useContext(TabBarContext);
 
 const TabsLayout = () => {
-  const [isTabBarVisible, setTabBarVisible] = useState(true);
-
-  const toggleTabBar = (visible: boolean) => {
-    setTabBarVisible(visible);
-  };
+  const [isTabBarVisible, setIsTabBarVisible] = useState(true);
+  const scrollY = 0;
 
   return (
-    <TabBarContext.Provider value={{ isTabBarVisible, toggleTabBar }}>
+    <TabBarContext.Provider
+      value={{ isTabBarVisible, setIsTabBarVisible, scrollY }}
+    >
       <Tabs
         screenOptions={{
           tabBarShowLabel: false,
           tabBarStyle: {
-            display: isTabBarVisible ? "flex" : "none",
+            position: "absolute",
+            bottom: isTabBarVisible ? 0 : -100,
+            width: "100%",
+            opacity: isTabBarVisible ? 1 : 0,
+            height: 90,
             paddingBottom: 20,
             paddingTop: 19,
-            height: 90,
           },
         }}
       >
-        {/* Screen configurations */}
         <Tabs.Screen
           name="home"
           options={{
