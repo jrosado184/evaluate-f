@@ -1,4 +1,11 @@
-import React, { useState, createContext, useContext } from "react";
+import React, {
+  useState,
+  createContext,
+  useContext,
+  useRef,
+  useEffect,
+} from "react";
+import { Animated, Easing } from "react-native";
 import { Tabs } from "expo-router";
 import HomeIcon from "@/constants/icons/HomeIcon";
 import UsersIcon from "@/constants/icons/UsersIcon";
@@ -17,18 +24,31 @@ export const useTabBar = () => useContext(TabBarContext);
 
 const TabsLayout = () => {
   const [isTabBarVisible, setIsTabBarVisible] = useState(true);
-  const scrollY = 0;
+  // When visible, translateY is 0; when hidden, translateY is 100 (adjust as needed).
+  const tabBarTranslate = useRef(
+    new Animated.Value(isTabBarVisible ? 0 : 100)
+  ).current;
+
+  useEffect(() => {
+    Animated.timing(tabBarTranslate, {
+      toValue: isTabBarVisible ? 0 : 100,
+      duration: 145,
+      useNativeDriver: true, // transform properties support the native driver
+      easing: Easing.inOut(Easing.ease),
+    }).start();
+  }, [isTabBarVisible, tabBarTranslate]);
 
   return (
     <TabBarContext.Provider
-      value={{ isTabBarVisible, setIsTabBarVisible, scrollY }}
+      value={{ isTabBarVisible, setIsTabBarVisible, scrollY: 0 }}
     >
       <Tabs
         screenOptions={{
           tabBarShowLabel: false,
           tabBarStyle: {
             position: "absolute",
-            bottom: isTabBarVisible ? 0 : -100,
+            // Apply the animated translateY instead of bottom
+            transform: [{ translateY: tabBarTranslate }],
             width: "100%",
             opacity: isTabBarVisible ? 1 : 0,
             height: 90,

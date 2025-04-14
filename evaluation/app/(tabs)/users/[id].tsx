@@ -39,6 +39,9 @@ const User = () => {
           });
       };
       getUser();
+      return () => {
+        setAddEmployeeInfo("");
+      };
     }, [])
   );
 

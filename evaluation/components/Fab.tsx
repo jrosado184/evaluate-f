@@ -13,12 +13,13 @@ const Fab = ({ icon, route }: any) => {
 
   // Animated value for smooth bottom transition
   const bottomPosition = useRef(
-    new Animated.Value(isTabBarVisible ? 180 : 112)
+    new Animated.Value(isTabBarVisible ? 150 : 82)
   ).current;
 
+  //210, 142
   useEffect(() => {
     Animated.timing(bottomPosition, {
-      toValue: isTabBarVisible ? 157 : 100, // Move up when tab bar is visible, move down when hidden
+      toValue: isTabBarVisible ? 150 : 82, // Move up when tab bar is visible, move down when hidden
       duration: 145, // Smooth transition speed
       easing: Easing.inOut(Easing.ease),
       useNativeDriver: false, // `bottom` cannot use native driver

@@ -81,7 +81,7 @@ const Lockers = () => {
       className={`p-6 bg-white h-[105vh] ${lockers?.length < 4 && "h-[105vh]"}`}
     >
       <View className="flex-row justify-between items-center w-full">
-        <Text className="pl-2 font-inter-regular text-[1.9rem]">Lockers</Text>
+        <Text className="pl-2 font-inter-regular text-[1.6rem]">Lockers</Text>
       </View>
       <Fab icon="unlock" route="lockers/add_locker" />
       <Search
