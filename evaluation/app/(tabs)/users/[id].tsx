@@ -24,6 +24,7 @@ import Icon from "react-native-vector-icons/Feather";
 import Folder from "react-native-vector-icons/AntDesign";
 import RightIcon from "@/constants/icons/RightIcon";
 import NewFolderModal from "@/components/NewFolderModal";
+import Folders from "@/components/Folders";
 
 const User = () => {
   const { id } = useGlobalSearchParams();
@@ -35,12 +36,11 @@ const User = () => {
 
   const inputRef = useRef<TextInput>(null);
 
-  // 👇 NEW: showModal handler
   const showModal = () => {
     setModalVisible(true);
     setTimeout(() => {
-      inputRef.current?.focus(); // instant keyboard
-    }, 10); // tiny delay to ensure render
+      inputRef.current?.focus();
+    }, 10);
   };
 
   useFocusEffect(
@@ -98,6 +98,34 @@ const User = () => {
     }
   };
 
+  const handleDeleteFolder = async (folderId: string) => {
+    const token = await AsyncStorage.getItem("token");
+    const baseUrl = await getServerIP();
+
+    try {
+      await axios.delete(`${baseUrl}/employees/${id}/folders/${folderId}`, {
+        headers: { Authorization: token },
+      });
+
+      // Refresh employee data
+      const res = await axios.get(`${baseUrl}/employees/${id}`, {
+        headers: { Authorization: token },
+      });
+
+      setEmployee(res.data);
+      setAddEmployeeInfo(res.data);
+    } catch (error) {
+      console.error("Error deleting folder:", error);
+      Alert.alert("Error", "Failed to delete folder.");
+    }
+  };
+
+  const handleModalCancel = () => {
+    console.log("hi");
+    setModalVisible(false);
+    setFolderName("");
+  };
+
   return (
     <SafeAreaView className="p-6 bg-neutral-50 h-full">
       <TouchableOpacity
@@ -138,48 +166,20 @@ const User = () => {
         </View>
 
         {loading ? (
-          <View className="my-3">
+          <View className="my-3 w-full">
             <CardSkeleton amount={1} width="w-full" height="h-[4.5rem]" />
           </View>
         ) : (
-          <View className="my-4 gap-y-4">
-            {employee?.folders.map((folder) => (
-              <TouchableOpacity
-                key={folder._id}
-                onPress={() =>
-                  router.push(`/users/${id}/folders/${folder._id}`)
-                }
-                activeOpacity={0.8}
-                className="border border-gray-400 w-full h-[4.5rem] rounded-lg flex-row items-center p-4"
-              >
-                <Image
-                  className="w-80 h-80"
-                  source={require("../../../assets/icons/Blue.png")}
-                  style={{
-                    width: 37,
-                    height: 29,
-                  }}
-                />
-                <View className="w-full">
-                  <View className="flex-row w-full justify-around items-center">
-                    <View className="w-80">
-                      <Text className="font-semibold text-[1.1rem]">
-                        {folder.name}{" "}
-                        <Text className="text-[1.1rem] font-inter-regular">
-                          {`( ${folder.files.length} )`}
-                        </Text>
-                      </Text>
-                      <Text className="text-[0.9rem] text-neutral-700">
-                        {`Created on ${formatISODate(folder.createdAt)}`}
-                      </Text>
-                    </View>
-                    <View className="pr-5">
-                      <RightIcon />
-                    </View>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            ))}
+          <View className="-mx-6">
+            <Folders
+              onDeleteFolder={handleDeleteFolder}
+              onTapOutside={() => {
+                setModalVisible(false);
+                setFolderName("");
+                handleModalCancel();
+              }}
+              handleModalCancel={handleModalCancel}
+            />
           </View>
         )}
       </View>
@@ -189,6 +189,7 @@ const User = () => {
         onClose={() => {
           setModalVisible(false);
           setFolderName("");
+          handleModalCancel();
         }}
         onCreate={(name) => {
           handleCreateFolder(name);

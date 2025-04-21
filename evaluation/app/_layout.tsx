@@ -10,6 +10,7 @@ import "react-native-reanimated";
 import { AuthProvider } from "./context/AuthContext";
 import { JobsProvider } from "./context/JobsContext";
 import { ActionsProvider } from "./context/ActionsContext";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -36,36 +37,39 @@ export default function RootLayout() {
   if (!fontsLoaded) {
     return null;
   }
+
   return (
-    <GluestackUIProvider mode="light">
-      <AuthProvider>
-        <EmployeeProvider>
-          <JobsProvider>
-            <ActionsProvider>
-              <Stack>
-                <Stack.Screen
-                  name="index"
-                  options={{
-                    headerShown: false,
-                  }}
-                />
-                <Stack.Screen
-                  name="(auth)"
-                  options={{
-                    headerShown: false,
-                  }}
-                />
-                <Stack.Screen
-                  name="(tabs)"
-                  options={{
-                    headerShown: false,
-                  }}
-                />
-              </Stack>
-            </ActionsProvider>
-          </JobsProvider>
-        </EmployeeProvider>
-      </AuthProvider>
-    </GluestackUIProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <GluestackUIProvider mode="light">
+        <AuthProvider>
+          <EmployeeProvider>
+            <JobsProvider>
+              <ActionsProvider>
+                <Stack>
+                  <Stack.Screen
+                    name="index"
+                    options={{
+                      headerShown: false,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="(auth)"
+                    options={{
+                      headerShown: false,
+                    }}
+                  />
+                  <Stack.Screen
+                    name="(tabs)"
+                    options={{
+                      headerShown: false,
+                    }}
+                  />
+                </Stack>
+              </ActionsProvider>
+            </JobsProvider>
+          </EmployeeProvider>
+        </AuthProvider>
+      </GluestackUIProvider>
+    </GestureHandlerRootView>
   );
 }
