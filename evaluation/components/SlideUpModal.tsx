@@ -17,8 +17,8 @@ import usePagination from "@/hooks/usePagination";
 import AssignCard from "./AssignCard";
 
 const SlideUpModal = ({ visible, onClose }: any) => {
-  const screenHeight = Dimensions.get("window").height; // Get screen height
-  const slideAnim = useRef(new Animated.Value(screenHeight)).current; // Start animation off-screen
+  const screenHeight = Dimensions.get("window").height;
+  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
 
   const {
     lockers,
@@ -28,41 +28,37 @@ const SlideUpModal = ({ visible, onClose }: any) => {
     setLockerDetails,
     lockerDetails,
   } = useEmployeeContext();
-  const { fetchAndSetLockers, getLockers } = useGetLockers();
-  const { limit, page, isSearching, getMoreData, fetchingMoreUsers } =
-    usePagination(
-      lockers,
-      getLockers,
-      setLockers,
-      setLockerDetails,
-      lockerDetails,
-      8
-    );
 
-  const { addEmployeeInfo } = useEmployeeContext();
+  const { getLockers } = useGetLockers();
+
+  const { getMoreData, resetPagination, fetchingMoreUsers } = usePagination(
+    lockers,
+    getLockers,
+    setLockers,
+    setLockerDetails,
+    lockerDetails,
+    8
+  );
 
   useEffect(() => {
     if (visible) {
-      // Slide up
       Animated.timing(slideAnim, {
-        toValue: 0, // Fully visible
-        duration: 300, // Animation duration
-        useNativeDriver: true, // Use native driver for better performance
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
       }).start();
+
+      setLoading(true);
+      resetPagination();
+      getMoreData().finally(() => setLoading(false));
     } else {
-      // Slide down
       Animated.timing(slideAnim, {
-        toValue: screenHeight, // Slide off-screen
+        toValue: screenHeight,
         duration: 300,
         useNativeDriver: true,
       }).start();
     }
   }, [visible]);
-
-  useEffect(() => {
-    setLoading(true);
-    !isSearching && fetchAndSetLockers(page, limit);
-  }, [getLockers]);
 
   const renderItem = useCallback(
     ({ item }: any) => (
@@ -77,19 +73,10 @@ const SlideUpModal = ({ visible, onClose }: any) => {
     []
   );
 
-  const vacantLockers = lockers?.filter((locker: any) => {
-    if (locker.vacant && locker.location === addEmployeeInfo?.location) {
-      return locker;
-    }
-  });
-
   return (
     <Modal transparent visible={visible} animationType="slide">
       <View style={styles.overlay}>
-        {/* Background overlay */}
         <TouchableOpacity style={styles.overlay} onPress={onClose} />
-
-        {/* Slide-up content */}
         <Animated.View
           style={[
             styles.modalContent,
@@ -106,18 +93,19 @@ const SlideUpModal = ({ visible, onClose }: any) => {
               </View>
             </View>
           </View>
+
           <View className="flex-1 my-3">
             {!loading && (
               <FlatList
-                data={vacantLockers}
+                data={lockers}
                 keyExtractor={(item) => item._id.toString()}
                 renderItem={renderItem}
                 onEndReached={getMoreData}
                 onEndReachedThreshold={0.5}
                 ListFooterComponent={
-                  fetchingMoreUsers && (
+                  fetchingMoreUsers ? (
                     <ActivityIndicator size="small" color="#0000ff" />
-                  )
+                  ) : null
                 }
                 contentContainerStyle={{ paddingBottom: 8 }}
               />
@@ -128,8 +116,6 @@ const SlideUpModal = ({ visible, onClose }: any) => {
     </Modal>
   );
 };
-
-//*make this component reusable
 
 const styles = StyleSheet.create({
   overlay: {

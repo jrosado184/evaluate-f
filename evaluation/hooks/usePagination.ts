@@ -37,8 +37,8 @@ const usePagination = (
 
     const data = await getData(nextPage, limit);
     if (data) {
-      setData((prev: any) => {
-        const combined = [...prev, ...data.results];
+      setData((prev: any | []) => {
+        const combined = [...(prev || []), ...data.results];
         const uniqueUsers = combined.reduce((acc: any[], user: any) => {
           if (!acc.some((item) => item._id === user._id)) {
             acc.push(user);
