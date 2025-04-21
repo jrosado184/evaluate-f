@@ -27,19 +27,23 @@ const SlideUpModal = ({ visible, onClose }: any) => {
     loading,
     setLockerDetails,
     lockerDetails,
+    addEmployeeInfo,
   } = useEmployeeContext();
 
   const { getLockers } = useGetLockers();
 
+  // 🔧 Pass current location into pagination
   const { getMoreData, resetPagination, fetchingMoreUsers } = usePagination(
     lockers,
-    getLockers,
+    (page: number, limit: number) =>
+      getLockers(page, limit, addEmployeeInfo?.location),
     setLockers,
     setLockerDetails,
     lockerDetails,
     8
   );
 
+  // 🟡 Reset when modal opens
   useEffect(() => {
     if (visible) {
       Animated.timing(slideAnim, {
@@ -49,6 +53,7 @@ const SlideUpModal = ({ visible, onClose }: any) => {
       }).start();
 
       setLoading(true);
+      setLockers([]); // Clear old results
       resetPagination();
       getMoreData().finally(() => setLoading(false));
     } else {
@@ -59,6 +64,15 @@ const SlideUpModal = ({ visible, onClose }: any) => {
       }).start();
     }
   }, [visible]);
+
+  // 🟡 Optional: refresh if location changes while modal is open
+  useEffect(() => {
+    if (visible) {
+      setLockers([]);
+      resetPagination();
+      getMoreData();
+    }
+  }, [addEmployeeInfo?.location]);
 
   const renderItem = useCallback(
     ({ item }: any) => (
@@ -134,10 +148,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
     height: "90%",
-  },
-  modalText: {
-    fontSize: 16,
-    marginBottom: 20,
   },
 });
 
