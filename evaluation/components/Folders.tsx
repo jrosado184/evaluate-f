@@ -5,38 +5,43 @@ import {
   TouchableOpacity,
   Alert,
   Animated,
-  TouchableWithoutFeedback,
-  Keyboard,
 } from "react-native";
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { router, useGlobalSearchParams } from "expo-router";
-import formatISODate from "@/app/conversions/ConvertIsoDate";
-import RightIcon from "@/constants/icons/RightIcon";
-import useEmployeeContext from "@/app/context/EmployeeContext";
 import { Swipeable } from "react-native-gesture-handler";
+import useEmployeeContext from "@/app/context/EmployeeContext";
+import RightIcon from "@/constants/icons/RightIcon";
+import formatISODate from "@/app/conversions/ConvertIsoDate";
 
 interface FoldersProps {
   onDeleteFolder: (folderId: string) => void;
-  onTapOutside?: () => void; // Optional external handler (for modal cancel)
-  handleModalCancel: any;
+  onEditPress: (folderId: string, folderName: string) => void;
+  onTapOutside?: () => void;
+  registerCloseSwipeable?: (fn: () => void) => void;
 }
 
 const Folders = ({
   onDeleteFolder,
+  onEditPress,
   onTapOutside,
-  handleModalCancel,
+  registerCloseSwipeable,
 }: FoldersProps) => {
   const { employee } = useEmployeeContext();
   const { id } = useGlobalSearchParams();
-
   const openSwipeableRef = useRef<Swipeable | null>(null);
 
-  const closeOpenSwipeable = () => {
+  const closeSwipeable = () => {
     if (openSwipeableRef.current) {
       openSwipeableRef.current.close();
       openSwipeableRef.current = null;
     }
   };
+
+  useEffect(() => {
+    if (registerCloseSwipeable) {
+      registerCloseSwipeable(closeSwipeable);
+    }
+  }, [registerCloseSwipeable]);
 
   const handleSwipeableWillOpen = (ref: Swipeable) => {
     if (openSwipeableRef.current && openSwipeableRef.current !== ref) {
@@ -45,31 +50,42 @@ const Folders = ({
     openSwipeableRef.current = ref;
   };
 
-  const handleOutsideTap = () => {
-    closeOpenSwipeable();
-    onTapOutside?.(); // Call parent handler if provided (modal cancel case)
-    Keyboard.dismiss();
-  };
-
   const renderRightActions = (
     progress: Animated.AnimatedInterpolation<number>,
-    folderId: string
+    folderId: string,
+    folderName: string
   ) => {
-    const opacity = progress.interpolate({
-      inputRange: [0.3, 1],
-      outputRange: [0, 1],
+    const translateX = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [80, 8],
       extrapolate: "clamp",
     });
 
     return (
-      <Animated.View style={{ opacity }}>
+      <Animated.View
+        style={{
+          transform: [{ translateX }],
+          flexDirection: "row",
+          height: "100%",
+          marginRight: 20,
+          width: "33%",
+          gap: 4,
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => onEditPress(folderId, folderName)}
+          className="justify-center items-center w-20 h-full rounded-l-lg bg-blue-600"
+        >
+          <Text className="text-white font-inter-semibold text-sm">Edit</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           onPress={() =>
             Alert.alert("Delete folder", "Are you sure?", [
               {
                 text: "Cancel",
                 style: "cancel",
-                onPress: () => handleModalCancel(),
+                onPress: () => onTapOutside?.(),
               },
               {
                 text: "Delete",
@@ -78,90 +94,91 @@ const Folders = ({
               },
             ])
           }
+          className="justify-center items-center w-20 h-full bg-red-500"
           style={{
-            backgroundColor: "#ef4444",
-            justifyContent: "center",
-            alignItems: "center",
-            width: 80,
-            height: "100%",
             borderTopRightRadius: 8,
             borderBottomRightRadius: 8,
           }}
         >
-          <Text style={{ color: "#fff", fontWeight: "600" }}>Delete</Text>
+          <Text className="text-white font-inter-semibold text-sm">Delete</Text>
         </TouchableOpacity>
       </Animated.View>
     );
   };
 
   return (
-    <TouchableWithoutFeedback onPress={handleOutsideTap}>
-      <View className="w-full px-3 my-4 gap-y-4">
-        {employee?.folders.map((folder: any) => {
+    <View className="my-4 gap-y-4 items-center w-full">
+      {employee?.folders?.length === 0 ? (
+        <View className="flex-col items-center justify-center mt-12 px-6">
+          <Image
+            source={require("../assets/icons/empty-folder.png")} // optional
+            style={{ width: 60, height: 60, marginBottom: 16 }}
+            resizeMode="contain"
+          />
+          <Text className="text-lg font-inter-semibold text-neutral-700">
+            No folders yet
+          </Text>
+          <Text className="text-sm text-neutral-500 mt-1 text-center">
+            Tap “New folder” above to add your first one.
+          </Text>
+        </View>
+      ) : (
+        employee?.folders.map((folder: any) => {
           let swipeRef: Swipeable | null = null;
 
           return (
-            <View
+            <Swipeable
               key={folder._id}
-              style={{
-                borderRadius: 8,
-                overflow: "hidden",
-                backgroundColor: "#fff",
-              }}
+              ref={(ref) => (swipeRef = ref)}
+              onSwipeableWillOpen={() =>
+                swipeRef && handleSwipeableWillOpen(swipeRef)
+              }
+              renderRightActions={(progress) =>
+                renderRightActions(progress, folder._id, folder.name)
+              }
+              friction={2}
+              overshootRight={false}
+              rightThreshold={40}
+              containerStyle={{ width: "100%" }}
             >
-              <Swipeable
-                ref={(ref) => (swipeRef = ref)}
-                onSwipeableWillOpen={() =>
-                  swipeRef && handleSwipeableWillOpen(swipeRef)
-                }
-                renderRightActions={(progress) =>
-                  renderRightActions(progress, folder._id)
-                }
-                friction={2}
-                overshootRight={false}
-                rightThreshold={40}
-              >
-                <View className="items-center w-full">
-                  <TouchableOpacity
-                    onPress={() =>
-                      router.push(`/users/${id}/folders/${folder._id}`)
-                    }
-                    activeOpacity={0.8}
-                    className="w-[90vw] flex-row items-center p-4 border border-gray-400 bg-white"
-                    style={{
-                      borderRadius: 8,
-                    }}
-                  >
-                    <Image
-                      source={require("../assets/icons/Blue.png")}
-                      style={{ width: 37, height: 29 }}
-                    />
-                    <View className="flex-1 pl-3">
-                      <View className="flex-row justify-between items-center w-full">
-                        <View className="flex-1">
-                          <Text className="font-semibold text-[1.1rem]">
-                            {folder.name}
-                            <Text className="text-[1.1rem] font-inter-regular">
-                              {` ( ${folder.files.length} )`}
-                            </Text>
+              <View className="w-full items-center bg-white">
+                <TouchableOpacity
+                  onPress={() =>
+                    router.push(`/users/${id}/folders/${folder._id}`)
+                  }
+                  activeOpacity={0.8}
+                  className="w-[90vw] border border-gray-400 h-[4.5rem] rounded-lg flex-row items-center pl-4 pr-2 bg-white"
+                >
+                  <Image
+                    className="w-80 h-80"
+                    source={require("../assets/icons/Blue.png")}
+                    style={{ width: 37, height: 29 }}
+                  />
+                  <View className="w-full pl-3">
+                    <View className="flex-row w-full justify-between items-center">
+                      <View className="flex-1">
+                        <Text className="font-semibold text-[1.1rem]">
+                          {folder.name}
+                          <Text className="text-[1.1rem] font-inter-regular">
+                            {` ( ${folder.files.length} )`}
                           </Text>
-                          <Text className="text-[0.9rem] text-neutral-700 mt-1">
-                            {`Created on ${formatISODate(folder.createdAt)}`}
-                          </Text>
-                        </View>
-                        <View className="ml-8 w-16 items-end">
-                          <RightIcon />
-                        </View>
+                        </Text>
+                        <Text className="text-[0.9rem] text-neutral-700">
+                          {`Created on ${formatISODate(folder.createdAt)}`}
+                        </Text>
+                      </View>
+                      <View className="pr-12 justify-center items-center">
+                        <RightIcon />
                       </View>
                     </View>
-                  </TouchableOpacity>
-                </View>
-              </Swipeable>
-            </View>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </Swipeable>
           );
-        })}
-      </View>
-    </TouchableWithoutFeedback>
+        })
+      )}
+    </View>
   );
 };
 
