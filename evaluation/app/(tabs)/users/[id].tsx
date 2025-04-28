@@ -164,7 +164,7 @@ const User = () => {
     <SafeAreaView className="bg-neutral-50 h-full">
       <View className="p-6">
         <TouchableOpacity
-          onPress={router.back}
+          onPress={() => router.push("/users")}
           className="flex-row items-center h-10"
         >
           <Icon name="chevron-left" size={29} />
@@ -203,7 +203,7 @@ const User = () => {
       </View>
 
       {loading ? (
-        <View className="my-3 w-full">
+        <View className="my-3 w-full px-6">
           <CardSkeleton amount={1} width="w-full" height="h-[4.5rem]" />
         </View>
       ) : (

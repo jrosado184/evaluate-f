@@ -1,9 +1,9 @@
 import React, {
   useState,
+  useEffect,
   createContext,
   useContext,
   useRef,
-  useEffect,
 } from "react";
 import { Animated, Easing } from "react-native";
 import { Tabs } from "expo-router";
@@ -13,7 +13,11 @@ import LockIcon from "@/constants/icons/LockIcon";
 import ProfileIcon from "@/constants/icons/ProfileIcon";
 import { TabIcon } from "@/components/navigation/TabBarIcon";
 
-// Create a context for tab bar visibility
+// ✨ This tells Expo Router to treat (tabs) folder independently
+export const unstable_settings = {
+  initialRouteName: "home",
+};
+
 const TabBarContext = createContext({
   isTabBarVisible: true,
   setIsTabBarVisible: (visible: boolean) => {},
@@ -22,21 +26,18 @@ const TabBarContext = createContext({
 
 export const useTabBar = () => useContext(TabBarContext);
 
-const TabsLayout = () => {
+export default function TabsLayout() {
   const [isTabBarVisible, setIsTabBarVisible] = useState(true);
-  // When visible, translateY is 0; when hidden, translateY is 100 (adjust as needed).
-  const tabBarTranslate = useRef(
-    new Animated.Value(isTabBarVisible ? 0 : 100)
-  ).current;
+  const tabBarTranslate = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(tabBarTranslate, {
       toValue: isTabBarVisible ? 0 : 100,
       duration: 145,
-      useNativeDriver: true, // transform properties support the native driver
       easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
     }).start();
-  }, [isTabBarVisible, tabBarTranslate]);
+  }, [isTabBarVisible]);
 
   return (
     <TabBarContext.Provider
@@ -44,10 +45,11 @@ const TabsLayout = () => {
     >
       <Tabs
         screenOptions={{
+          headerShown: false, // disables all tabs header
           tabBarShowLabel: false,
+          tabBarHideOnKeyboard: true,
           tabBarStyle: {
             position: "absolute",
-            // Apply the animated translateY instead of bottom
             transform: [{ translateY: tabBarTranslate }],
             width: "100%",
             opacity: isTabBarVisible ? 1 : 0,
@@ -61,8 +63,7 @@ const TabsLayout = () => {
           name="home"
           options={{
             title: "Home",
-            headerShown: false,
-            tabBarIcon: ({ color, focused }: any) => (
+            tabBarIcon: ({ color, focused }) => (
               <TabIcon
                 color={color}
                 icon_name="Home"
@@ -83,8 +84,7 @@ const TabsLayout = () => {
           name="users"
           options={{
             title: "Users",
-            headerShown: false,
-            tabBarIcon: ({ color, focused }: any) => (
+            tabBarIcon: ({ color, focused }) => (
               <TabIcon
                 color={color}
                 icon_name="Users"
@@ -105,8 +105,7 @@ const TabsLayout = () => {
           name="lockers"
           options={{
             title: "Lockers",
-            headerShown: false,
-            tabBarIcon: ({ color, focused }: any) => (
+            tabBarIcon: ({ color, focused }) => (
               <TabIcon
                 color={color}
                 icon_name="Lockers"
@@ -127,8 +126,7 @@ const TabsLayout = () => {
           name="profile"
           options={{
             title: "Profile",
-            headerShown: false,
-            tabBarIcon: ({ color, focused }: any) => (
+            tabBarIcon: ({ color, focused }) => (
               <TabIcon
                 color={color}
                 icon_name="Profile"
@@ -148,6 +146,4 @@ const TabsLayout = () => {
       </Tabs>
     </TabBarContext.Provider>
   );
-};
-
-export default TabsLayout;
+}

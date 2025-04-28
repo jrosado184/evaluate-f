@@ -1,28 +1,31 @@
 import { router, useFocusEffect } from "expo-router";
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback } from "react";
 import { Image, View } from "react-native";
 import SpinningCircle from "@/constants/animations/spinning-circle";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 import { isTokenExpired } from "@/constants/utilities/isTokenExpired";
-import useEmployeeContext from "./context/EmployeeContext";
-import useAuthContext from "./context/AuthContext";
 
 export default function Index() {
   useFocusEffect(
     useCallback(() => {
       const timer = setTimeout(async () => {
-        AsyncStorage.getItem("token").then((token: any) => {
-          const decodedToken = jwtDecode(token);
-          if (isTokenExpired(decodedToken)) {
-            router.replace("/sign-in");
-          } else {
-            router.replace("/home");
-          }
-        });
-      }, 3000);
+        const token = await AsyncStorage.getItem("token");
 
+        if (!token) {
+          router.replace("/sign-in");
+          return;
+        }
+
+        const decodedToken = jwtDecode(token);
+
+        if (isTokenExpired(decodedToken)) {
+          router.replace("/sign-in");
+        } else {
+          router.replace("/(tabs)/home");
+        }
+      }, 1500);
       return () => clearTimeout(timer);
     }, [])
   );

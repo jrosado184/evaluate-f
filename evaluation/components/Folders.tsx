@@ -123,7 +123,7 @@ const Folders = ({
           </Text>
         </View>
       ) : (
-        employee?.folders.map((folder: any) => {
+        employee?.folders?.map((folder: any) => {
           let swipeRef: Swipeable | null = null;
 
           return (

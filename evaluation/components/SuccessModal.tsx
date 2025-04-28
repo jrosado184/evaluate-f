@@ -2,30 +2,39 @@ import React, { useEffect, useRef } from "react";
 import { Animated } from "react-native";
 import { Alert, AlertText } from "@/components/ui/alert";
 import Icon from "react-native-vector-icons/Octicons";
-import useEmployeeContext from "@/app/context/EmployeeContext";
 
-const SuccessModal = ({ message }: any) => {
+interface Props {
+  message: string;
+  trigger?: number;
+  clearMessage?: () => void;
+}
+
+const SuccessModal = ({ message, trigger, clearMessage }: Props) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const { successfullyAddedEmployee } = useEmployeeContext();
-
   useEffect(() => {
-    if (successfullyAddedEmployee) {
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
+    if (!message) return;
 
-      setTimeout(() => {
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 1000,
-          useNativeDriver: true,
-        }).start();
-      }, 3000);
-    }
-  }, [successfullyAddedEmployee]);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
+    const timeout = setTimeout(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }).start(() => {
+        clearMessage && clearMessage(); // reset state after fade-out
+      });
+    }, 3000);
+
+    return () => clearTimeout(timeout);
+  }, [trigger]);
+
+  if (!message) return null;
 
   return (
     <Animated.View

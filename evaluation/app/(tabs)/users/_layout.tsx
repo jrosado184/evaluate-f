@@ -1,21 +1,15 @@
-import React from "react";
 import { Stack } from "expo-router";
+import React from "react";
 import useResetOnTabFocus from "@/hooks/useResetOnTabFocus";
 
-const UserLayout = () => {
+export default function UsersLayout() {
   useResetOnTabFocus("users");
 
   return (
     <Stack
       screenOptions={{
-        headerShown: false,
+        headerShown: false, // no header
       }}
-    >
-      <Stack.Screen name="index" />
-      <Stack.Screen name="[id]" />
-      <Stack.Screen name="add_user" />
-    </Stack>
+    />
   );
-};
-
-export default UserLayout;
+}
