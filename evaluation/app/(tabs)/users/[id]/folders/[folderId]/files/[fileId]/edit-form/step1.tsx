@@ -65,23 +65,23 @@ const PersonalInfoForm = ({ onNext }: { onNext: () => void }) => {
     try {
       const baseUrl = await getServerIP();
       await axios.patch(
-        `${baseUrl}/employees/${id}/folders/${folderId}/files/${fileId}/personal-info`,
-        formData
+        `${baseUrl}/employees/${id}/folders/${folderId}/files/${fileId}`,
+        {
+          action: "update_personal_info",
+          data: { personalInfo: formData },
+        }
       );
 
-      console.log("✅ Personal Info Submitted:", formData);
+      await axios.patch(
+        `${baseUrl}/employees/${id}/folders/${folderId}/files/${fileId}`,
+        {
+          action: "update_status",
+          data: { status: "in_progress" },
+        }
+      );
 
-      router.push({
-        pathname: `/users/${id}/folders/files/${fileId}/edit-form`,
-        params: {
-          step: "2",
-          fileId: fileId as string,
-          folderId: folderId as string,
-        },
-      });
       onNext();
-    } catch (error) {
-      console.error("Personal info submit error:", error);
+    } catch (error: any) {
       Alert.alert("Error", "Failed to save personal information.");
     }
   };
@@ -118,7 +118,9 @@ const PersonalInfoForm = ({ onNext }: { onNext: () => void }) => {
             }}
           >
             <TouchableOpacity
-              onPress={() => router.push(`/users/${id}/folders/${folderId}`)}
+              onPress={() => {
+                router.push(`/users/${id}/folders/${folderId}`);
+              }}
               style={{ marginRight: 12 }}
             >
               <Icon name="chevron-left" size={28} color="#1a237e" />

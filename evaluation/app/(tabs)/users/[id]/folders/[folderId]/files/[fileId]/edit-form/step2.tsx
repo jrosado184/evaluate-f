@@ -8,15 +8,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  Alert,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Icon from "react-native-vector-icons/Feather";
-import axios from "axios"; // 🆕 added
+import axios from "axios";
 import getServerIP from "@/app/requests/NetworkAddress";
 
 const Step2Form = ({ onNext }: { onNext: () => void }) => {
   const router = useRouter();
-  const { id, fileId, folderId } = useLocalSearchParams();
+  const { id, fileId, folderId, step, week } = useLocalSearchParams();
 
   const [formData, setFormData] = useState<any>({
     hoursMonday: "",
@@ -38,6 +39,7 @@ const Step2Form = ({ onNext }: { onNext: () => void }) => {
     supervisorSignature: "",
   });
 
+  const currentWeek = parseInt((week as string) || "1", 10);
   const projectedTrainingHours = 40;
 
   const totalHoursOnJob =
@@ -54,6 +56,30 @@ const Step2Form = ({ onNext }: { onNext: () => void }) => {
     : "0";
 
   useEffect(() => {
+    const markFileInProgress = async () => {
+      try {
+        const baseUrl = await getServerIP();
+        await axios.patch(
+          `${baseUrl}/employees/${id}/folders/${folderId}/files/${fileId}`,
+          {
+            action: "update_status",
+            data: { status: "in_progress" },
+          }
+        );
+      } catch (error: any) {
+        console.error(
+          "Failed to mark file in progress:",
+          error.response?.data || error.message
+        );
+      }
+    };
+
+    if (id && folderId && fileId) {
+      markFileInProgress();
+    }
+  }, [id, folderId, fileId]);
+
+  useEffect(() => {
     setFormData((prev: any) => ({
       ...prev,
       expectedQualified: expectedQualified.toString(),
@@ -66,8 +92,6 @@ const Step2Form = ({ onNext }: { onNext: () => void }) => {
     formData.hoursFriday,
   ]);
 
-  console.log(fileId);
-
   const handleChange = (key: string, value: string) => {
     setFormData((prev: any) => ({ ...prev, [key]: value }));
   };
@@ -79,10 +103,26 @@ const Step2Form = ({ onNext }: { onNext: () => void }) => {
     }));
   };
 
+  const getOrdinalSuffix = (n: number) => {
+    const s = ["th", "st", "nd", "rd"];
+    const v = n % 100;
+    return `${n}${s[(v - 20) % 10] || s[v] || s[0]}`;
+  };
+
+  const handleBack = () => {
+    if (step === "2") {
+      router.replace(`/users/${id}/folders/${folderId}/files/${fileId}`);
+    } else {
+      router.push(
+        `/users/${id}/folders/${folderId}/files/${fileId}/edit-form?step=1`
+      );
+    }
+  };
+
   const handleSubmit = async () => {
     try {
       const evaluationData = {
-        weekNumber: 1, // 🛑 Hardcoded Week 1 for now
+        weekNumber: currentWeek,
         hoursMonday: formData.hoursMonday,
         hoursTuesday: formData.hoursTuesday,
         hoursWednesday: formData.hoursWednesday,
@@ -103,21 +143,32 @@ const Step2Form = ({ onNext }: { onNext: () => void }) => {
         traineeSignature: formData.teamMemberSignature,
         supervisorSignature: formData.supervisorSignature,
       };
+
       const baseUrl = await getServerIP();
+
       await axios.patch(
-        `${baseUrl}/employees/${id}/folders/${folderId}/files/${fileId}/evaluations`,
-        evaluationData
+        `${baseUrl}/employees/${id}/folders/${folderId}/files/${fileId}`,
+        {
+          action: "add_evaluation",
+          data: { evaluation: evaluationData },
+        }
       );
 
-      console.log("✅ Evaluation saved successfully");
+      await axios.patch(
+        `${baseUrl}/employees/${id}/folders/${folderId}/files/${fileId}`,
+        {
+          action: "update_status",
+          data: { status: "in_progress" },
+        }
+      );
 
-      router.replace(`/users/${id}/folders/files/${fileId}`);
+      router.replace(`/users/${id}/folders/${folderId}/files/${fileId}`);
     } catch (error: any) {
       console.error(
         "Error saving evaluation:",
         error.response?.data || error.message
       );
-      alert("Failed to save evaluation.");
+      Alert.alert("Error", "Failed to save evaluation.");
     }
   };
 
@@ -145,19 +196,11 @@ const Step2Form = ({ onNext }: { onNext: () => void }) => {
               marginBottom: 24,
             }}
           >
-            <TouchableOpacity
-              onPress={() =>
-                router.push({
-                  pathname: `/users/${id}/folders/files/${fileId}/edit-form`,
-                  params: { step: "1", folderId },
-                })
-              }
-              style={{ marginRight: 12 }}
-            >
+            <TouchableOpacity onPress={handleBack} style={{ marginRight: 12 }}>
               <Icon name="chevron-left" size={28} color="#1a237e" />
             </TouchableOpacity>
             <Text style={{ fontSize: 24, fontWeight: "600", color: "#111827" }}>
-              1st Week Information
+              {getOrdinalSuffix(currentWeek)} Week Information
             </Text>
           </View>
 

@@ -33,7 +33,18 @@ const FolderDetails = () => {
   const translateY = useRef(new Animated.Value(400)).current;
   const openSwipeableRef = useRef<Swipeable | null>(null);
 
-  const { employee } = useEmployeeContext();
+  const fileStatus = (status: string) => {
+    switch (status) {
+      case "not started":
+        return "Not started";
+      case "in_progress":
+        return "In progress";
+      case "complete":
+        return "Complete";
+      default:
+        return status;
+    }
+  };
 
   const fetchFolderFiles = async () => {
     if (!userId || !folderId) return;
@@ -143,36 +154,23 @@ const FolderDetails = () => {
     ]);
   };
 
-  const handleFilePress = async (file: any) => {
-    try {
-      const fileUri = `${await getServerIP()}${file.fileUrl}`;
+  const handleFilePress = (file: any) => {
+    if (!file || !file._id || !file.status) return;
 
-      if (Platform.OS === "ios") {
-        if (file.status === "complete") {
-          router.push({
-            pathname: `/users/${userId}/folders/files/${file._id}`,
-            params: {
-              filename: file.fileUrl.replace("/uploads/", ""),
-              fileId: file._id,
-              folderId: folderId,
-            },
-          });
-        } else {
-          router.push({
-            pathname: `/users/${userId}/folders/files/${file._id}/edit-form`,
-            params: {
-              filename: file.fileUrl.replace("/uploads/", ""),
-              fileId: file._id,
-              folderId: folderId,
-            },
-          });
-        }
-      } else {
-        // Android logic here
-      }
-    } catch (error) {
-      Alert.alert("Error", "Could not preview file.");
-      console.error("Preview error:", error);
+    if (!folderId) {
+      Alert.alert("Error", "Missing folderId");
+      return;
+    }
+
+    const fileId = file._id;
+
+    if (file.status === "not started") {
+      router.push(
+        `/users/${userId}/folders/${folderId}/files/${fileId}/edit-form?step=1`
+      );
+    } else {
+      // in_progress or complete → go to summary screen
+      router.push(`/users/${userId}/folders/${folderId}/files/${fileId}`);
     }
   };
 
@@ -254,7 +252,7 @@ const FolderDetails = () => {
                       : "text-yellow-700"
                   }`}
                 >
-                  {item.status}
+                  {fileStatus(item.status)}
                 </Text>
               </View>
             </View>
