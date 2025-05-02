@@ -63,6 +63,7 @@
     "react-native-blob-util": "^0.21.2",
     "react-native-css-interop": "^0.1.22",
     "react-native-gesture-handler": "~2.20.2",
+    "react-native-heroicons": "^4.0.0",
     "react-native-network-info": "^5.2.1",
     "react-native-pager-view": "6.5.1",
     "react-native-paper": "^5.13.5",

@@ -10,16 +10,20 @@ import {
   StatusBar,
   Alert,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Icon from "react-native-vector-icons/Feather";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import getServerIP from "@/app/requests/NetworkAddress";
+import SignatureModal from "@/components/SignatureModal";
+import useAuthContext from "@/app/context/AuthContext";
 
 const Step2Form = () => {
   const router = useRouter();
-  const { id, fileId, folderId, step, week } = useLocalSearchParams();
+  const { id, fileId, folderId, week } = useLocalSearchParams();
+  const { currentUser } = useAuthContext();
 
   const currentWeek = parseInt((week as string) || "1", 10);
   const [formData, setFormData] = useState<any>({
@@ -41,7 +45,10 @@ const Step2Form = () => {
     teamMemberSignature: "",
     supervisorSignature: "",
   });
+
   const [loading, setLoading] = useState(true);
+  const [signatureType, setSignatureType] = useState<null | string>(null);
+  const [traineeName, setTraineeName] = useState("Trainee");
 
   const projectedTrainingHours = 40;
 
@@ -87,6 +94,10 @@ const Step2Form = () => {
           (e: any) => e.weekNumber === currentWeek
         );
 
+        if (employee?.employee_name) {
+          setTraineeName(employee.employee_name);
+        }
+
         if (weekData) {
           setFormData(weekData);
         }
@@ -114,6 +125,16 @@ const Step2Form = () => {
 
   const handleBack = () => {
     router.replace(`/users/${id}/folders/${folderId}/files/${fileId}`);
+  };
+
+  const handleSignature = (base64: string) => {
+    if (signatureType) {
+      setFormData((prev: any) => ({
+        ...prev,
+        [signatureType]: base64,
+      }));
+    }
+    setSignatureType(null);
   };
 
   const handleSubmit = async () => {
@@ -159,7 +180,7 @@ const Step2Form = () => {
 
   return (
     <View className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar barStyle="dark-content" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -169,7 +190,7 @@ const Step2Form = () => {
           contentContainerStyle={{ paddingBottom: 100 }}
           className="px-5 pt-5"
         >
-          {/* Back and title */}
+          {/* Back & Title */}
           <View className="flex-row items-center mb-6">
             <TouchableOpacity onPress={handleBack} className="mr-3">
               <Icon name="chevron-left" size={28} color="#1a237e" />
@@ -183,7 +204,7 @@ const Step2Form = () => {
             </Text>
           </View>
 
-          {/* Inputs */}
+          {/* Input Fields */}
           {[
             { label: "Hours on Job - Monday", key: "hoursMonday" },
             { label: "Hours on Job - Tuesday", key: "hoursTuesday" },
@@ -197,11 +218,8 @@ const Step2Form = () => {
             { label: "Knife Audit Date", key: "knifeSkillsAuditDate" },
             { label: "Knife Score (%)", key: "knifeScore" },
             { label: "Comments", key: "comments", multiline: true },
-            { label: "Trainer Signature", key: "trainerSignature" },
-            { label: "Team Member Signature", key: "teamMemberSignature" },
-            { label: "Supervisor Signature", key: "supervisorSignature" },
           ].map((field) => (
-            <View className="mb-5" key={field.key}>
+            <View key={field.key} className="mb-5">
               <Text className="text-base font-medium text-gray-700 mb-2">
                 {field.label}
               </Text>
@@ -221,8 +239,8 @@ const Step2Form = () => {
             </View>
           ))}
 
-          {/* Hand stretch toggle */}
-          <View className="mb-5">
+          {/* Hand Stretch Toggle */}
+          <View className="mb-6">
             <Text className="text-base font-medium text-gray-700 mb-2">
               Hand Stretch Exercises Completed
             </Text>
@@ -238,6 +256,42 @@ const Step2Form = () => {
             </TouchableOpacity>
           </View>
 
+          {/* Signatures */}
+          {/* Signatures */}
+          {[
+            {
+              key: "trainerSignature",
+              signer: currentUser?.name || "Trainer",
+            },
+            {
+              key: "teamMemberSignature",
+              signer: traineeName,
+            },
+            {
+              key: "supervisorSignature",
+              signer: "Supervisor (TBD)",
+            },
+          ].map((field) => (
+            <View key={field.key} className="mb-6">
+              <Text className="text-base font-medium text-gray-700 mb-2">
+                {field.signer}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setSignatureType(field.key)}
+                className="bg-gray-100 border border-gray-300 rounded-md px-4 py-3 justify-center items-center"
+              >
+                {formData[field.key] ? (
+                  <Image
+                    source={{ uri: formData[field.key] }}
+                    className="w-full h-28"
+                    resizeMode="contain"
+                  />
+                ) : (
+                  <Text className="text-gray-500">Tap to Sign</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          ))}
           {/* Totals */}
           <View className="mb-6">
             <Text className="text-lg font-medium text-gray-800">
@@ -260,6 +314,12 @@ const Step2Form = () => {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <SignatureModal
+        visible={!!signatureType}
+        onOK={handleSignature}
+        onCancel={() => setSignatureType(null)}
+      />
     </View>
   );
 };

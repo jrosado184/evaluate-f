@@ -12,6 +12,7 @@ import { Swipeable } from "react-native-gesture-handler";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import RightIcon from "@/constants/icons/RightIcon";
 import formatISODate from "@/app/conversions/ConvertIsoDate";
+import Icon from "react-native-vector-icons/AntDesign";
 
 interface FoldersProps {
   onDeleteFolder: (folderId: string) => void;
@@ -60,7 +61,7 @@ const Folders = ({
       outputRange: [80, 8],
       extrapolate: "clamp",
     });
-
+    // Edit and delete buttons
     return (
       <Animated.View
         style={{
@@ -107,7 +108,7 @@ const Folders = ({
   };
 
   return (
-    <View className="my-4 gap-y-4 items-center w-full">
+    <View className="gap-y-5 items-center w-full">
       {employee?.folders?.length === 0 ? (
         <View className="flex-col items-center justify-center mt-12 px-6">
           <Image
@@ -149,10 +150,12 @@ const Folders = ({
                   activeOpacity={0.8}
                   className="w-[90vw] border border-gray-400 h-[4.5rem] rounded-lg flex-row items-center pl-4 pr-2 bg-white"
                 >
-                  <Image
-                    className="w-80 h-80"
-                    source={require("../assets/icons/Blue.png")}
-                    style={{ width: 37, height: 29 }}
+                  <Icon
+                    size={30}
+                    name="folder1"
+                    style={{
+                      color: "#1a237e",
+                    }}
                   />
                   <View className="w-full pl-3">
                     <View className="flex-row w-full justify-between items-center">

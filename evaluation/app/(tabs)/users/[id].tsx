@@ -189,7 +189,7 @@ const User = () => {
         </View>
 
         <View className="my-4">
-          <View className="flex-row justify-between">
+          <View className="flex-row justify-between items-center">
             <Text className="font-inter-semibold text-[1.2rem]">Files</Text>
             <TouchableOpacity
               onPress={handleNewFolderPress}

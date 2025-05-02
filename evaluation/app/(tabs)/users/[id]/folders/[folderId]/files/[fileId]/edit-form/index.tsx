@@ -46,7 +46,11 @@ const EditFormController = () => {
       <StepProgressBar step={currentStep} />
       {currentStep === 1 && <PersonalInfoForm onNext={handleNext} />}
       {currentStep === 2 && (
-        <Step2Form onNext={handleNext} onBack={handleBack} />
+        <Step2Form
+          onNext={handleNext}
+          onBack={handleBack}
+          initialEvaluation={null}
+        />
       )}
     </SafeAreaView>
   );
