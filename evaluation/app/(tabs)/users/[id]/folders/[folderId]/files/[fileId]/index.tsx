@@ -51,6 +51,8 @@ const FileDetailsScreen = () => {
     }
   };
 
+  const pdfpreview = fileData?.fileUrl?.split("/")[2];
+
   useEffect(() => {
     fetchFileData();
   }, []);
@@ -215,9 +217,12 @@ const FileDetailsScreen = () => {
                 <View className="w-full items-center bg-white">
                   <TouchableOpacity
                     onPress={() =>
-                      router.push(
-                        `/users/${userId}/folders/${fileData.folderId}/files/${fileId}/pdfpreview/${fileData?.name}`
-                      )
+                      router.push({
+                        pathname: `/users/${userId}/folders/${fileData.folderId}/files/${fileId}/${pdfpreview}`,
+                        params: {
+                          filename: pdfpreview,
+                        },
+                      })
                     }
                     activeOpacity={0.85}
                     className="w-[90vw] border border-gray-300 rounded-lg bg-white px-4 py-3"
