@@ -57,19 +57,21 @@ const FileDetailsScreen = () => {
 
   const handleContinue = () => {
     if (!fileData) return;
-
     const folderId = fileData.folderId;
     if (!folderId) {
       Alert.alert("Error", "Missing folderId for this file.");
       return;
     }
 
-    if (fileData.status === "in progress") {
+    if (fileData.status === "in_progress" && canQualify) {
+      router.push(
+        `/users/${userId}/folders/${folderId}/files/${fileId}/qualify`
+      );
+    } else if (fileData.status === "in_progress") {
       router.push(
         `/users/${userId}/folders/${folderId}/files/${fileId}/edit-form?step=2`
       );
-    }
-    if (fileData.status === "incomplete") {
+    } else if (fileData.status === "incomplete") {
       router.push(
         `/users/${userId}/folders/${folderId}/files/${fileId}/edit-form?step=1`
       );
@@ -84,9 +86,11 @@ const FileDetailsScreen = () => {
     }
   };
 
+  const evaluationsCompletedCount = fileData?.evaluations?.length || 0;
+  const canQualify = evaluationsCompletedCount >= 3;
+
   return (
     <SafeAreaView className="flex-1 bg-white">
-      {/* Exit Button */}
       <View className="px-4 pt-4">
         <TouchableOpacity
           onPress={handleExit}
@@ -150,7 +154,7 @@ const FileDetailsScreen = () => {
                   Evaluation Timeline
                 </Text>
                 {fileData.evaluations?.length > 0 ? (
-                  <EvaluationTimeline evaluations={fileData.evaluations} />
+                  <EvaluationTimeline fileData={fileData} />
                 ) : (
                   <View className="items-center justify-center mt-4 mb-8 px-4">
                     <Icon
@@ -181,16 +185,18 @@ const FileDetailsScreen = () => {
                 )}
               </View>
 
-              {/* Start / Continue Button if evaluations exist */}
-              {fileData.status !== "complete" &&
+              {/* Start / Qualify Button */}
+              {fileData.status !== "complete" ? (
                 fileData.evaluations?.length > 0 && (
                   <TouchableOpacity
-                    onPress={handleContinue}
-                    activeOpacity={0.85}
+                    onPress={canQualify ? handleContinue : undefined}
+                    activeOpacity={canQualify ? 0.85 : 1}
                     className={`py-4 rounded-lg items-center justify-center ${
                       fileData.status === "incomplete"
                         ? "bg-[#1a237e]"
-                        : "bg-[#059669]"
+                        : canQualify
+                        ? "bg-[#059669]"
+                        : "bg-gray-300"
                     }`}
                   >
                     <Text className="text-white text-lg font-inter-semibold">
@@ -198,8 +204,42 @@ const FileDetailsScreen = () => {
                         ? "Start Evaluation"
                         : "Qualify"}
                     </Text>
+                    {!canQualify && fileData.status !== "incomplete" && (
+                      <Text className="text-xs mt-1 text-white opacity-70">
+                        At least 3 weeks required
+                      </Text>
+                    )}
                   </TouchableOpacity>
-                )}
+                )
+              ) : (
+                <View className="w-full items-center bg-white">
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push(
+                        `/users/${userId}/folders/${fileData.folderId}/files/${fileId}/pdfpreview/${fileData?.name}`
+                      )
+                    }
+                    activeOpacity={0.85}
+                    className="w-[90vw] border border-gray-300 rounded-lg bg-white px-4 py-3"
+                  >
+                    <View className="flex-row justify-between items-center">
+                      <View className="flex-1 pr-2">
+                        <Text className="text-base font-inter-medium">
+                          Evaluation Summary
+                        </Text>
+                        <Text className="text-sm text-neutral-500">
+                          View as PDF document
+                        </Text>
+                      </View>
+                      <View className="px-3 py-1 rounded-full bg-blue-100">
+                        <Text className="text-xs font-inter-semibold text-blue-700">
+                          View PDF
+                        </Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
           }
           data={[]}

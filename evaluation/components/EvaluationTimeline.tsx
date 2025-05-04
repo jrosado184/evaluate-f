@@ -10,17 +10,13 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 
-interface EvaluationTimelineProps {
-  evaluations?: any[];
-}
-
-const EvaluationTimeline = ({ evaluations = [] }: EvaluationTimelineProps) => {
+const EvaluationTimeline = ({ fileData }: any) => {
   const router = useRouter();
   const { id, fileId, folderId } = useLocalSearchParams();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const completedWeeks = new Map(
-    evaluations?.map((e) => [e.weekNumber, e]) || []
+    fileData.evaluations?.map((e: any) => [e.weekNumber, e]) || []
   );
 
   const nextAvailableWeek = (() => {
@@ -29,6 +25,9 @@ const EvaluationTimeline = ({ evaluations = [] }: EvaluationTimelineProps) => {
     }
     return null;
   })();
+
+  const projectedTrainingWeeks =
+    fileData.personalInfo.projectedTrainingHours / 40;
 
   const handleEdit = (weekNumber: number) => {
     router.push(
@@ -44,9 +43,9 @@ const EvaluationTimeline = ({ evaluations = [] }: EvaluationTimelineProps) => {
 
   return (
     <View className="mt-2">
-      {Array.from({ length: 6 }).map((_, i) => {
+      {Array.from({ length: projectedTrainingWeeks }).map((_, i) => {
         const week = i + 1;
-        const evaluation = completedWeeks.get(week);
+        const evaluation: any = completedWeeks.get(week);
         const nextWeekComplete = completedWeeks.has(week + 1);
         const isComplete = !!evaluation;
         const isNext = week === nextAvailableWeek;

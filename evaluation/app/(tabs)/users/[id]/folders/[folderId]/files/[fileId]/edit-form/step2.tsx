@@ -19,6 +19,7 @@ import axios from "axios";
 import getServerIP from "@/app/requests/NetworkAddress";
 import SignatureModal from "@/components/SignatureModal";
 import useAuthContext from "@/app/context/AuthContext";
+import useEvaluationsValidation from "@/app/validation/useEvaluationsValidation";
 
 const Step2Form = () => {
   const router = useRouter();
@@ -46,12 +47,12 @@ const Step2Form = () => {
     supervisorSignature: "",
   });
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [signatureType, setSignatureType] = useState<null | string>(null);
   const [traineeName, setTraineeName] = useState("Trainee");
 
   const projectedTrainingHours = 40;
-
   const totalHoursOnJob =
     (Number(formData.hoursMonday) || 0) +
     (Number(formData.hoursTuesday) || 0) +
@@ -101,8 +102,7 @@ const Step2Form = () => {
         if (weekData) {
           setFormData(weekData);
         }
-      } catch (error: any) {
-        console.error("Failed to fetch evaluation:", error.message);
+      } catch {
         Alert.alert("Error", "Failed to load evaluation data.");
       } finally {
         setLoading(false);
@@ -113,7 +113,38 @@ const Step2Form = () => {
   }, [currentWeek]);
 
   const handleChange = (key: string, value: string) => {
-    setFormData((prev: any) => ({ ...prev, [key]: value }));
+    let updated = value;
+
+    if (
+      key === "reTimeAchieved" ||
+      key === "yieldAuditDate" ||
+      key === "knifeSkillsAuditDate"
+    ) {
+      updated = value
+        .replace(/[^\d]/g, "")
+        .slice(0, 8)
+        .replace(/(\d{2})(\d{0,2})(\d{0,4})/, (_, a, b, c) =>
+          [a, b, c].filter(Boolean).join("/")
+        );
+    }
+
+    if (
+      key.startsWith("hours") ||
+      key === "knifeScore" ||
+      key === "percentQualified"
+    ) {
+      updated = updated.replace(/[^\d]/g, "");
+    }
+
+    setFormData((prev: any) => ({ ...prev, [key]: updated }));
+
+    if (errors[key]) {
+      setErrors((prev) => {
+        const copy = { ...prev };
+        delete copy[key];
+        return copy;
+      });
+    }
   };
 
   const toggleHandStretch = () => {
@@ -121,10 +152,6 @@ const Step2Form = () => {
       ...prev,
       handStretchCompleted: !prev.handStretchCompleted,
     }));
-  };
-
-  const handleBack = () => {
-    router.replace(`/users/${id}/folders/${folderId}/files/${fileId}`);
   };
 
   const handleSignature = (base64: string) => {
@@ -138,6 +165,10 @@ const Step2Form = () => {
   };
 
   const handleSubmit = async () => {
+    const { newErrors } = useEvaluationsValidation(formData);
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
+
     try {
       const baseUrl = await getServerIP();
       await axios.patch(
@@ -164,8 +195,7 @@ const Step2Form = () => {
       );
 
       router.replace(`/users/${id}/folders/${folderId}/files/${fileId}`);
-    } catch (error: any) {
-      console.error("Save failed:", error.response?.data || error.message);
+    } catch {
       Alert.alert("Error", "Failed to save evaluation.");
     }
   };
@@ -187,12 +217,18 @@ const Step2Form = () => {
       >
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 100 }}
           className="px-5 pt-5"
+          contentContainerStyle={{ paddingBottom: 120 }}
         >
-          {/* Back & Title */}
           <View className="flex-row items-center mb-6">
-            <TouchableOpacity onPress={handleBack} className="mr-3">
+            <TouchableOpacity
+              onPress={() =>
+                router.replace(
+                  `/users/${id}/folders/${folderId}/files/${fileId}`
+                )
+              }
+              className="mr-3"
+            >
               <Icon name="chevron-left" size={28} color="#1a237e" />
             </TouchableOpacity>
             <Text className="text-2xl font-semibold text-gray-900">
@@ -218,28 +254,44 @@ const Step2Form = () => {
             { label: "Knife Audit Date", key: "knifeSkillsAuditDate" },
             { label: "Knife Score (%)", key: "knifeScore" },
             { label: "Comments", key: "comments", multiline: true },
-          ].map((field) => (
-            <View key={field.key} className="mb-5">
-              <Text className="text-base font-medium text-gray-700 mb-2">
-                {field.label}
-              </Text>
-              <TextInput
-                value={formData[field.key]}
-                onChangeText={(text) => handleChange(field.key, text)}
-                placeholder={field.label}
-                multiline={!!field.multiline}
-                numberOfLines={field.multiline ? 4 : 1}
-                className={`border border-gray-300 rounded-md px-4 py-3 text-base text-gray-900 ${
-                  field.multiline ? "text-start" : ""
-                }`}
-                style={{
-                  textAlignVertical: field.multiline ? "top" : "center",
-                }}
-              />
-            </View>
-          ))}
+          ].map((field) => {
+            const isNumericField =
+              field.key.startsWith("hours") ||
+              field.key === "percentQualified" ||
+              field.key === "knifeScore" ||
+              field.key === "reTimeAchieved" ||
+              field.key === "yieldAuditDate" ||
+              field.key === "knifeSkillsAuditDate";
 
-          {/* Hand Stretch Toggle */}
+            return (
+              <View key={field.key} className="mb-5">
+                <Text className="text-base font-medium text-gray-700 mb-2">
+                  {field.label}
+                </Text>
+                <TextInput
+                  value={formData[field.key]}
+                  onChangeText={(text) => handleChange(field.key, text)}
+                  placeholder={field.label}
+                  multiline={!!field.multiline}
+                  keyboardType={isNumericField ? "numeric" : "default"}
+                  numberOfLines={field.multiline ? 4 : 1}
+                  className={`border ${
+                    errors[field.key] ? "border-red-500" : "border-gray-300"
+                  } rounded-md px-4 py-3 text-gray-900`}
+                  style={{
+                    textAlignVertical: field.multiline ? "top" : "center",
+                  }}
+                />
+                {errors[field.key] && (
+                  <Text className="text-sm text-red-500 mt-1">
+                    {errors[field.key]}
+                  </Text>
+                )}
+              </View>
+            );
+          })}
+
+          {/* Hand Stretch */}
           <View className="mb-6">
             <Text className="text-base font-medium text-gray-700 mb-2">
               Hand Stretch Exercises Completed
@@ -256,7 +308,6 @@ const Step2Form = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Signatures */}
           {/* Signatures */}
           {[
             {
@@ -278,7 +329,11 @@ const Step2Form = () => {
               </Text>
               <TouchableOpacity
                 onPress={() => setSignatureType(field.key)}
-                className="bg-gray-100 border border-gray-300 rounded-md px-4 py-3 justify-center items-center"
+                className={`rounded-md px-4 py-3 justify-center items-center ${
+                  errors[field.key]
+                    ? "bg-gray-100 border border-red-500"
+                    : "bg-gray-100 border border-gray-300"
+                }`}
               >
                 {formData[field.key] ? (
                   <Image
@@ -290,8 +345,14 @@ const Step2Form = () => {
                   <Text className="text-gray-500">Tap to Sign</Text>
                 )}
               </TouchableOpacity>
+              {errors[field.key] && (
+                <Text className="text-sm text-red-500 mt-1">
+                  {errors[field.key]}
+                </Text>
+              )}
             </View>
           ))}
+
           {/* Totals */}
           <View className="mb-6">
             <Text className="text-lg font-medium text-gray-800">
@@ -302,7 +363,6 @@ const Step2Form = () => {
             </Text>
           </View>
 
-          {/* Submit */}
           <TouchableOpacity
             onPress={handleSubmit}
             activeOpacity={0.85}

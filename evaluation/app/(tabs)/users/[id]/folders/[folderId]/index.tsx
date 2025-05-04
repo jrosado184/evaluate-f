@@ -21,9 +21,11 @@ import formatISODate from "@/app/conversions/ConvertIsoDate";
 import { Swipeable } from "react-native-gesture-handler";
 import SuccessModal from "@/components/SuccessModal";
 import useEmployeeContext from "@/app/context/EmployeeContext";
+import useAuthContext from "@/app/context/AuthContext";
 
 const FolderDetails = () => {
   const { id: userId, folderId } = useLocalSearchParams();
+  const { currentUser } = useAuthContext();
   const [uploadVisible, setUploadVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [files, setFiles] = useState<any[]>([]);
@@ -104,7 +106,7 @@ const FolderDetails = () => {
       type: selectedFile.mimeType || "application/pdf",
     };
     formData.append("file", fileToUpload);
-    formData.append("addedBy", "Trainer");
+    formData.append("addedBy", currentUser?.name);
     try {
       await axios.post(
         `${baseUrl}/employees/${userId}/folders/${folderId}/files`,
@@ -242,7 +244,11 @@ const FolderDetails = () => {
               </View>
               <View
                 className={`px-3 py-1 rounded-full ${
-                  item.status === "complete" ? "bg-green-100" : "bg-yellow-100"
+                  item.status === "in_progress"
+                    ? "bg-yellow-100"
+                    : item.status === "incomplete"
+                    ? "bg-red-100"
+                    : "bg-green-100"
                 }`}
               >
                 <Text

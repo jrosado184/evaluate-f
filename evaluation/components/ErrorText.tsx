@@ -7,12 +7,12 @@ interface ErrorTypes {
   hidden: boolean;
 }
 
-const Error: React.FC<ErrorTypes> = ({ styles, title, hidden }) => {
+const ErrorText: React.FC<ErrorTypes> = ({ styles, title, hidden }) => {
   return (
     <View className={`${hidden && "hidden"} w-[90%] ${styles}`}>
-      <Text className="pl-1 text-red-500 my-2">{title}</Text>
+      <Text className="pl-1 text-red-500 my-1 text-[.9rem]">{title}</Text>
     </View>
   );
 };
 
-export default Error;
+export default ErrorText;

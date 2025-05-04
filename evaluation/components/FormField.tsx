@@ -1,79 +1,80 @@
-import { View, Text, TextInput, Image, TouchableOpacity } from "react-native";
+import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import React, { useState } from "react";
-import "../global.css";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Entypo from "@expo/vector-icons/Entypo";
+import ErrorText from "./ErrorText";
 
 interface FormFieldProps {
   title?: string;
   value?: any;
   handleChangeText?: any;
-  keyboadtype?: string;
+  keyboardType?: any;
   styles?: string;
   placeholder?: string;
   rounded?: string;
   inputStyles?: string;
   icon?: any;
   optional?: boolean;
+  secure?: boolean;
+  editable?: boolean;
+  error?: string;
 }
-/**
- * Form fields that take props.
- *
- * @param {string} inputStyles - Styles for the input box
- * @param {string} title - Title for input label
- * @param {string} value - Input value
- * @param {string} handleChangeText - Function that triggers the inputs onChange
- * @param {string} styles - Parent container styles
- * @param {string} placeholder - Placeholder text
- * @param {string} icon - Icon
- * @param {string} rounded - Rounded styles
- */
 
 const FormField: React.FC<FormFieldProps> = ({
   title,
   value,
   handleChangeText,
-  styles,
+  keyboardType = "default",
+  styles = "",
   placeholder,
-  rounded,
-  inputStyles,
+  rounded = "rounded-md",
+  inputStyles = "",
   icon,
   optional,
+  secure = false,
+  editable = true,
+  error,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const isPassword = title?.toLowerCase() === "password";
+
   return (
-    <View className={`space-y-2 gap-2 ${styles}`}>
-      <Text className="text-base font-inter-medium">
+    <View className={`space-y-2 ${styles}`}>
+      <Text className="text-base font-semibold text-gray-800">
         {title}{" "}
         {optional && <Text className="text-neutral-400">(Optional)</Text>}
       </Text>
       <View
-        className={`border border-gray-400 w-full h-16 flex-row items-center ${rounded}`}
+        className={`w-full h-14 flex-row items-center px-4 ${
+          error ? "border border-red-500" : "border border-gray-300"
+        } ${rounded} ${!editable && "bg-gray-50"}`}
       >
-        {icon && <View className="pl-4">{icon}</View>}
+        {icon && <View className="mr-2">{icon}</View>}
         <TextInput
-          className={`font-inter-semibold flex-1 ${inputStyles}`}
+          className={`flex-1 text-gray-500 ${
+            editable && "text-gray-400"
+          } ${inputStyles}`}
           value={value}
-          placeholder={placeholder}
-          placeholderTextColor="#929292"
           onChangeText={handleChangeText}
-          secureTextEntry={title === "Password" && !showPassword}
+          placeholder={placeholder}
+          secureTextEntry={isPassword && !showPassword}
+          keyboardType={keyboardType}
+          editable={editable}
+          style={{
+            textAlignVertical: "center",
+          }}
         />
-        {title === "Password" && (
-          <TouchableOpacity
-            className="pr-4"
-            onPress={() => {
-              setShowPassword(!showPassword);
-            }}
-          >
-            {!showPassword ? (
-              <AntDesign name="eye" size={15} color="black" />
+        {isPassword && (
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            {showPassword ? (
+              <Entypo name="eye-with-line" size={18} color="#6b7280" />
             ) : (
-              <Entypo name="eye-with-line" size={15} color="black" />
+              <AntDesign name="eye" size={18} color="#6b7280" />
             )}
           </TouchableOpacity>
         )}
       </View>
+      {error && <ErrorText title={error} hidden={!error} />}
     </View>
   );
 };
