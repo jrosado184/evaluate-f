@@ -43,7 +43,12 @@ const EvaluationTimeline = ({ fileData }: any) => {
 
   return (
     <View className="mt-2">
-      {Array.from({ length: projectedTrainingWeeks }).map((_, i) => {
+      {Array.from({
+        length:
+          fileData.status === "complete"
+            ? fileData.evaluations.length
+            : projectedTrainingWeeks,
+      }).map((_, i) => {
         const week = i + 1;
         const evaluation: any = completedWeeks.get(week);
         const nextWeekComplete = completedWeeks.has(week + 1);
@@ -117,7 +122,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
                 </View>
 
                 {/* Edit Button */}
-                {!nextWeekComplete && (
+                {!nextWeekComplete && !isComplete && (
                   <TouchableOpacity
                     onPress={() => handleEdit(week)}
                     className="mt-4 bg-[#1a237e] px-5 py-3 rounded-md self-start shadow-sm"
@@ -128,7 +133,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
                   </TouchableOpacity>
                 )}
               </>
-            ) : isNext ? (
+            ) : isNext && !isComplete ? (
               <TouchableOpacity
                 onPress={() => handleStart(week)}
                 className="mt-2 bg-emerald-600 px-5 py-3 rounded-md self-start shadow-sm"
