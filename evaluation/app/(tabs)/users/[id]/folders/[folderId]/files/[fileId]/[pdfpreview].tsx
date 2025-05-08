@@ -1,109 +1,62 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
 import { router, useLocalSearchParams } from "expo-router";
 import { WebView } from "react-native-webview";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
+import axios from "axios";
+import useEmployeeContext from "@/app/context/EmployeeContext";
 
 const PDFPreview = () => {
-  const { fileId, filename } = useLocalSearchParams();
+  const { employee } = useEmployeeContext();
+  const { fileId, folderId } = useLocalSearchParams();
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const employeeId = employee?._id;
+
   useEffect(() => {
-    (async () => {
-      const baseUrl = await getServerIP();
-      const fullUrl = `${baseUrl}/uploads/${filename}`;
-      setFileUrl(fullUrl);
-    })();
-  }, [filename]);
+    const fetchFilledPDF = async () => {
+      try {
+        const token = await AsyncStorage.getItem("token");
+        const baseUrl = await getServerIP();
 
-  const getHtmlContent = (url: string) => `
-  <!DOCTYPE html>
-  <html>
-    <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    background: #fff;
-  }
-  #pdf-container {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-  }
-  canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 0;
-  }
-  .overlay-text {
-    position: absolute;
-    font-size: 12px;
-    background: rgba(255, 255, 255, 0.7);
-    padding: 2px 4px;
-    border-radius: 3px;
-    z-index: 10; /* <-- critical to make visible */
-  }
-  #teamMemberName {
-    top: 75px;
-    left: 160px;
-  }
-  #position {
-    top: 105px;
-    left: 160px;
-  }
-  #employeeId {
-    top: 135px;
-    left: 160px;
-  }
-</style>
-    </head>
-    <body>
-      <div id="pdf-container">
-        <canvas id="the-canvas"></canvas>
-        <div id="teamMemberName" class="overlay-text">Javier Rosado</div>
-        <div id="position" class="overlay-text">Butcher</div>
-        <div id="employeeId" class="overlay-text">A123456</div>
-        <!-- Add more overlays as needed -->
-      </div>
+        const response = await axios.post(
+          `${baseUrl}/generated-evaluation`,
+          { fileId, employeeId, folderId },
+          {
+            headers: {
+              Authorization: token || "",
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-      <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js";
-        const loadingTask = pdfjsLib.getDocument("${url}");
-        loadingTask.promise.then(pdf => {
-          return pdf.getPage(1);
-        }).then(page => {
-          const scale = 1.4;
-          const viewport = page.getViewport({ scale });
-          const canvas = document.getElementById('the-canvas');
-          const context = canvas.getContext('2d');
+        if (response.data?.fileUrl) {
+          setFileUrl(`${baseUrl}${response.data.fileUrl}`);
+        } else {
+          throw new Error("Missing fileUrl in response");
+        }
+      } catch (err: any) {
+        console.error("PDF preview error:", err.message);
+        Alert.alert("Error", "Could not load filled PDF.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-          canvas.width = viewport.width;
-          canvas.height = viewport.height;
-
-          page.render({
-            canvasContext: context,
-            viewport: viewport
-          });
-        }).catch(error => {
-          const err = document.createElement("pre");
-          err.style.color = "red";
-          err.style.fontSize = "12px";
-          err.innerText = "Failed to load PDF:\\n" + error.message;
-          document.body.appendChild(err);
-          console.error("PDF.js error", error);
-        });
-      </script>
-    </body>
-  </html>
-`;
+    if (employeeId && fileId && folderId) {
+      fetchFilledPDF();
+    }
+  }, [fileId, employeeId, folderId]);
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -121,14 +74,14 @@ const PDFPreview = () => {
           allowFileAccess
           allowUniversalAccessFromFileURLs
           javaScriptEnabled
-          source={{ html: getHtmlContent(fileUrl) }}
+          source={{ uri: fileUrl }}
           onLoadEnd={() => setLoading(false)}
           style={{ flex: 1 }}
         />
       ) : (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#1a237e" />
-          <Text className="mt-2 text-sm text-gray-500">Loading PDF...</Text>
+          <Text className="mt-2 text-sm text-gray-500">Generating PDF...</Text>
         </View>
       )}
     </SafeAreaView>

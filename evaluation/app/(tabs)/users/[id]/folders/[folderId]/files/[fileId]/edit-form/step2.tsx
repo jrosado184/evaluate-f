@@ -1,3 +1,4 @@
+// Step2Form.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -33,7 +34,16 @@ const Step2Form = () => {
     hoursWednesday: "",
     hoursThursday: "",
     hoursFriday: "",
-    hoursOffJob: "",
+    hoursOffJobMonday: "",
+    hoursOffJobTuesday: "",
+    hoursOffJobWednesday: "",
+    hoursOffJobThursday: "",
+    hoursOffJobFriday: "",
+    hoursWithTraineeMonday: "",
+    hoursWithTraineeTuesday: "",
+    hoursWithTraineeWednesday: "",
+    hoursWithTraineeThursday: "",
+    hoursWithTraineeFriday: "",
     percentQualified: "",
     expectedQualified: "",
     reTimeAchieved: "",
@@ -53,18 +63,30 @@ const Step2Form = () => {
   const [traineeName, setTraineeName] = useState("Trainee");
 
   const projectedTrainingHours = 40;
-  const totalHoursOnJob =
-    (Number(formData.hoursMonday) || 0) +
-    (Number(formData.hoursTuesday) || 0) +
-    (Number(formData.hoursWednesday) || 0) +
-    (Number(formData.hoursThursday) || 0) +
-    (Number(formData.hoursFriday) || 0);
-
-  const totalHours = totalHoursOnJob + (Number(formData.hoursOffJob) || 0);
-
-  const expectedQualified = projectedTrainingHours
-    ? ((totalHoursOnJob / projectedTrainingHours) * 100).toFixed(1)
-    : "0";
+  const totalHoursOnJob = [
+    "hoursMonday",
+    "hoursTuesday",
+    "hoursWednesday",
+    "hoursThursday",
+    "hoursFriday",
+  ].reduce((sum, key) => sum + (Number(formData[key]) || 0), 0);
+  const totalHoursOffJob = [
+    "hoursOffJobMonday",
+    "hoursOffJobTuesday",
+    "hoursOffJobWednesday",
+    "hoursOffJobThursday",
+    "hoursOffJobFriday",
+  ].reduce((sum, key) => sum + (Number(formData[key]) || 0), 0);
+  const totalHoursWithTrainee = [
+    "hoursWithTraineeMonday",
+    "hoursWithTraineeTuesday",
+    "hoursWithTraineeWednesday",
+    "hoursWithTraineeThursday",
+    "hoursWithTraineeFriday",
+  ].reduce((sum, key) => sum + (Number(formData[key]) || 0), 0);
+  const totalHours = totalHoursOnJob + totalHoursOffJob;
+  const expectedQualified =
+    ((totalHoursOnJob / projectedTrainingHours) * 100).toFixed(1) || "0";
 
   useEffect(() => {
     setFormData((prev: any) => ({
@@ -87,7 +109,6 @@ const Step2Form = () => {
         const res = await axios.get(`${baseUrl}/employees/${id}`, {
           headers: { Authorization: token },
         });
-
         const employee = res.data;
         const folder = employee.folders.find((f: any) => f._id === folderId);
         const file = folder.files.find((f: any) => f._id === fileId);
@@ -95,13 +116,8 @@ const Step2Form = () => {
           (e: any) => e.weekNumber === currentWeek
         );
 
-        if (employee?.employee_name) {
-          setTraineeName(employee.employee_name);
-        }
-
-        if (weekData) {
-          setFormData(weekData);
-        }
+        if (employee?.employee_name) setTraineeName(employee.employee_name);
+        if (weekData) setFormData(weekData);
       } catch {
         Alert.alert("Error", "Failed to load evaluation data.");
       } finally {
@@ -116,9 +132,7 @@ const Step2Form = () => {
     let updated = value;
 
     if (
-      key === "reTimeAchieved" ||
-      key === "yieldAuditDate" ||
-      key === "knifeSkillsAuditDate"
+      ["reTimeAchieved", "yieldAuditDate", "knifeSkillsAuditDate"].includes(key)
     ) {
       updated = value
         .replace(/[^\d]/g, "")
@@ -137,7 +151,6 @@ const Step2Form = () => {
     }
 
     setFormData((prev: any) => ({ ...prev, [key]: updated }));
-
     if (errors[key]) {
       setErrors((prev) => {
         const copy = { ...prev };
@@ -146,6 +159,34 @@ const Step2Form = () => {
       });
     }
   };
+
+  const renderFieldGroup = (title: string, keys: string[]) => (
+    <View className="mb-6">
+      <Text className="text-lg font-semibold text-gray-800 mb-3">{title}</Text>
+      {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map(
+        (day, index) => {
+          const key = keys[index];
+          return (
+            <View key={key} className="mb-4">
+              <Text className="text-base text-gray-700 mb-2">{day}</Text>
+              <TextInput
+                value={formData[key]}
+                onChangeText={(text) => handleChange(key, text)}
+                placeholder="0"
+                keyboardType="numeric"
+                className={`border ${
+                  errors[key] ? "border-red-500" : "border-gray-300"
+                } rounded-md px-4 py-3 text-gray-900`}
+              />
+              {errors[key] && (
+                <Text className="text-sm text-red-500 mt-1">{errors[key]}</Text>
+              )}
+            </View>
+          );
+        }
+      )}
+    </View>
+  );
 
   const toggleHandStretch = () => {
     setFormData((prev: any) => ({
@@ -156,16 +197,14 @@ const Step2Form = () => {
 
   const handleSignature = (base64: string) => {
     if (signatureType) {
-      setFormData((prev: any) => ({
-        ...prev,
-        [signatureType]: base64,
-      }));
+      setFormData((prev: any) => ({ ...prev, [signatureType]: base64 }));
     }
     setSignatureType(null);
   };
 
   const handleSubmit = async () => {
     const { newErrors } = useEvaluationsValidation(formData);
+    console.log(newErrors);
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
@@ -180,6 +219,8 @@ const Step2Form = () => {
               ...formData,
               totalHours,
               totalHoursOnJob,
+              totalHoursOffJob,
+              totalHoursWithTrainee,
               weekNumber: currentWeek,
             },
           },
@@ -218,7 +259,7 @@ const Step2Form = () => {
         <ScrollView
           keyboardShouldPersistTaps="handled"
           className="px-5 pt-5"
-          contentContainerStyle={{ paddingBottom: 120 }}
+          contentContainerStyle={{ paddingBottom: 140 }}
         >
           <View className="flex-row items-center mb-6">
             <TouchableOpacity
@@ -240,58 +281,74 @@ const Step2Form = () => {
             </Text>
           </View>
 
-          {/* Input Fields */}
+          {renderFieldGroup("Hours On Job", [
+            "hoursMonday",
+            "hoursTuesday",
+            "hoursWednesday",
+            "hoursThursday",
+            "hoursFriday",
+          ])}
+
+          {renderFieldGroup("Hours Off Job", [
+            "hoursOffJobMonday",
+            "hoursOffJobTuesday",
+            "hoursOffJobWednesday",
+            "hoursOffJobThursday",
+            "hoursOffJobFriday",
+          ])}
+
+          {renderFieldGroup("Hours With Trainee", [
+            "hoursWithTraineeMonday",
+            "hoursWithTraineeTuesday",
+            "hoursWithTraineeWednesday",
+            "hoursWithTraineeThursday",
+            "hoursWithTraineeFriday",
+          ])}
+
           {[
-            { label: "Hours on Job - Monday", key: "hoursMonday" },
-            { label: "Hours on Job - Tuesday", key: "hoursTuesday" },
-            { label: "Hours on Job - Wednesday", key: "hoursWednesday" },
-            { label: "Hours on Job - Thursday", key: "hoursThursday" },
-            { label: "Hours on Job - Friday", key: "hoursFriday" },
-            { label: "Hours Off Job", key: "hoursOffJob" },
             { label: "Percent Qualified (%)", key: "percentQualified" },
             { label: "RE Time Achieved", key: "reTimeAchieved" },
             { label: "Yield Audit Date", key: "yieldAuditDate" },
             { label: "Knife Audit Date", key: "knifeSkillsAuditDate" },
             { label: "Knife Score (%)", key: "knifeScore" },
             { label: "Comments", key: "comments", multiline: true },
-          ].map((field) => {
-            const isNumericField =
-              field.key.startsWith("hours") ||
-              field.key === "percentQualified" ||
-              field.key === "knifeScore" ||
-              field.key === "reTimeAchieved" ||
-              field.key === "yieldAuditDate" ||
-              field.key === "knifeSkillsAuditDate";
-
-            return (
-              <View key={field.key} className="mb-5">
-                <Text className="text-base font-medium text-gray-700 mb-2">
-                  {field.label}
+          ].map((field) => (
+            <View key={field.key} className="mb-5">
+              <Text className="text-base font-medium text-gray-700 mb-2">
+                {field.label}
+              </Text>
+              <TextInput
+                value={formData[field.key]}
+                onChangeText={(text) => handleChange(field.key, text)}
+                placeholder={field.label}
+                multiline={!!field.multiline}
+                keyboardType={
+                  [
+                    "knifeScore",
+                    "percentQualified",
+                    "reTimeAchieved",
+                    "yieldAuditDate",
+                    "knifeSkillsAuditDate",
+                  ].includes(field.key)
+                    ? "numeric"
+                    : "default"
+                }
+                numberOfLines={field.multiline ? 4 : 1}
+                className={`border ${
+                  errors[field.key] ? "border-red-500" : "border-gray-300"
+                } rounded-md px-4 py-3 text-gray-900`}
+                style={{
+                  textAlignVertical: field.multiline ? "top" : "center",
+                }}
+              />
+              {errors[field.key] && (
+                <Text className="text-sm text-red-500 mt-1">
+                  {errors[field.key]}
                 </Text>
-                <TextInput
-                  value={formData[field.key]}
-                  onChangeText={(text) => handleChange(field.key, text)}
-                  placeholder={field.label}
-                  multiline={!!field.multiline}
-                  keyboardType={isNumericField ? "numeric" : "default"}
-                  numberOfLines={field.multiline ? 4 : 1}
-                  className={`border ${
-                    errors[field.key] ? "border-red-500" : "border-gray-300"
-                  } rounded-md px-4 py-3 text-gray-900`}
-                  style={{
-                    textAlignVertical: field.multiline ? "top" : "center",
-                  }}
-                />
-                {errors[field.key] && (
-                  <Text className="text-sm text-red-500 mt-1">
-                    {errors[field.key]}
-                  </Text>
-                )}
-              </View>
-            );
-          })}
+              )}
+            </View>
+          ))}
 
-          {/* Hand Stretch */}
           <View className="mb-6">
             <Text className="text-base font-medium text-gray-700 mb-2">
               Hand Stretch Exercises Completed
@@ -308,20 +365,10 @@ const Step2Form = () => {
             </TouchableOpacity>
           </View>
 
-          {/* Signatures */}
           {[
-            {
-              key: "trainerSignature",
-              signer: currentUser?.name || "Trainer",
-            },
-            {
-              key: "teamMemberSignature",
-              signer: traineeName,
-            },
-            {
-              key: "supervisorSignature",
-              signer: "Supervisor (TBD)",
-            },
+            { key: "trainerSignature", signer: currentUser?.name || "Trainer" },
+            { key: "teamMemberSignature", signer: traineeName },
+            { key: "supervisorSignature", signer: "Supervisor (TBD)" },
           ].map((field) => (
             <View key={field.key} className="mb-6">
               <Text className="text-base font-medium text-gray-700 mb-2">
@@ -353,10 +400,15 @@ const Step2Form = () => {
             </View>
           ))}
 
-          {/* Totals */}
           <View className="mb-6">
             <Text className="text-lg font-medium text-gray-800">
               Total Hours on Job: {totalHoursOnJob}
+            </Text>
+            <Text className="text-lg font-medium text-gray-800">
+              Total Hours Off Job: {totalHoursOffJob}
+            </Text>
+            <Text className="text-lg font-medium text-gray-800">
+              Total Hours With Trainee: {totalHoursWithTrainee}
             </Text>
             <Text className="text-lg font-medium text-gray-800">
               Total Hours: {totalHours}

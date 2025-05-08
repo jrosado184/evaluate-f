@@ -41,6 +41,21 @@ const EvaluationTimeline = ({ fileData }: any) => {
     );
   };
 
+  const totalOnJob = fileData.evaluations?.reduce(
+    (sum: number, e: any) => sum + (Number(e.totalHoursOnJob) || 0),
+    0
+  );
+
+  const totalOffJob = fileData.evaluations?.reduce(
+    (sum: number, e: any) => sum + (Number(e.totalHoursOffJob) || 0),
+    0
+  );
+
+  const totalWithTrainee = fileData.evaluations?.reduce(
+    (sum: number, e: any) => sum + (Number(e.totalHoursWithTrainee) || 0),
+    0
+  );
+
   return (
     <View className="mt-2">
       {Array.from({
@@ -60,26 +75,50 @@ const EvaluationTimeline = ({ fileData }: any) => {
             key={week}
             className="mb-5 p-4 bg-gray-50 rounded-xl border border-gray-200"
           >
-            <Text className="text-lg font-semibold mb-2">Week {week}</Text>
+            <Text className="text-lg font-semibold mb-3">Week {week}</Text>
 
             {isComplete ? (
               <>
-                <Text className="text-sm text-gray-700">
-                  Total Hours on Job:{" "}
-                  <Text className="font-semibold text-gray-900">
-                    {evaluation.totalHoursOnJob ?? "0"}
-                  </Text>
-                </Text>
+                <View className="flex-row flex-wrap gap-y-1">
+                  <View className="w-1/2 pr-2">
+                    <Text className="text-sm text-gray-700">
+                      Total Hours on Job:{" "}
+                      <Text className="font-semibold text-gray-900">
+                        {evaluation.totalHoursOnJob ?? "0"}
+                      </Text>
+                    </Text>
+                  </View>
 
-                <Text className="text-sm text-gray-700 mt-1">
-                  Percent Qualified:{" "}
-                  <Text className="font-semibold text-gray-900">
-                    {evaluation.percentQualified ?? "-"}%
-                  </Text>
-                </Text>
+                  <View className="w-1/2 pr-2">
+                    <Text className="text-sm text-gray-700">
+                      Total Hours Off Job:{" "}
+                      <Text className="font-semibold text-gray-900">
+                        {evaluation.totalHoursOffJob ?? "0"}
+                      </Text>
+                    </Text>
+                  </View>
+
+                  <View className="w-1/2 pr-2">
+                    <Text className="text-sm text-gray-700">
+                      Total Hours With Trainee:{" "}
+                      <Text className="font-semibold text-gray-900">
+                        {evaluation.totalHoursWithTrainee ?? "0"}
+                      </Text>
+                    </Text>
+                  </View>
+
+                  <View className="w-1/2 pr-2">
+                    <Text className="text-sm text-gray-700">
+                      Percent Qualified:{" "}
+                      <Text className="font-semibold text-gray-900">
+                        {evaluation.percentQualified ?? "-"}%
+                      </Text>
+                    </Text>
+                  </View>
+                </View>
 
                 {evaluation.comments && (
-                  <Text className="text-sm text-gray-500 mt-1">
+                  <Text className="text-sm text-gray-500 mt-2">
                     Comments:{" "}
                     <Text className="font-medium text-gray-700">
                       {evaluation.comments}
@@ -121,7 +160,6 @@ const EvaluationTimeline = ({ fileData }: any) => {
                   )}
                 </View>
 
-                {/* Edit Button */}
                 {!nextWeekComplete && !isComplete && (
                   <TouchableOpacity
                     onPress={() => handleEdit(week)}
@@ -151,7 +189,50 @@ const EvaluationTimeline = ({ fileData }: any) => {
         );
       })}
 
-      {/* Signature Fullscreen Preview */}
+      {/* Final Totals Section */}
+      {fileData?.evaluation?.length > 0 && (
+        <View className="mt-6 p-4 bg-white border border-gray-300 rounded-xl">
+          <Text className="text-lg font-semibold text-gray-900 mb-3">
+            Final Totals
+          </Text>
+          <View className="flex-row flex-wrap gap-y-1">
+            <View className="w-1/2 pr-2">
+              <Text className="text-sm text-gray-700">
+                Total Hours on Job:{" "}
+                <Text className="font-semibold text-gray-900">
+                  {totalOnJob}
+                </Text>
+              </Text>
+            </View>
+            <View className="w-1/2 pr-2">
+              <Text className="text-sm text-gray-700">
+                Total Hours Off Job:{" "}
+                <Text className="font-semibold text-gray-900">
+                  {totalOffJob}
+                </Text>
+              </Text>
+            </View>
+            <View className="w-1/2 pr-2">
+              <Text className="text-sm text-gray-700">
+                Total Hours With Trainee:{" "}
+                <Text className="font-semibold text-gray-900">
+                  {totalWithTrainee}
+                </Text>
+              </Text>
+            </View>
+            <View className="w-1/2 pr-2">
+              <Text className="text-sm text-gray-700">
+                Total{" "}
+                <Text className="font-semibold text-gray-900">
+                  {totalOnJob + totalOffJob}
+                </Text>
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
+
+      {/* Fullscreen Signature Preview */}
       <Modal visible={!!selectedImage} transparent animationType="fade">
         <Pressable
           className="flex-1 bg-black bg-opacity-90 justify-center items-center"

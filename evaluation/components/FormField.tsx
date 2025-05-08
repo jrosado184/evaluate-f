@@ -52,8 +52,8 @@ const FormField: React.FC<FormFieldProps> = ({
         {icon && <View className="mr-2">{icon}</View>}
         <TextInput
           className={`flex-1 text-gray-500 ${
-            editable && "text-gray-400"
-          } ${inputStyles}`}
+            editable && "text-gray-900"
+          } ${inputStyles} placeholder:text-gray-700`}
           value={value}
           onChangeText={handleChangeText}
           placeholder={placeholder}

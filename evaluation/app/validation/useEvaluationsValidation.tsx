@@ -2,12 +2,28 @@ const useEvaluationsValidation = (formData: any) => {
   const newErrors: Record<string, string> = {};
 
   const requiredFields = [
+    // On Job
     "hoursMonday",
     "hoursTuesday",
     "hoursWednesday",
     "hoursThursday",
     "hoursFriday",
-    "hoursOffJob",
+
+    // Off Job
+    "hoursOffJobMonday",
+    "hoursOffJobTuesday",
+    "hoursOffJobWednesday",
+    "hoursOffJobThursday",
+    "hoursOffJobFriday",
+
+    // With Trainee
+    "hoursWithTraineeMonday",
+    "hoursWithTraineeTuesday",
+    "hoursWithTraineeWednesday",
+    "hoursWithTraineeThursday",
+    "hoursWithTraineeFriday",
+
+    // Other fields
     "percentQualified",
     "reTimeAchieved",
     "yieldAuditDate",
@@ -31,7 +47,16 @@ const useEvaluationsValidation = (formData: any) => {
     "hoursWednesday",
     "hoursThursday",
     "hoursFriday",
-    "hoursOffJob",
+    "hoursOffJobMonday",
+    "hoursOffJobTuesday",
+    "hoursOffJobWednesday",
+    "hoursOffJobThursday",
+    "hoursOffJobFriday",
+    "hoursWithTraineeMonday",
+    "hoursWithTraineeTuesday",
+    "hoursWithTraineeWednesday",
+    "hoursWithTraineeThursday",
+    "hoursWithTraineeFriday",
     "percentQualified",
     "knifeScore",
   ];
