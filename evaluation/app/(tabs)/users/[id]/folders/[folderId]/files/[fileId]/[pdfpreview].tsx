@@ -16,6 +16,9 @@ import axios from "axios";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import { useTabBar } from "@/app/(tabs)/_layout";
 
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
+
 const PDFPreview = () => {
   const { employee } = useEmployeeContext();
   const { fileId, folderId } = useLocalSearchParams();
@@ -24,15 +27,11 @@ const PDFPreview = () => {
   const { setIsTabBarVisible } = useTabBar();
   const employeeId = employee?._id;
 
-  // hide the bottom tab bar on mount, restore on unmount
   useEffect(() => {
     setIsTabBarVisible(false);
-    return () => {
-      setIsTabBarVisible(true);
-    };
+    return () => setIsTabBarVisible(true);
   }, [setIsTabBarVisible]);
 
-  // fetch the generated PDF URL
   useEffect(() => {
     const fetchFilledPDF = async () => {
       try {
@@ -41,17 +40,10 @@ const PDFPreview = () => {
         const { data } = await axios.post(
           `${baseUrl}/generated-evaluation`,
           { fileId, employeeId, folderId },
-          {
-            headers: {
-              Authorization: token || "",
-              "Content-Type": "application/json",
-            },
-          }
+          { headers: { Authorization: token || "" } }
         );
-
         if (data?.fileUrl) {
-          // append hash params if you like, or leave off
-          setFileUrl(`${baseUrl}${data.fileUrl}`);
+          setFileUrl(baseUrl + data.fileUrl);
         } else {
           throw new Error("Missing fileUrl in response");
         }
@@ -63,14 +55,32 @@ const PDFPreview = () => {
       }
     };
 
-    if (employeeId && fileId && folderId) {
-      fetchFilledPDF();
-    }
+    if (employeeId && fileId && folderId) fetchFilledPDF();
   }, [employeeId, fileId, folderId]);
+
+  const handleDownload = async () => {
+    if (!fileUrl) return;
+    try {
+      const fileName = `evaluation_${fileId}.pdf`;
+      const localUri = FileSystem.cacheDirectory + fileName;
+      const { uri } = await FileSystem.downloadAsync(fileUrl, localUri);
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(uri, {
+          mimeType: "application/pdf",
+          dialogTitle: "Share your evaluation PDF",
+        });
+      } else {
+        Alert.alert("Can't share", "Sharing isn't available on this device.");
+      }
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Download failed", "Could not download or share the PDF.");
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
-      {/* Header */}
       <View
         style={{
           flexDirection: "row",
@@ -85,7 +95,9 @@ const PDFPreview = () => {
           <Icon name="chevron-left" size={28} />
         </TouchableOpacity>
         <Text style={{ fontSize: 18, fontWeight: "600" }}>PDF Preview</Text>
-        <View style={{ width: 28 }} />
+        <TouchableOpacity onPress={handleDownload}>
+          <Icon name="download" size={24} color="#1a237e" />
+        </TouchableOpacity>
       </View>
 
       {loading && (
