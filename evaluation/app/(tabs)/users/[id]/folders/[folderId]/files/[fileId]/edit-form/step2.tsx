@@ -26,8 +26,8 @@ const Step2Form = () => {
   const router = useRouter();
   const { id, fileId, folderId, week } = useLocalSearchParams();
   const { currentUser } = useAuthContext();
-
   const currentWeek = parseInt((week as string) || "1", 10);
+
   const [formData, setFormData] = useState<any>({
     hoursMonday: "",
     hoursTuesday: "",
@@ -51,17 +51,19 @@ const Step2Form = () => {
     knifeSkillsAuditDate: "",
     knifeScore: "",
     handStretchCompleted: false,
+    // ← NEW FIELD:
+    hasPain: false,
     comments: "",
     trainerSignature: "",
     teamMemberSignature: "",
     supervisorSignature: "",
   });
-
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [signatureType, setSignatureType] = useState<null | string>(null);
   const [traineeName, setTraineeName] = useState("Trainee");
 
+  // computed totals…
   const projectedTrainingHours = 40;
   const totalHoursOnJob = [
     "hoursMonday",
@@ -101,6 +103,7 @@ const Step2Form = () => {
     formData.hoursFriday,
   ]);
 
+  // fetch existing data…
   useEffect(() => {
     const fetchEvaluation = async () => {
       try {
@@ -130,7 +133,7 @@ const Step2Form = () => {
 
   const handleChange = (key: string, value: string) => {
     let updated = value;
-
+    // date masks…
     if (
       ["reTimeAchieved", "yieldAuditDate", "knifeSkillsAuditDate"].includes(key)
     ) {
@@ -141,7 +144,7 @@ const Step2Form = () => {
           [a, b, c].filter(Boolean).join("/")
         );
     }
-
+    // numeric only…
     if (
       key.startsWith("hours") ||
       key === "knifeScore" ||
@@ -194,6 +197,13 @@ const Step2Form = () => {
       handStretchCompleted: !prev.handStretchCompleted,
     }));
   };
+  // NEW: toggle pain
+  const togglePain = () => {
+    setFormData((prev: any) => ({
+      ...prev,
+      hasPain: !prev.hasPain,
+    }));
+  };
 
   const handleSignature = (base64: string) => {
     if (signatureType) {
@@ -204,12 +214,12 @@ const Step2Form = () => {
 
   const handleSubmit = async () => {
     const { newErrors } = useEvaluationsValidation(formData);
-    console.log(newErrors);
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
     try {
       const baseUrl = await getServerIP();
+      // add evaluation
       await axios.patch(
         `${baseUrl}/employees/${id}/folders/${folderId}/files/${fileId}`,
         {
@@ -226,7 +236,7 @@ const Step2Form = () => {
           },
         }
       );
-
+      // update status…
       await axios.patch(
         `${baseUrl}/employees/${id}/folders/${folderId}/files/${fileId}`,
         {
@@ -234,7 +244,6 @@ const Step2Form = () => {
           data: { status: "in_progress" },
         }
       );
-
       router.replace(`/users/${id}/folders/${folderId}/files/${fileId}`);
     } catch {
       Alert.alert("Error", "Failed to save evaluation.");
@@ -288,7 +297,6 @@ const Step2Form = () => {
             "hoursThursday",
             "hoursFriday",
           ])}
-
           {renderFieldGroup("Hours Off Job", [
             "hoursOffJobMonday",
             "hoursOffJobTuesday",
@@ -296,7 +304,6 @@ const Step2Form = () => {
             "hoursOffJobThursday",
             "hoursOffJobFriday",
           ])}
-
           {renderFieldGroup("Hours With Trainee", [
             "hoursWithTraineeMonday",
             "hoursWithTraineeTuesday",
@@ -305,9 +312,10 @@ const Step2Form = () => {
             "hoursWithTraineeFriday",
           ])}
 
+          {/* Percent, RE, Yield, Knife, Comments */}
           {[
             { label: "Percent Qualified (%)", key: "percentQualified" },
-            { label: "RE Time Achieved", key: "reTimeAchieved" },
+            { label: "RE Time Achieved (secs)", key: "reTimeAchieved" },
             { label: "Yield Audit Date", key: "yieldAuditDate" },
             { label: "Knife Audit Date", key: "knifeSkillsAuditDate" },
             { label: "Knife Score (%)", key: "knifeScore" },
@@ -349,6 +357,24 @@ const Step2Form = () => {
             </View>
           ))}
 
+          {/* NEW: Pain / Numbness */}
+          <View className="mb-6">
+            <Text className="text-base font-medium text-gray-700 mb-2">
+              Having pain/numbness/tingling or other issues?
+            </Text>
+            <TouchableOpacity
+              onPress={togglePain}
+              className={`py-3 rounded-md items-center ${
+                formData.hasPain ? "bg-red-600" : "bg-gray-300"
+              }`}
+            >
+              <Text className="text-white text-lg font-semibold">
+                {formData.hasPain ? "Yes" : "No"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Hand stretch toggle */}
           <View className="mb-6">
             <Text className="text-base font-medium text-gray-700 mb-2">
               Hand Stretch Exercises Completed
@@ -365,10 +391,11 @@ const Step2Form = () => {
             </TouchableOpacity>
           </View>
 
+          {/* Signatures… */}
           {[
             { key: "trainerSignature", signer: currentUser?.name || "Trainer" },
             { key: "teamMemberSignature", signer: traineeName },
-            { key: "supervisorSignature", signer: "Supervisor (TBD)" },
+            { key: "supervisorSignature", signer: "Supervisor" },
           ].map((field) => (
             <View key={field.key} className="mb-6">
               <Text className="text-base font-medium text-gray-700 mb-2">
@@ -400,6 +427,7 @@ const Step2Form = () => {
             </View>
           ))}
 
+          {/* Totals */}
           <View className="mb-6">
             <Text className="text-lg font-medium text-gray-800">
               Total Hours on Job: {totalHoursOnJob}

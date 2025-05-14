@@ -64,35 +64,70 @@ const PersonalInfoForm = ({ onNext }: { onNext: () => void }) => {
   const handleChange = (key: string, value: string) => {
     let formattedValue = value;
 
+    // 1) DATE FIELDS → MM/DD/YYYY
     if (
       key === "hireDate" ||
       key === "jobStartDate" ||
       key === "projectedQualifyingDate"
     ) {
-      formattedValue = formattedValue.replace(/[^\d]/g, "");
-      if (formattedValue.length > 2 && formattedValue.length <= 4) {
+      // strip non-digits
+      formattedValue = formattedValue.replace(/\D/g, "");
+
+      if (formattedValue.length <= 2) {
+        // just month
+        // e.g. "0", "12"
+      } else if (formattedValue.length <= 4) {
+        // month/day
         formattedValue = `${formattedValue.slice(0, 2)}/${formattedValue.slice(
           2
         )}`;
-      } else if (formattedValue.length > 4) {
-        formattedValue = `${formattedValue.slice(0, 2)}/${formattedValue.slice(
-          2,
-          4
-        )}/${formattedValue.slice(4, 8)}`;
+      } else {
+        // month/day/year
+        formattedValue =
+          `${formattedValue.slice(0, 2)}/` +
+          `${formattedValue.slice(2, 4)}/` +
+          `${formattedValue.slice(4, 8)}`;
       }
     }
 
+    // 2) PHONE → (123)-456-7890, blank if empty
+    if (key === "phoneNumber") {
+      // keep digits only, max 10
+      const digits = formattedValue.replace(/\D/g, "").slice(0, 10);
+
+      if (digits.length === 0) {
+        formattedValue = "";
+      } else if (digits.length <= 3) {
+        // (XXX
+        formattedValue = `(${digits}`;
+      } else if (digits.length <= 6) {
+        // (XXX)-YYY
+        formattedValue = `(${digits.slice(0, 3)})-${digits.slice(3)}`;
+      } else {
+        // (XXX)-YYY-ZZZZ
+        formattedValue =
+          `(${digits.slice(0, 3)})-` +
+          `${digits.slice(3, 6)}-` +
+          `${digits.slice(6)}`;
+      }
+    }
+
+    // 3) PURE NUMBERS
     if (
       key === "projectedTrainingHours" ||
       key === "employeeId" ||
       key === "lockerNumber"
     ) {
-      formattedValue = formattedValue.replace(/[^\d]/g, "");
+      formattedValue = formattedValue.replace(/\D/g, "");
     }
 
-    setFormData((prev) => ({ ...prev, [key]: formattedValue }));
+    // finally, update state
+    setFormData((prev) => ({
+      ...prev,
+      [key]: formattedValue,
+    }));
 
-    // Clear error when fixed
+    // clear any validation error on this field
     if (errors[key]) {
       setErrors((prev) => {
         const copy = { ...prev };
@@ -267,7 +302,8 @@ const PersonalInfoForm = ({ onNext }: { onNext: () => void }) => {
                   key.includes("Date") ||
                   key === "projectedTrainingHours" ||
                   key === "employeeId" ||
-                  key === "lockerNumber"
+                  key === "lockerNumber" ||
+                  key === "phoneNumber"
                     ? "numeric"
                     : "default"
                 }

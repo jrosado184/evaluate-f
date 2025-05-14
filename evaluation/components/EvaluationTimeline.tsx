@@ -1,3 +1,4 @@
+// EvaluationTimeline.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -6,7 +7,6 @@ import {
   Image,
   Modal,
   Pressable,
-  ScrollView,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 
@@ -45,12 +45,10 @@ const EvaluationTimeline = ({ fileData }: any) => {
     (sum: number, e: any) => sum + (Number(e.totalHoursOnJob) || 0),
     0
   );
-
   const totalOffJob = fileData.evaluations?.reduce(
     (sum: number, e: any) => sum + (Number(e.totalHoursOffJob) || 0),
     0
   );
-
   const totalWithTrainee = fileData.evaluations?.reduce(
     (sum: number, e: any) => sum + (Number(e.totalHoursWithTrainee) || 0),
     0
@@ -80,6 +78,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
             {isComplete ? (
               <>
                 <View className="flex-row flex-wrap gap-y-1">
+                  {/* Time & Qualification */}
                   <View className="w-1/2 pr-2">
                     <Text className="text-sm text-gray-700">
                       Total Hours on Job:{" "}
@@ -88,7 +87,6 @@ const EvaluationTimeline = ({ fileData }: any) => {
                       </Text>
                     </Text>
                   </View>
-
                   <View className="w-1/2 pr-2">
                     <Text className="text-sm text-gray-700">
                       Total Hours Off Job:{" "}
@@ -97,7 +95,6 @@ const EvaluationTimeline = ({ fileData }: any) => {
                       </Text>
                     </Text>
                   </View>
-
                   <View className="w-1/2 pr-2">
                     <Text className="text-sm text-gray-700">
                       Total Hours With Trainee:{" "}
@@ -106,12 +103,63 @@ const EvaluationTimeline = ({ fileData }: any) => {
                       </Text>
                     </Text>
                   </View>
-
                   <View className="w-1/2 pr-2">
                     <Text className="text-sm text-gray-700">
                       Percent Qualified:{" "}
                       <Text className="font-semibold text-gray-900">
                         {evaluation.percentQualified ?? "-"}%
+                      </Text>
+                    </Text>
+                  </View>
+
+                  {/* Audits */}
+                  <View className="w-1/2 pr-2 mt-1">
+                    <Text className="text-sm text-gray-700">
+                      Yield Audit:{" "}
+                      <Text className="font-semibold text-gray-900">
+                        {evaluation.yieldAuditDate || "-"}
+                      </Text>
+                    </Text>
+                  </View>
+                  <View className="w-1/2 pr-2 mt-1">
+                    <Text className="text-sm text-gray-700">
+                      Knife Skills Audit:{" "}
+                      <Text className="font-semibold text-gray-900">
+                        {evaluation.knifeSkillsAuditDate || "-"}
+                      </Text>
+                    </Text>
+                  </View>
+                  <View className="w-1/2 pr-2 mt-1">
+                    <Text className="text-sm text-gray-700">
+                      Knife Score:{" "}
+                      <Text className="font-semibold text-gray-900">
+                        {evaluation.knifeScore ?? "-"}
+                      </Text>
+                    </Text>
+                  </View>
+
+                  {/* Physical Wellness */}
+                  <View className="w-1/2 pr-2 mt-1">
+                    <Text className="text-sm text-gray-700">
+                      Pain/Numbness:{" "}
+                      <Text className="font-semibold text-gray-900">
+                        {evaluation.hasPain ? "Yes" : "No"}
+                      </Text>
+                    </Text>
+                  </View>
+                  <View className="w-1/2 pr-2 mt-1">
+                    <Text className="text-sm text-gray-700">
+                      Hand Stretch Completed:{" "}
+                      <Text className="font-semibold text-gray-900">
+                        {evaluation.handStretchCompleted ? "Yes" : "No"}
+                      </Text>
+                    </Text>
+                  </View>
+                  <View className="w-1/2 pr-2 mt-1">
+                    <Text className="text-sm text-gray-700">
+                      RE Time Achieved:{" "}
+                      <Text className="font-semibold text-gray-900">
+                        {evaluation.reTimeAchieved ?? "-"} secs
                       </Text>
                     </Text>
                   </View>
@@ -189,11 +237,11 @@ const EvaluationTimeline = ({ fileData }: any) => {
         );
       })}
 
-      {/* Final Totals Section */}
-      {fileData?.evaluation?.length > 0 && (
+      {/* Final Totals + Final Signatures */}
+      {fileData?.evaluations?.length > 0 && (
         <View className="mt-6 p-4 bg-white border border-gray-300 rounded-xl">
           <Text className="text-lg font-semibold text-gray-900 mb-3">
-            Final Totals
+            Totals
           </Text>
           <View className="flex-row flex-wrap gap-y-1">
             <View className="w-1/2 pr-2">
@@ -222,17 +270,56 @@ const EvaluationTimeline = ({ fileData }: any) => {
             </View>
             <View className="w-1/2 pr-2">
               <Text className="text-sm text-gray-700">
-                Total{" "}
+                Total:{" "}
                 <Text className="font-semibold text-gray-900">
                   {totalOnJob + totalOffJob}
                 </Text>
               </Text>
             </View>
           </View>
+
+          {/* Final Signature Preview */}
+          {fileData.finalSignatures && (
+            <>
+              <Text className="text-md font-semibold text-gray-900 mt-6 mb-2">
+                Final Signatures
+              </Text>
+              <View className="flex-row flex-wrap justify-start gap-4">
+                {[
+                  { label: "Team Member", key: "teamMember" },
+                  { label: "Trainer", key: "trainer" },
+                  { label: "Supervisor", key: "supervisor" },
+                  { label: "Training Supervisor", key: "trainingSupervisor" },
+                ].map(
+                  ({ label, key }) =>
+                    fileData.finalSignatures[key] && (
+                      <Pressable
+                        key={key}
+                        onPress={() =>
+                          setSelectedImage(fileData.finalSignatures[key])
+                        }
+                        className="items-center"
+                      >
+                        <View className="w-32 h-16 bg-neutral-50 border border-neutral-400 rounded-md overflow-hidden">
+                          <Image
+                            source={{ uri: fileData.finalSignatures[key] }}
+                            className="w-full h-full"
+                            resizeMode="contain"
+                          />
+                        </View>
+                        <Text className="text-xs text-gray-400 mt-1">
+                          {label}
+                        </Text>
+                      </Pressable>
+                    )
+                )}
+              </View>
+            </>
+          )}
         </View>
       )}
 
-      {/* Fullscreen Signature Preview */}
+      {/* Fullscreen Signature Modal */}
       <Modal visible={!!selectedImage} transparent animationType="fade">
         <Pressable
           className="flex-1 bg-black bg-opacity-90 justify-center items-center"

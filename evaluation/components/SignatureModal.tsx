@@ -36,6 +36,11 @@ const SignatureModal = ({ visible, onOK, onCancel }: Props) => {
           onOK={onOK}
           onEmpty={onCancel}
           autoClear={false}
+          penColor="#000000" // use solid black ink
+          backgroundColor="rgba(0,0,0,0)" // transparent background
+          minWidth={2} // minimum stroke width
+          maxWidth={4} // maximum stroke width
+          dotSize={1} // size of the dot when you tap
           webStyle={webStyle}
           descriptionText="Sign above"
         />
