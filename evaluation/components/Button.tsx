@@ -25,7 +25,7 @@ const Button: React.FC<ButtonTypes> = ({
         onPress={handlePress}
         disabled={isLoading}
         activeOpacity={0.8}
-        className={`bg-[#323FC1] h-16 rounded-[0.625rem] items-center justify-center ${inputStyles}`}
+        className={`bg-[#1a237e] h-16 rounded-[0.625rem] items-center justify-center ${inputStyles}`}
       >
         <Text className="font-inter-medium text-white text-[1rem]">
           {isLoading ? <SpinningCircle color="white" /> : title}

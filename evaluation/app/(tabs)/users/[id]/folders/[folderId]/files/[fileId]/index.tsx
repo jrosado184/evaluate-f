@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,18 +7,20 @@ import {
   FlatList,
   Alert,
 } from "react-native";
-import { useLocalSearchParams, router } from "expo-router";
+import { useLocalSearchParams, useFocusEffect, router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import axios from "axios";
 import Icon from "react-native-vector-icons/Feather";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import EvaluationTimeline from "@/components/EvaluationTimeline";
+import EvaluationButton from "@/components/buttons/EvaluationButton";
 
 const FileDetailsScreen = () => {
-  const { id: userId, fileId } = useLocalSearchParams();
+  const { id: userId, fileId, ...params } = useLocalSearchParams();
   const [fileData, setFileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchFileData = async () => {
     try {
@@ -42,7 +44,23 @@ const FileDetailsScreen = () => {
         return;
       }
 
-      setFileData(foundFile);
+      // Merge updated fields from router params into personalInfo
+      const updatedFields = [
+        "trainingType",
+        "phoneNumber",
+        "jobStartDate",
+        "projectedTrainingHours",
+        "projectedQualifyingDate",
+      ];
+
+      const updatedPersonalInfo = { ...foundFile.personalInfo };
+      updatedFields.forEach((key) => {
+        if (params[key]) {
+          updatedPersonalInfo[key] = params[key];
+        }
+      });
+
+      setFileData({ ...foundFile, personalInfo: updatedPersonalInfo });
     } catch (err: any) {
       console.error("Failed to fetch file:", err.message);
       Alert.alert("Error", "Could not load file information.");
@@ -51,32 +69,49 @@ const FileDetailsScreen = () => {
     }
   };
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchFileData();
+    }, [])
+  );
+
   const pdfpreview = fileData?.fileUrl?.split("/")[2];
+  const evaluationsCompletedCount = fileData?.evaluations?.length || 0;
+  const canQualify = evaluationsCompletedCount >= 3;
 
-  useEffect(() => {
-    fetchFileData();
-  }, []);
+  const handleContinue = async () => {
+    if (isSubmitting || !fileData) return;
 
-  const handleContinue = () => {
-    if (!fileData) return;
     const folderId = fileData.folderId;
     if (!folderId) {
       Alert.alert("Error", "Missing folderId for this file.");
       return;
     }
 
-    if (fileData.status === "in_progress" && canQualify) {
-      router.push(
-        `/users/${userId}/folders/${folderId}/files/${fileId}/qualify`
-      );
-    } else if (fileData.status === "in_progress") {
-      router.push(
-        `/users/${userId}/folders/${folderId}/files/${fileId}/edit-form?step=2`
-      );
-    } else if (fileData.status === "incomplete") {
-      router.push(
-        `/users/${userId}/folders/${folderId}/files/${fileId}/edit-form?step=1`
-      );
+    try {
+      setIsSubmitting(true);
+
+      if (fileData.status === "in_progress" && canQualify) {
+        router.push(
+          `/users/${userId}/folders/${folderId}/files/${fileId}/qualify`
+        );
+      } else if (fileData.status === "in_progress") {
+        router.push(
+          `/users/${userId}/folders/${folderId}/files/${fileId}/edit-form?step=2`
+        );
+      } else if (fileData.status === "incomplete") {
+        router.push({
+          pathname: `/users/${userId}/folders/${folderId}/files/${fileId}/edit-form`,
+          params: {
+            step: 1,
+            status: fileData.status,
+          },
+        });
+      }
+    } catch (err) {
+      Alert.alert("Error", "Navigation failed.");
+    } finally {
+      setTimeout(() => setIsSubmitting(false), 1000);
     }
   };
 
@@ -87,9 +122,6 @@ const FileDetailsScreen = () => {
       router.back();
     }
   };
-
-  const evaluationsCompletedCount = fileData?.evaluations?.length || 0;
-  const canQualify = evaluationsCompletedCount >= 3;
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -121,9 +153,28 @@ const FileDetailsScreen = () => {
               {/* Personal Info */}
               {fileData.personalInfo && (
                 <View className="mb-8">
-                  <Text className="text-xl font-bold text-gray-900 mb-4">
-                    Personal Information
-                  </Text>
+                  <View className="flex-row justify-between items-center mb-4">
+                    <Text className="text-xl font-bold text-gray-900">
+                      Personal Information
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() =>
+                        router.push({
+                          pathname: `/users/${userId}/folders/${fileData.folderId}/files/${fileId}/edit-form`,
+                          params: {
+                            step: 1,
+                            from: "details",
+                            status: fileData.status,
+                          },
+                        })
+                      }
+                      className="px-3 py-1 border border-gray-300 rounded-md"
+                    >
+                      <Text className="text-sm text-[#1a237e] font-medium">
+                        Edit
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                   {Object.entries(fileData.personalInfo).map(
                     ([key, value]: any) => (
                       <View key={key} className="mb-3">
@@ -190,28 +241,12 @@ const FileDetailsScreen = () => {
               {/* Start / Qualify Button */}
               {fileData.status !== "complete" ? (
                 fileData.evaluations?.length > 0 && (
-                  <TouchableOpacity
-                    onPress={canQualify ? handleContinue : undefined}
-                    activeOpacity={canQualify ? 0.85 : 1}
-                    className={`py-4 rounded-lg items-center justify-center ${
-                      fileData.status === "incomplete"
-                        ? "bg-[#1a237e]"
-                        : canQualify
-                        ? "bg-[#059669]"
-                        : "bg-gray-300"
-                    }`}
-                  >
-                    <Text className="text-white text-lg font-inter-semibold">
-                      {fileData.status === "incomplete"
-                        ? "Start Evaluation"
-                        : "Qualify"}
-                    </Text>
-                    {!canQualify && fileData.status !== "incomplete" && (
-                      <Text className="text-xs mt-1 text-white opacity-70">
-                        At least 3 weeks required
-                      </Text>
-                    )}
-                  </TouchableOpacity>
+                  <EvaluationButton
+                    status={fileData.status}
+                    canQualify={canQualify}
+                    onPress={handleContinue}
+                    isLoading={isSubmitting}
+                  />
                 )
               ) : (
                 <View className="w-full items-center bg-white">

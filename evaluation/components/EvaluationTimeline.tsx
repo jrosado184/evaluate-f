@@ -284,7 +284,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
               <Text className="text-md font-semibold text-gray-900 mt-6 mb-2">
                 Final Signatures
               </Text>
-              <View className="flex-row flex-wrap justify-start gap-4">
+              <View className="flex-row flex-wrap gap-4 justify-center">
                 {[
                   { label: "Team Member", key: "teamMember" },
                   { label: "Trainer", key: "trainer" },
@@ -300,7 +300,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
                         }
                         className="items-center"
                       >
-                        <View className="w-32 h-16 bg-neutral-50 border border-neutral-400 rounded-md overflow-hidden">
+                        <View className="w-48 h-20 flex justify-center items-center bg-neutral-50 border border-neutral-400 rounded-md overflow-hidden">
                           <Image
                             source={{ uri: fileData.finalSignatures[key] }}
                             className="w-full h-full"
