@@ -78,7 +78,7 @@ const UserCard: React.FC<UserCardTypes> = ({
                 </View>
                 <View className="flex-row items-center">
                   <Text className="font-inter-regular">
-                    Locker:{" "}
+                    Locker:
                     <Text className="font-inter-semibold">{locker_number}</Text>
                   </Text>
                   <Text></Text>

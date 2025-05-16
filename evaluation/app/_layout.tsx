@@ -1,15 +1,15 @@
+import { Slot } from "expo-router";
 import React, { useEffect, useState } from "react";
-import "@/global.css";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
-import { SplashScreen, Stack } from "expo-router";
-import "../global.css";
-import * as Font from "expo-font";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Provider as PaperProvider } from "react-native-paper";
 import { EmployeeProvider } from "./context/EmployeeContext";
-import "react-native-gesture-handler";
-import "react-native-reanimated";
 import { AuthProvider } from "./context/AuthContext";
 import { JobsProvider } from "./context/JobsContext";
 import { ActionsProvider } from "./context/ActionsContext";
+import * as SplashScreen from "expo-splash-screen";
+import * as Font from "expo-font";
+import "@/global.css";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -27,7 +27,7 @@ export default function RootLayout() {
         "Inter-ExtraBold": require("../assets/fonts/Inter_18pt-ExtraBold.ttf"),
       });
       setFontsLoaded(true);
-      SplashScreen.hideAsync();
+      await SplashScreen.hideAsync();
     }
 
     loadFonts();
@@ -37,35 +37,20 @@ export default function RootLayout() {
     return null;
   }
   return (
-    <GluestackUIProvider mode="light">
-      <AuthProvider>
-        <EmployeeProvider>
-          <JobsProvider>
-            <ActionsProvider>
-              <Stack>
-                <Stack.Screen
-                  name="index"
-                  options={{
-                    headerShown: false,
-                  }}
-                />
-                <Stack.Screen
-                  name="(auth)"
-                  options={{
-                    headerShown: false,
-                  }}
-                />
-                <Stack.Screen
-                  name="(tabs)"
-                  options={{
-                    headerShown: false,
-                  }}
-                />
-              </Stack>
-            </ActionsProvider>
-          </JobsProvider>
-        </EmployeeProvider>
-      </AuthProvider>
-    </GluestackUIProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <GluestackUIProvider mode="light">
+        <AuthProvider>
+          <PaperProvider>
+            <EmployeeProvider>
+              <JobsProvider>
+                <ActionsProvider>
+                  <Slot />
+                </ActionsProvider>
+              </JobsProvider>
+            </EmployeeProvider>
+          </PaperProvider>
+        </AuthProvider>
+      </GluestackUIProvider>
+    </GestureHandlerRootView>
   );
 }

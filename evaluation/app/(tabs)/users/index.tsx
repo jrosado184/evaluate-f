@@ -49,7 +49,7 @@ const Users = () => {
   const { onScrollHandler } = useScrollHandler();
   const { successfullyAddedEmployee, setSuccessfullyAddedEmployee } =
     useEmployeeContext();
-  const { actionsMessage } = useActionContext();
+  const { actionsMessage, setActionsMessage } = useActionContext();
 
   const debouncedFetch = useCallback(
     debounce(async (searchTerm: string) => {
@@ -85,7 +85,7 @@ const Users = () => {
       const data = await getUsers(1, 4);
       if (data) {
         setEmployees(data.results);
-        setUserDetails((prev) => ({
+        setUserDetails((prev: any) => ({
           ...prev,
           currentPage: 1,
           totalPages: data.totalPages,
@@ -186,7 +186,10 @@ const Users = () => {
         <UserCardSkeleton amount={5} width="w-full" height="h-40" />
       )}
 
-      <SuccessModal message={actionsMessage} />
+      <SuccessModal
+        clearMessage={() => setActionsMessage("")}
+        message={actionsMessage}
+      />
 
       {employees && employees.length > 4 && (
         <LinearGradient

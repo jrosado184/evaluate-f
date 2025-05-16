@@ -17,8 +17,8 @@ import usePagination from "@/hooks/usePagination";
 import AssignCard from "./AssignCard";
 
 const SlideUpModal = ({ visible, onClose }: any) => {
-  const screenHeight = Dimensions.get("window").height; // Get screen height
-  const slideAnim = useRef(new Animated.Value(screenHeight)).current; // Start animation off-screen
+  const screenHeight = Dimensions.get("window").height;
+  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
 
   const {
     lockers,
@@ -27,42 +27,52 @@ const SlideUpModal = ({ visible, onClose }: any) => {
     loading,
     setLockerDetails,
     lockerDetails,
+    addEmployeeInfo,
   } = useEmployeeContext();
-  const { fetchAndSetLockers, getLockers } = useGetLockers();
-  const { limit, page, isSearching, getMoreData, fetchingMoreUsers } =
-    usePagination(
-      lockers,
-      getLockers,
-      setLockers,
-      setLockerDetails,
-      lockerDetails,
-      8
-    );
 
-  const { addEmployeeInfo } = useEmployeeContext();
+  const { getLockers } = useGetLockers();
 
+  // 🔧 Pass current location into pagination
+  const { getMoreData, resetPagination, fetchingMoreUsers } = usePagination(
+    lockers,
+    (page: number, limit: number) =>
+      getLockers(page, limit, addEmployeeInfo?.location),
+    setLockers,
+    setLockerDetails,
+    lockerDetails,
+    8
+  );
+
+  // 🟡 Reset when modal opens
   useEffect(() => {
     if (visible) {
-      // Slide up
       Animated.timing(slideAnim, {
-        toValue: 0, // Fully visible
-        duration: 300, // Animation duration
-        useNativeDriver: true, // Use native driver for better performance
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
       }).start();
+
+      setLoading(true);
+      setLockers([]); // Clear old results
+      resetPagination();
+      getMoreData().finally(() => setLoading(false));
     } else {
-      // Slide down
       Animated.timing(slideAnim, {
-        toValue: screenHeight, // Slide off-screen
+        toValue: screenHeight,
         duration: 300,
         useNativeDriver: true,
       }).start();
     }
   }, [visible]);
 
+  // 🟡 Optional: refresh if location changes while modal is open
   useEffect(() => {
-    setLoading(true);
-    !isSearching && fetchAndSetLockers(page, limit);
-  }, [getLockers]);
+    if (visible) {
+      setLockers([]);
+      resetPagination();
+      getMoreData();
+    }
+  }, [addEmployeeInfo?.location]);
 
   const renderItem = useCallback(
     ({ item }: any) => (
@@ -77,19 +87,10 @@ const SlideUpModal = ({ visible, onClose }: any) => {
     []
   );
 
-  const vacantLockers = lockers?.filter((locker: any) => {
-    if (locker.vacant && locker.location === addEmployeeInfo?.location) {
-      return locker;
-    }
-  });
-
   return (
     <Modal transparent visible={visible} animationType="slide">
       <View style={styles.overlay}>
-        {/* Background overlay */}
         <TouchableOpacity style={styles.overlay} onPress={onClose} />
-
-        {/* Slide-up content */}
         <Animated.View
           style={[
             styles.modalContent,
@@ -106,18 +107,19 @@ const SlideUpModal = ({ visible, onClose }: any) => {
               </View>
             </View>
           </View>
+
           <View className="flex-1 my-3">
             {!loading && (
               <FlatList
-                data={vacantLockers}
+                data={lockers}
                 keyExtractor={(item) => item._id.toString()}
                 renderItem={renderItem}
                 onEndReached={getMoreData}
                 onEndReachedThreshold={0.5}
                 ListFooterComponent={
-                  fetchingMoreUsers && (
+                  fetchingMoreUsers ? (
                     <ActivityIndicator size="small" color="#0000ff" />
-                  )
+                  ) : null
                 }
                 contentContainerStyle={{ paddingBottom: 8 }}
               />
@@ -128,8 +130,6 @@ const SlideUpModal = ({ visible, onClose }: any) => {
     </Modal>
   );
 };
-
-//*make this component reusable
 
 const styles = StyleSheet.create({
   overlay: {
@@ -148,10 +148,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
     height: "90%",
-  },
-  modalText: {
-    fontSize: 16,
-    marginBottom: 20,
   },
 });
 

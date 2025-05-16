@@ -11,18 +11,16 @@ const Fab = ({ icon, route }: any) => {
   const { isTabBarVisible } = useTabBar();
   const router = useRouter();
 
-  // Animated value for smooth bottom transition
   const bottomPosition = useRef(
     new Animated.Value(isTabBarVisible ? 150 : 82)
   ).current;
 
-  //210, 142
   useEffect(() => {
     Animated.timing(bottomPosition, {
-      toValue: isTabBarVisible ? 150 : 82, // Move up when tab bar is visible, move down when hidden
-      duration: 145, // Smooth transition speed
+      toValue: isTabBarVisible ? 150 : 82,
+      duration: 145,
       easing: Easing.inOut(Easing.ease),
-      useNativeDriver: false, // `bottom` cannot use native driver
+      useNativeDriver: false, // ❗ Important: must be false because we are animating `bottom`
     }).start();
   }, [isTabBarVisible]);
 
@@ -51,8 +49,8 @@ const styles = StyleSheet.create({
   fabContainer: {
     position: "absolute",
     right: 28,
-    zIndex: 999, // Keeps the FAB above everything
-    elevation: 10, // Ensures visibility on Android
+    zIndex: 999,
+    elevation: 10,
   },
   fabButton: {
     width: 56,
@@ -61,9 +59,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#1a237e",
     justifyContent: "center",
     alignItems: "center",
-    shadowOpacity: 0.2, // Reduced shadow intensity
-    shadowRadius: 2, // Smaller shadow spread
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 6, // Android-specific shadow control
+    elevation: 6,
   },
 });

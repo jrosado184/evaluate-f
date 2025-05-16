@@ -60,12 +60,15 @@ const ActionBar: React.FC<ActionBarProps> = ({
     path: Array<string>,
     options: Array<any>
   ): Array<any> => {
-    return path.reduce((currentLevelOptions, label) => {
-      const selectedOption = currentLevelOptions.find(
-        (opt) => opt.label === label
-      );
-      return selectedOption?.children || [];
-    }, options);
+    return (
+      path ??
+      [].reduce((currentLevelOptions, label) => {
+        const selectedOption = currentLevelOptions.find(
+          (opt) => opt.label === label
+        );
+        return selectedOption?.children || [];
+      }, options)
+    );
   };
 
   return (

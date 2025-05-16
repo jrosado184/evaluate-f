@@ -10,7 +10,7 @@ import { router } from "expo-router";
 import useGetJobs from "@/app/requests/useGetJobs";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import useSelect from "@/hooks/useSelect";
-import Error from "@/components/Error";
+import Error from "@/components/ErrorText";
 import useAddUser from "@/hooks/useAddUser";
 
 const AddUser = () => {

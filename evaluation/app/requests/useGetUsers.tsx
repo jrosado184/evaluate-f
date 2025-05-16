@@ -9,7 +9,7 @@ const useGetUsers = () => {
   const { sortingBy, setUserDetails, setEmployees, setLoading } =
     useEmployeeContext();
 
-  const { limit } = usePagination();
+  const limit = 4;
 
   const [sort, setSort] = useState("default");
 
