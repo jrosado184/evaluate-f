@@ -274,7 +274,7 @@ PODS:
     - ExpoModulesCore
   - ExpoDocumentPicker (13.1.5):
     - ExpoModulesCore
-  - ExpoFileSystem (18.1.9):
+  - ExpoFileSystem (18.1.10):
     - ExpoModulesCore
   - ExpoFont (13.3.1):
     - ExpoModulesCore
@@ -312,6 +312,8 @@ PODS:
     - ReactCommon/turbomodule/core
     - Yoga
   - ExpoNetwork (7.1.5):
+    - ExpoModulesCore
+  - ExpoSharing (13.1.5):
     - ExpoModulesCore
   - ExpoSplashScreen (0.30.8):
     - ExpoModulesCore
@@ -2492,6 +2494,7 @@ DEPENDENCIES:
   - ExpoLinking (from `../node_modules/expo-linking/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - ExpoNetwork (from `../node_modules/expo-network/ios`)
+  - ExpoSharing (from `../node_modules/expo-sharing/ios`)
   - ExpoSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - ExpoSystemUI (from `../node_modules/expo-system-ui/ios`)
   - ExpoWebBrowser (from `../node_modules/expo-web-browser/ios`)
@@ -2627,6 +2630,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-modules-core"
   ExpoNetwork:
     :path: "../node_modules/expo-network/ios"
+  ExpoSharing:
+    :path: "../node_modules/expo-sharing/ios"
   ExpoSplashScreen:
     :path: "../node_modules/expo-splash-screen/ios"
   ExpoSystemUI:
@@ -2813,7 +2818,7 @@ SPEC CHECKSUMS:
   ExpoAsset: 3bc9adb7dbbf27ae82c18ca97eb988a3ae7e73b1
   ExpoBlur: 7f9379db213e4a56aeceda82e94a7fea1b1d8c48
   ExpoDocumentPicker: 5487ce33530198f4ecf724e650d390b2abe84c15
-  ExpoFileSystem: 0f3f466ecd3560f55768cd3f94ac3a17f093b8e6
+  ExpoFileSystem: c36eb8155eb2381c83dda7dc210e3eec332368b6
   ExpoFont: abbb91a911eb961652c2b0a22eef801860425ed6
   ExpoHead: 0ebd8ad3ff266be8b77b9993345c90a36d9aec46
   ExpoKeepAwake: bf0811570c8da182bfb879169437d4de298376e7
@@ -2821,6 +2826,7 @@ SPEC CHECKSUMS:
   ExpoLinking: b6a0320bf46ae36807d3dc27b4a1d4474505f99c
   ExpoModulesCore: 3ac17421302df62928fc99c133cf25bdbcf0b004
   ExpoNetwork: 92cac43c13a2d9e9c1470ec8804836574ff34068
+  ExpoSharing: b0377be82430d07398c6a4cd60b5a15696accbd3
   ExpoSplashScreen: f524572afd81522e40850eaa7163e2ae99cce783
   ExpoSystemUI: 82c970cf8495449698e7343b4f78a0d04bcec9ee
   ExpoWebBrowser: 06fb5f767f53ad53944b068cdd207984cb998712

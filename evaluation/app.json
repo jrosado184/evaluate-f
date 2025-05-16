@@ -15,14 +15,16 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.javierrosado.evaluation"
+      "bundleIdentifier": "com.javierrosado.evaluation",
+      "buildNumber": "1.0.0"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.javierrosado.evaluation"
+      "package": "com.javierrosado.evaluation",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
@@ -36,6 +38,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a65685d4-0ed5-4986-9c94-129e36623a9f"
+      }
     }
   }
 }
