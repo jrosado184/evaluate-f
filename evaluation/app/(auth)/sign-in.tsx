@@ -41,6 +41,7 @@ const SignIn = () => {
 
       if (res.status === 200) router.replace("/home");
     } catch (error: any) {
+      console.log(error);
       const { employee_id, password, message } = error.response?.data || {};
       setErrors({
         employee_id,
