@@ -63,11 +63,12 @@ const update_user = () => {
     }
   };
 
+  console.log(addEmployeeInfo);
+
   const updateUser = async () => {
     const response = await updateEmployee(rest, addEmployeeInfo?._id);
     //most edges cases handles here, if any come up fix asap
     //next issue is to update locker updated in the locker collection in backend
-    //unrelated to this code but fix issue with not being able to search users by their id
     if (
       response.status === 400 &&
       response.data.message === "Employee with that ID already exists"
