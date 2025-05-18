@@ -1,412 +1,248 @@
-import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
-  Animated,
-  Easing,
-  KeyboardAvoidingView,
-  Platform,
+  ScrollView,
   FlatList,
-  Alert,
 } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { router, useFocusEffect, useGlobalSearchParams } from "expo-router";
 import Icon from "react-native-vector-icons/Feather";
-import { router, useLocalSearchParams } from "expo-router";
-import * as DocumentPicker from "expo-document-picker";
+import Folder from "react-native-vector-icons/AntDesign";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
-import formatISODate from "@/app/conversions/ConvertIsoDate";
-import { Swipeable } from "react-native-gesture-handler";
-import SuccessModal from "@/components/SuccessModal";
+import UserCard from "@/components/UserCard";
+import CardSkeleton from "@/app/skeletons/CardSkeleton";
+import NewFolderModal from "@/components/NewFolderModal";
+import Folders from "@/components/Folders";
 import useEmployeeContext from "@/app/context/EmployeeContext";
-import useAuthContext from "@/app/context/AuthContext";
+import { formatISODate } from "@/app/conversions/ConvertIsoDate";
+import EditFolderModal from "@/components/EditFolderModal";
 
-const FolderDetails = () => {
-  const { id: userId, folderId } = useLocalSearchParams();
-  const { currentUser } = useAuthContext();
-  const [uploadVisible, setUploadVisible] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<any>(null);
-  const [files, setFiles] = useState<any[]>([]);
-  const [toastMessage, setToastMessage] = useState("");
-  const [toastTrigger, setToastTrigger] = useState(0);
+const User = () => {
+  const { id } = useGlobalSearchParams();
+  const { employee, setEmployee, setAddEmployeeInfo } = useEmployeeContext();
 
-  const translateY = useRef(new Animated.Value(400)).current;
-  const openSwipeableRef = useRef<Swipeable | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [folderName, setFolderName] = useState("");
+  const [editFolderName, setEditFolderName] = useState("");
+  const [currentFolderId, setCurrentFolderId] = useState("");
+  const [evaluations, setEvaluations] = useState([]);
 
-  const fileStatus = (status: string) => {
-    switch (status) {
-      case "not started":
-        return "Not started";
-      case "in_progress":
-        return "In progress";
-      case "complete":
-        return "Complete";
-      default:
-        return status;
-    }
+  const closeSwipeableFn = useRef<() => void>();
+
+  const handleModalCancel = () => {
+    closeSwipeableFn.current?.();
+    setModalVisible(false);
+    setFolderName("");
   };
 
-  const fetchFolderFiles = async () => {
-    if (!userId || !folderId) return;
-    try {
-      const token = await AsyncStorage.getItem("token");
-      const baseUrl = await getServerIP();
-      const res = await axios.get(`${baseUrl}/employees/${userId}`, {
-        headers: { Authorization: token },
-      });
-      const folder = res.data.folders.find((f: any) => f._id === folderId);
-      if (folder) setFiles(folder.files || []);
-    } catch (err: any) {
-      console.error("Failed to load files:", err.message);
-    }
+  const handleEditModalClose = () => {
+    closeSwipeableFn.current?.();
+    setEditModalVisible(false);
+    setCurrentFolderId("");
+    setEditFolderName("");
   };
 
-  useEffect(() => {
-    fetchFolderFiles();
-  }, []);
-
-  useEffect(() => {
-    if (uploadVisible) {
-      Animated.spring(translateY, {
-        toValue: 0,
-        useNativeDriver: true,
-        speed: 12,
-        bounciness: 6,
-      }).start();
-    } else {
-      Animated.timing(translateY, {
-        toValue: 400,
-        duration: 200,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [uploadVisible]);
-
-  const pickDocument = async () => {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: "application/pdf",
-      copyToCacheDirectory: true,
-    });
-    if (result.assets?.length) {
-      setSelectedFile(result.assets[0]);
-    }
+  const handleNewFolderPress = () => {
+    closeSwipeableFn.current?.();
+    setModalVisible(true);
   };
 
-  const handleUpload = async () => {
-    if (!selectedFile || !userId || !folderId) return;
+  const openEditModal = (folderId: string, name: string) => {
+    closeSwipeableFn.current?.();
+    setTimeout(() => {
+      setEditFolderName(name);
+      setCurrentFolderId(folderId);
+      setEditModalVisible(true);
+    }, 10);
+  };
+
+  const fetchEmployee = async () => {
     const token = await AsyncStorage.getItem("token");
     const baseUrl = await getServerIP();
-    const formData = new FormData();
-    const fileToUpload: any = {
-      uri: selectedFile.uri,
-      name: selectedFile.name,
-      type: selectedFile.mimeType || "application/pdf",
-    };
-    formData.append("file", fileToUpload);
-    formData.append("addedBy", currentUser?.name);
-    try {
-      await axios.post(
-        `${baseUrl}/employees/${userId}/folders/${folderId}/files`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: token,
-          },
-        }
-      );
-      setUploadVisible(false);
-      setSelectedFile(null);
-      fetchFolderFiles();
-    } catch (err: any) {
-      console.error("Upload error:", err.message);
-      Alert.alert("Upload Failed", "Could not upload the PDF.");
-    }
-  };
-
-  const handleDeleteFile = async (fileId: string) => {
-    const previousFiles = [...files];
-
-    Alert.alert("Delete File", "Are you sure?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          const updatedFiles = files.filter((file) => file._id !== fileId);
-          setFiles(updatedFiles); // Optimistic update
-          try {
-            const token = await AsyncStorage.getItem("token");
-            const baseUrl = await getServerIP();
-            await axios.delete(
-              `${baseUrl}/employees/${userId}/folders/${folderId}/files/${fileId}`,
-              { headers: { Authorization: token } }
-            );
-            setToastMessage("File deleted successfully");
-            setToastTrigger(Date.now());
-          } catch {
-            setFiles(previousFiles); // Rollback on error
-            Alert.alert("Error", "Failed to delete file.");
-          }
-        },
-      },
-    ]);
-  };
-
-  const handleFilePress = (file: any) => {
-    if (!file || !file._id || !file.status) return;
-
-    if (!folderId) {
-      Alert.alert("Error", "Missing folderId");
-      return;
-    }
-
-    const fileId = file._id;
-
-    if (file.status === "not started") {
-      router.push(
-        `/users/${userId}/folders/${folderId}/files/${fileId}/edit-form?step=1`
-      );
-    } else {
-      // in_progress or complete → go to summary screen
-      router.push(`/users/${userId}/folders/${folderId}/files/${fileId}`);
-    }
-  };
-
-  const renderRightActions = (
-    progress: Animated.AnimatedInterpolation<number>,
-    fileId: string
-  ) => {
-    const translateX = progress.interpolate({
-      inputRange: [0, 1],
-      outputRange: [80, 8],
-      extrapolate: "clamp",
+    const res = await axios.get(`${baseUrl}/employees/${id}`, {
+      headers: { Authorization: token },
     });
-    return (
-      <Animated.View
-        style={{
-          transform: [{ translateX }],
-          flexDirection: "row",
-          height: "100%",
-          marginRight: 20,
-          maxHeight: 61,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <TouchableOpacity
-          onPress={() => handleDeleteFile(fileId)}
-          className="justify-center items-center w-20 h-full bg-red-500 rounded-r-lg"
-        >
-          <Text className="text-white font-inter-semibold text-sm">Delete</Text>
-        </TouchableOpacity>
-      </Animated.View>
+    setEmployee(res.data);
+    setAddEmployeeInfo(res.data);
+
+    // Gather evaluation files
+    const allFiles =
+      res.data?.folders?.flatMap(
+        (folder: any) =>
+          folder.files?.map((file: any) => ({
+            ...file,
+            folderName: folder.name,
+            folderId: folder._id,
+          })) || []
+      ) || [];
+
+    const filtered = allFiles.filter(
+      (file: any) =>
+        file.status === "evaluation_started" || file.status === "complete"
     );
+    setEvaluations(filtered);
   };
 
-  const renderFileItem = ({ item }: any) => {
-    let swipeRef: Swipeable | null = null;
-
-    const handleSwipeableOpen = (ref: Swipeable) => {
-      if (openSwipeableRef.current && openSwipeableRef.current !== ref) {
-        openSwipeableRef.current.close();
-      }
-      openSwipeableRef.current = ref;
-    };
-
-    return (
-      <Swipeable
-        ref={(ref) => (swipeRef = ref)}
-        friction={2}
-        overshootRight={false}
-        rightThreshold={40}
-        containerStyle={{ width: "100%" }}
-        renderRightActions={(progress) =>
-          renderRightActions(progress, item._id)
-        }
-        onSwipeableWillOpen={() => swipeRef && handleSwipeableOpen(swipeRef)}
-      >
-        <TouchableOpacity
-          onPress={() => handleFilePress(item)}
-          activeOpacity={0.8}
-          className="w-full items-center bg-white"
-        >
-          <View className="w-[90vw] border border-gray-300 rounded-lg bg-white px-4 py-3 mb-2">
-            <View className="flex-row justify-between items-center">
-              <View className="flex-1 pr-2">
-                <Text className="text-base font-inter-medium">{item.name}</Text>
-                <Text className="text-sm text-neutral-500">
-                  {`Uploaded on ${formatISODate(item.uploadedAt)}`}
-                </Text>
-              </View>
-              <View
-                className={`px-3 py-1 rounded-full ${
-                  item.status === "in_progress"
-                    ? "bg-yellow-100"
-                    : item.status === "incomplete"
-                    ? "bg-red-100"
-                    : "bg-green-100"
-                }`}
-              >
-                <Text
-                  className={`text-xs font-inter-semibold ${
-                    item.status === "complete"
-                      ? "text-green-700"
-                      : "text-yellow-700"
-                  }`}
-                >
-                  {fileStatus(item.status)}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Swipeable>
+  const handleCreateFolder = async (name: string) => {
+    if (!name.trim()) return;
+    const token = await AsyncStorage.getItem("token");
+    const baseUrl = await getServerIP();
+    await axios.post(
+      `${baseUrl}/employees/${id}/folders`,
+      { name: name.trim() },
+      { headers: { Authorization: token } }
     );
+    fetchEmployee();
   };
+
+  const handleEditFolder = async (newName: string) => {
+    if (!newName.trim()) return;
+    const token = await AsyncStorage.getItem("token");
+    const baseUrl = await getServerIP();
+    await axios.patch(
+      `${baseUrl}/employees/${id}/folders/${currentFolderId}`,
+      { name: newName.trim() },
+      { headers: { Authorization: token } }
+    );
+    fetchEmployee();
+    handleEditModalClose();
+  };
+
+  const handleDeleteFolder = async (folderId: string) => {
+    const token = await AsyncStorage.getItem("token");
+    const baseUrl = await getServerIP();
+    await axios.delete(`${baseUrl}/employees/${id}/folders/${folderId}`, {
+      headers: { Authorization: token },
+    });
+    fetchEmployee();
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchEmployee().then(() => setLoading(false));
+      return () => setAddEmployeeInfo("");
+    }, [])
+  );
+
+  const renderEvaluationCard = ({ item }: { item: any }) => (
+    <TouchableOpacity
+      onPress={() => router.push(`/users/${id}/evaluations/${item._id}`)}
+      className="bg-white shadow-md rounded-xl px-4 py-3 mb-3 mx-6 border border-gray-200"
+    >
+      <Text className="font-semibold text-base mb-1">{item.name}</Text>
+      <Text className="text-xs text-gray-500">Folder: {item.folderName}</Text>
+      <Text className="text-xs text-gray-500 mt-1">Status: {item.status}</Text>
+      <Text className="text-xs text-gray-400 mt-1">
+        Uploaded: {formatISODate(item.uploadedAt)}
+      </Text>
+    </TouchableOpacity>
+  );
 
   return (
-    <SafeAreaView className="bg-neutral-50 h-full w-full">
-      {/* Top back button */}
-      <View className="p-6">
-        <TouchableOpacity
-          onPress={() => {
-            if (files.length > 0) {
-              router.push(`/users/${userId}`);
-            } else {
-              router.back();
-            }
-          }}
-          className="flex-row items-center h-10"
-        >
-          <Icon name="chevron-left" size={29} />
-          <Text className="text-[1.3rem]">Back</Text>
-        </TouchableOpacity>
-      </View>
-
-      <FlatList
-        data={files}
-        keyExtractor={(item) => item._id}
-        renderItem={renderFileItem}
-        contentContainerStyle={{ paddingBottom: 140 }}
-      />
-
-      {!uploadVisible && (
-        <View
-          style={{
-            position: "absolute",
-            bottom: 120,
-            right: 28,
-            zIndex: 99,
-            elevation: 10,
-          }}
-        >
+    <SafeAreaView className="bg-white h-full">
+      <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
+        <View className="p-6">
           <TouchableOpacity
-            onPress={() => setUploadVisible(true)}
-            activeOpacity={0.85}
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 28,
-              backgroundColor: "#1a237e",
-              justifyContent: "center",
-              alignItems: "center",
-              shadowOpacity: 0.2,
-              shadowRadius: 2,
-              shadowOffset: { width: 0, height: 2 },
-              elevation: 6,
-            }}
+            onPress={() => router.push("/users")}
+            className="flex-row items-center mb-4"
           >
-            <Icon name="upload" size={20} color="#fff" />
+            <Icon name="chevron-left" size={28} />
+            <Text className="text-xl font-semibold ml-1">Back</Text>
           </TouchableOpacity>
-        </View>
-      )}
 
-      {/* Upload Modal */}
-      {uploadVisible && (
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          className="absolute inset-0 z-50"
-          style={{
-            justifyContent: "center",
-            alignItems: "center",
-            backgroundColor: "rgba(0,0,0,0.4)",
-          }}
-        >
-          <Animated.View
-            style={{
-              transform: [{ translateY }],
-              width: "90%",
-              maxWidth: 400,
-              backgroundColor: "#fff",
-              borderRadius: 16,
-              paddingHorizontal: 20,
-              paddingTop: 24,
-              paddingBottom: 20,
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 6 },
-              shadowOpacity: 0.2,
-              shadowRadius: 8,
-              elevation: 10,
-            }}
-          >
-            <Text className="text-lg font-inter-semibold mb-4 text-center">
-              Upload PDF File
-            </Text>
+          {loading ? (
+            <CardSkeleton amount={1} width="w-full" height="h-40" />
+          ) : (
+            <UserCard
+              name={employee?.employee_name}
+              employee_id={employee?.employee_id}
+              locker_number={employee?.locker_number}
+              knife_number={employee?.knife_number}
+              position={employee?.position}
+              department={employee?.department}
+              last_update={formatISODate(employee?.last_updated)}
+              status="Damaged"
+            />
+          )}
 
-            <TouchableOpacity
-              onPress={pickDocument}
-              className="border border-neutral-300 rounded-lg px-4 py-3 mb-5"
-            >
-              <Text className="text-center text-base text-blue-600">
-                {selectedFile?.name || "Select PDF"}
-              </Text>
-            </TouchableOpacity>
-
-            <View className="flex-row justify-end items-center gap-5">
+          <View className="my-6">
+            <View className="flex-row justify-between items-center mb-3">
+              <Text className="text-lg font-semibold">Folders</Text>
               <TouchableOpacity
-                onPress={() => {
-                  setUploadVisible(false);
-                  setSelectedFile(null);
-                }}
+                onPress={handleNewFolderPress}
+                className="flex-row items-center border border-neutral-400 rounded-lg px-3 py-1"
               >
-                <Text className="text-base text-neutral-500 font-inter-regular">
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={handleUpload}
-                disabled={!selectedFile}
-                style={{
-                  backgroundColor: selectedFile ? "#1a237e" : "#9ca3af",
-                  paddingHorizontal: 20,
-                  paddingVertical: 8,
-                  borderRadius: 8,
-                }}
-              >
-                <Text className="text-white font-inter-semibold text-base">
-                  Upload
-                </Text>
+                <Folder name="addfolder" size={16} />
+                <Text className="text-sm ml-1">New folder</Text>
               </TouchableOpacity>
             </View>
-          </Animated.View>
-        </KeyboardAvoidingView>
-      )}
+            {loading ? (
+              <CardSkeleton amount={1} width="w-full" height="h-[4.5rem]" />
+            ) : (
+              <Folders
+                onDeleteFolder={handleDeleteFolder}
+                onEditPress={openEditModal}
+                onTapOutside={handleModalCancel}
+                registerCloseSwipeable={(fn) => {
+                  closeSwipeableFn.current = fn;
+                }}
+              />
+            )}
+          </View>
 
-      {/* Success Toast */}
-      <View className="w-[90%] -my-20 justify-center items-center">
-        <SuccessModal
-          message={toastMessage}
-          trigger={toastTrigger}
-          clearMessage={() => setToastMessage("")}
-        />
-      </View>
+          <View className="my-6">
+            <View className="flex-row justify-between items-center mb-3">
+              <Text className="text-lg font-semibold">Evaluations</Text>
+              <TouchableOpacity
+                onPress={() => router.push(`/users/${id}/evaluations`)}
+                className="flex-row items-center border border-blue-600 rounded-lg px-3 py-1"
+              >
+                <Icon name="clipboard" size={16} color="blue" />
+                <Text className="text-sm ml-1 text-blue-600">Start</Text>
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={evaluations}
+              keyExtractor={(item) => item._id}
+              renderItem={renderEvaluationCard}
+              ListEmptyComponent={
+                <Text className="text-sm text-center text-gray-400">
+                  No evaluations yet.
+                </Text>
+              }
+              scrollEnabled={false}
+            />
+          </View>
+        </View>
+      </ScrollView>
+
+      <NewFolderModal
+        visible={modalVisible}
+        onClose={handleModalCancel}
+        onCreate={(name) => {
+          handleCreateFolder(name);
+          handleModalCancel();
+        }}
+        folderName={folderName}
+        setFolderName={setFolderName}
+      />
+
+      <EditFolderModal
+        visible={editModalVisible}
+        onClose={handleEditModalClose}
+        onSubmit={handleEditFolder}
+        folderName={editFolderName}
+        setFolderName={setEditFolderName}
+      />
     </SafeAreaView>
   );
 };
 
-export default FolderDetails;
+export default User;

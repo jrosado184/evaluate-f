@@ -1,4 +1,4 @@
-import { View, ScrollView, Image } from "react-native";
+import { View, ScrollView, Image, Alert } from "react-native";
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import FormField from "@/components/FormField";
@@ -29,7 +29,10 @@ const SignIn = () => {
     setIsSigningIn(true);
     try {
       const baseUrl = await getServerIP();
-      const res = await axios.post(`${baseUrl}/auth/login`, {
+      const url = `${baseUrl}/auth/login`;
+      console.log("[SignIn Debug] Hitting URL:", url);
+
+      const res = await axios.post(url, {
         employee_id: form.employee_id,
         password: form.password,
       });

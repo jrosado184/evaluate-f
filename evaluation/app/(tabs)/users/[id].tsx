@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, TextInput, Alert } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect, useGlobalSearchParams } from "expo-router";
@@ -9,7 +9,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import UserCard from "@/components/UserCard";
 import CardSkeleton from "@/app/skeletons/CardSkeleton";
-import RightIcon from "@/constants/icons/RightIcon";
 import NewFolderModal from "@/components/NewFolderModal";
 import Folders from "@/components/Folders";
 import useEmployeeContext from "@/app/context/EmployeeContext";
@@ -26,7 +25,6 @@ const User = () => {
   const [folderName, setFolderName] = useState("");
   const [editFolderName, setEditFolderName] = useState("");
   const [currentFolderId, setCurrentFolderId] = useState("");
-
   const closeSwipeableFn = useRef<() => void>();
 
   const handleModalCancel = () => {
@@ -56,122 +54,69 @@ const User = () => {
     }, 10);
   };
 
-  const handleEditFolder = async (newName: string) => {
-    if (!newName.trim()) return;
-
+  const fetchEmployee = async () => {
     const token = await AsyncStorage.getItem("token");
     const baseUrl = await getServerIP();
-
-    try {
-      await axios.patch(
-        `${baseUrl}/employees/${id}/folders/${currentFolderId}`,
-        { name: newName.trim() },
-        {
-          headers: { Authorization: token },
-        }
-      );
-
-      const res = await axios.get(`${baseUrl}/employees/${id}`, {
-        headers: { Authorization: token },
-      });
-
-      setEmployee(res.data);
-      setAddEmployeeInfo(res.data);
-      handleEditModalClose();
-    } catch (error) {
-      console.error("Error editing folder:", error);
-      Alert.alert("Error", "Failed to update folder name.");
-    }
+    const res = await axios.get(`${baseUrl}/employees/${id}`, {
+      headers: { Authorization: token },
+    });
+    setEmployee(res.data);
+    setAddEmployeeInfo(res.data);
   };
 
   const handleCreateFolder = async (name: string) => {
-    if (!name || !name.trim()) return;
-
+    if (!name.trim()) return;
     const token = await AsyncStorage.getItem("token");
     const baseUrl = await getServerIP();
+    await axios.post(
+      `${baseUrl}/employees/${id}/folders`,
+      { name: name.trim() },
+      { headers: { Authorization: token } }
+    );
+    fetchEmployee();
+  };
 
-    try {
-      await axios.post(
-        `${baseUrl}/employees/${id}/folders`,
-        { name: name.trim() },
-        {
-          headers: { Authorization: token },
-        }
-      );
-
-      const res = await axios.get(`${baseUrl}/employees/${id}`, {
-        headers: { Authorization: token },
-      });
-
-      setEmployee(res.data);
-      setAddEmployeeInfo(res.data);
-    } catch (error) {
-      console.error("Error creating folder:", error);
-      Alert.alert("Error", "Failed to create folder.");
-    }
+  const handleEditFolder = async (newName: string) => {
+    if (!newName.trim()) return;
+    const token = await AsyncStorage.getItem("token");
+    const baseUrl = await getServerIP();
+    await axios.patch(
+      `${baseUrl}/employees/${id}/folders/${currentFolderId}`,
+      { name: newName.trim() },
+      { headers: { Authorization: token } }
+    );
+    fetchEmployee();
+    handleEditModalClose();
   };
 
   const handleDeleteFolder = async (folderId: string) => {
     const token = await AsyncStorage.getItem("token");
     const baseUrl = await getServerIP();
-
-    try {
-      await axios.delete(`${baseUrl}/employees/${id}/folders/${folderId}`, {
-        headers: { Authorization: token },
-      });
-
-      const res = await axios.get(`${baseUrl}/employees/${id}`, {
-        headers: { Authorization: token },
-      });
-
-      setEmployee(res.data);
-      setAddEmployeeInfo(res.data);
-    } catch (error) {
-      console.error("Error deleting folder:", error);
-      Alert.alert("Error", "Failed to delete folder.");
-    }
+    await axios.delete(`${baseUrl}/employees/${id}/folders/${folderId}`, {
+      headers: { Authorization: token },
+    });
+    fetchEmployee();
   };
 
   useFocusEffect(
     useCallback(() => {
-      const getUser = async () => {
-        const token = await AsyncStorage.getItem("token");
-        const baseUrl = await getServerIP();
-
-        axios
-          .get(`${baseUrl}/employees/${id}`, {
-            headers: {
-              Authorization: token,
-            },
-          })
-          .then((res) => {
-            setLoading(false);
-            setEmployee(res.data);
-            setAddEmployeeInfo(res.data);
-          })
-          .catch((error) => {
-            throw new Error(error);
-          });
-      };
-      getUser();
-      return () => {
-        setAddEmployeeInfo("");
-      };
+      fetchEmployee().then(() => setLoading(false));
+      return () => setAddEmployeeInfo("");
     }, [])
   );
 
   return (
-    <SafeAreaView className="bg-neutral-50 h-full">
-      <View className="p-6">
-        <TouchableOpacity
-          onPress={() => router.push("/users")}
-          className="flex-row items-center h-10"
-        >
-          <Icon name="chevron-left" size={29} />
-          <Text className="text-[1.3rem]">Back</Text>
-        </TouchableOpacity>
+    <SafeAreaView className="bg-white h-full">
+      <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
+        <View className="p-6">
+          <TouchableOpacity
+            onPress={() => router.push("/users")}
+            className="flex-row items-center mb-4"
+          >
+            <Icon name="chevron-left" size={28} />
+            <Text className="text-xl font-semibold ml-1">Back</Text>
+          </TouchableOpacity>
 
-        <View className="my-4">
           {loading ? (
             <CardSkeleton amount={1} width="w-full" height="h-40" />
           ) : (
@@ -186,36 +131,46 @@ const User = () => {
               status="Damaged"
             />
           )}
-        </View>
 
-        <View className="my-4">
-          <View className="flex-row justify-between items-center">
-            <Text className="font-inter-semibold text-[1.2rem]">Files</Text>
-            <TouchableOpacity
-              onPress={handleNewFolderPress}
-              className="font-inter-semibold text-[1.2rem] flex-row items-center justify-center border border-neutral-500 rounded-lg w-28 h-7 gap-1"
-            >
-              <Folder size={16} name="addfolder" />
-              <Text className="text-[0.8rem]">New folder</Text>
-            </TouchableOpacity>
+          <View className="my-6">
+            <View className="flex-row justify-between items-center mb-3">
+              <Text className="text-lg font-semibold">Folders</Text>
+              <TouchableOpacity
+                onPress={handleNewFolderPress}
+                className="flex-row items-center border border-neutral-400 rounded-lg px-3 py-1"
+              >
+                <Folder name="addfolder" size={16} />
+                <Text className="text-sm ml-1">New folder</Text>
+              </TouchableOpacity>
+            </View>
+            {loading ? (
+              <CardSkeleton amount={1} width="w-full" height="h-[4.5rem]" />
+            ) : (
+              <Folders
+                onDeleteFolder={handleDeleteFolder}
+                onEditPress={openEditModal}
+                onTapOutside={handleModalCancel}
+                registerCloseSwipeable={(fn) => {
+                  closeSwipeableFn.current = fn;
+                }}
+              />
+            )}
+          </View>
+
+          <View className="my-6">
+            <View className="flex-row justify-between items-center mb-3">
+              <Text className="text-lg font-semibold">Evaluations</Text>
+              <TouchableOpacity
+                onPress={() => router.push(`/users/${id}/evaluations`)}
+                className="flex-row items-center border border-blue-600 rounded-lg px-3 py-1"
+              >
+                <Icon name="clipboard" size={16} color="blue" />
+                <Text className="text-sm ml-1 text-blue-600">Start</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
-
-      {loading ? (
-        <View className="my-3 w-full px-6">
-          <CardSkeleton amount={1} width="w-full" height="h-[4.5rem]" />
-        </View>
-      ) : (
-        <Folders
-          onDeleteFolder={handleDeleteFolder}
-          onEditPress={openEditModal}
-          onTapOutside={handleModalCancel}
-          registerCloseSwipeable={(fn) => {
-            closeSwipeableFn.current = fn;
-          }}
-        />
-      )}
+      </ScrollView>
 
       <NewFolderModal
         visible={modalVisible}

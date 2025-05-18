@@ -23,11 +23,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.javierrosado.evaluation",
-      "buildNumber": "1.0.1",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        }
+        },
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
