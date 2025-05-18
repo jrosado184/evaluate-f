@@ -41,12 +41,12 @@ const SignIn = () => {
 
       if (res.status === 200) router.replace("/home");
     } catch (error: any) {
-      console.log(error);
       const { employee_id, password, message } = error.response?.data || {};
       setErrors({
         employee_id,
         password,
-        invalidCreddential: message || "Login failed",
+        invalidCreddential:
+          !employee_id && !password ? message || "Login failed" : "",
       });
     } finally {
       setIsSigningIn(false);
