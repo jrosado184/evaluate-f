@@ -30,7 +30,6 @@ const SignIn = () => {
     try {
       const baseUrl = await getServerIP();
       const url = `${baseUrl}/auth/login`;
-      console.log("[SignIn Debug] Hitting URL:", url);
 
       const res = await axios.post(url, {
         employee_id: form.employee_id,

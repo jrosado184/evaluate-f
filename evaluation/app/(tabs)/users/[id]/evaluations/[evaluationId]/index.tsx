@@ -16,7 +16,7 @@ import getServerIP from "@/app/requests/NetworkAddress";
 import EvaluationTimeline from "@/components/EvaluationTimeline";
 import EvaluationButton from "@/components/buttons/EvaluationButton";
 
-const FileDetailsScreen = () => {
+const EvaluationSummary = () => {
   const { id: userId, fileId, ...params } = useLocalSearchParams();
   const [fileData, setFileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -292,4 +292,4 @@ const FileDetailsScreen = () => {
   );
 };
 
-export default FileDetailsScreen;
+export default EvaluationSummary;

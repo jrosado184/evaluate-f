@@ -1,12 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import axios from "axios";
-
 import StepProgressBar from "@/components/StepProgressBar";
-import PersonalInfoForm from "./step1";
-import Step2Form from "./step2";
-import getServerIP from "@/app/requests/NetworkAddress";
+import PersonalInfoForm from "../../../../../evaluations/step1";
+import Step2Form from "../../../../../evaluations/[evaluationId]/step2";
 
 const EditFormController = () => {
   const { id, fileId, folderId, step } = useLocalSearchParams();

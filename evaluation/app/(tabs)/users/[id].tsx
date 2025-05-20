@@ -1,196 +1,294 @@
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  Animated,
+  TouchableWithoutFeedback,
+} from "react-native";
+import React, { useCallback, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect, useGlobalSearchParams } from "expo-router";
 import Icon from "react-native-vector-icons/Feather";
-import Folder from "react-native-vector-icons/AntDesign";
+import { Swipeable } from "react-native-gesture-handler";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import UserCard from "@/components/UserCard";
 import CardSkeleton from "@/app/skeletons/CardSkeleton";
-import NewFolderModal from "@/components/NewFolderModal";
-import Folders from "@/components/Folders";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
-import EditFolderModal from "@/components/EditFolderModal";
+import useAuthContext from "@/app/context/AuthContext";
 
 const User = () => {
   const { id } = useGlobalSearchParams();
   const { employee, setEmployee, setAddEmployeeInfo } = useEmployeeContext();
+  const { currentUser } = useAuthContext();
 
   const [loading, setLoading] = useState(true);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [folderName, setFolderName] = useState("");
-  const [editFolderName, setEditFolderName] = useState("");
-  const [currentFolderId, setCurrentFolderId] = useState("");
-  const closeSwipeableFn = useRef<() => void>();
-
-  const handleModalCancel = () => {
-    closeSwipeableFn.current?.();
-    setModalVisible(false);
-    setFolderName("");
-  };
-
-  const handleEditModalClose = () => {
-    closeSwipeableFn.current?.();
-    setEditModalVisible(false);
-    setCurrentFolderId("");
-    setEditFolderName("");
-  };
-
-  const handleNewFolderPress = () => {
-    closeSwipeableFn.current?.();
-    setModalVisible(true);
-  };
-
-  const openEditModal = (folderId: string, name: string) => {
-    closeSwipeableFn.current?.();
-    setTimeout(() => {
-      setEditFolderName(name);
-      setCurrentFolderId(folderId);
-      setEditModalVisible(true);
-    }, 10);
-  };
+  const [evaluationFiles, setEvaluationFiles] = useState<any[]>([]);
+  const openSwipeableRef = useRef<Swipeable | null>(null);
 
   const fetchEmployee = async () => {
     const token = await AsyncStorage.getItem("token");
     const baseUrl = await getServerIP();
+
     const res = await axios.get(`${baseUrl}/employees/${id}`, {
       headers: { Authorization: token },
     });
     setEmployee(res.data);
     setAddEmployeeInfo(res.data);
-  };
+    setLoading(false);
 
-  const handleCreateFolder = async (name: string) => {
-    if (!name.trim()) return;
-    const token = await AsyncStorage.getItem("token");
-    const baseUrl = await getServerIP();
-    await axios.post(
-      `${baseUrl}/employees/${id}/folders`,
-      { name: name.trim() },
-      { headers: { Authorization: token } }
-    );
-    fetchEmployee();
-  };
-
-  const handleEditFolder = async (newName: string) => {
-    if (!newName.trim()) return;
-    const token = await AsyncStorage.getItem("token");
-    const baseUrl = await getServerIP();
-    await axios.patch(
-      `${baseUrl}/employees/${id}/folders/${currentFolderId}`,
-      { name: newName.trim() },
-      { headers: { Authorization: token } }
-    );
-    fetchEmployee();
-    handleEditModalClose();
-  };
-
-  const handleDeleteFolder = async (folderId: string) => {
-    const token = await AsyncStorage.getItem("token");
-    const baseUrl = await getServerIP();
-    await axios.delete(`${baseUrl}/employees/${id}/folders/${folderId}`, {
+    const evalRes = await axios.get(`${baseUrl}/employees/${id}/evaluations`, {
       headers: { Authorization: token },
     });
-    fetchEmployee();
+    setEvaluationFiles(evalRes.data);
+  };
+
+  const handleStartEvaluation = () => {
+    router.push(`/users/${id}/evaluations/step1`);
+  };
+
+  const handleDeleteEvaluation = (evaluationId: string) => {
+    Alert.alert(
+      "Delete Evaluation",
+      "Are you sure you want to delete this evaluation?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            const token = await AsyncStorage.getItem("token");
+            const baseUrl = await getServerIP();
+            try {
+              await axios.delete(
+                `${baseUrl}/employees/${id}/evaluations/${evaluationId}`,
+                { headers: { Authorization: token } }
+              );
+              fetchEmployee();
+            } catch {
+              Alert.alert("Error", "Failed to delete evaluation.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSwipeableWillOpen = (ref: Swipeable) => {
+    if (openSwipeableRef.current && openSwipeableRef.current !== ref) {
+      openSwipeableRef.current.close();
+    }
+    openSwipeableRef.current = ref;
+  };
+
+  const handleTapOutside = () => {
+    if (openSwipeableRef.current) {
+      openSwipeableRef.current.close();
+      openSwipeableRef.current = null;
+    }
   };
 
   useFocusEffect(
     useCallback(() => {
-      fetchEmployee().then(() => setLoading(false));
+      fetchEmployee();
       return () => setAddEmployeeInfo("");
     }, [])
   );
 
+  const renderRightActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    evaluationId: string
+  ) => {
+    const translateX = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [80, 8],
+      extrapolate: "clamp",
+    });
+    return (
+      <Animated.View
+        style={{
+          transform: [{ translateX }],
+          flexDirection: "row",
+          height: "85%",
+          marginRight: 5,
+          width: "20%",
+        }}
+      >
+        <TouchableOpacity
+          onPress={() => handleDeleteEvaluation(evaluationId)}
+          style={{
+            width: 70,
+            backgroundColor: "#EF4444",
+            justifyContent: "center",
+            alignItems: "center",
+            borderTopRightRadius: 8,
+            borderBottomRightRadius: 8,
+          }}
+        >
+          <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>Delete</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
   return (
-    <SafeAreaView className="bg-white h-full">
-      <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
-        <View className="p-6">
-          <TouchableOpacity
-            onPress={() => router.push("/users")}
-            className="flex-row items-center mb-4"
-          >
-            <Icon name="chevron-left" size={28} />
-            <Text className="text-xl font-semibold ml-1">Back</Text>
-          </TouchableOpacity>
+    <TouchableWithoutFeedback onPress={handleTapOutside}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: 80 }}
+          onScrollBeginDrag={handleTapOutside}
+          scrollEventThrottle={16}
+        >
+          <View style={{ padding: 24 }}>
+            <TouchableOpacity
+              onPress={() => router.push("/users")}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginBottom: 16,
+              }}
+            >
+              <Icon name="chevron-left" size={28} />
+              <Text style={{ fontSize: 20, fontWeight: "600", marginLeft: 4 }}>
+                Back
+              </Text>
+            </TouchableOpacity>
 
-          {loading ? (
-            <CardSkeleton amount={1} width="w-full" height="h-40" />
-          ) : (
-            <UserCard
-              name={employee?.employee_name}
-              employee_id={employee?.employee_id}
-              locker_number={employee?.locker_number}
-              knife_number={employee?.knife_number}
-              position={employee?.position}
-              department={employee?.department}
-              last_update={formatISODate(employee?.last_updated)}
-              status="Damaged"
-            />
-          )}
-
-          <View className="my-6">
-            <View className="flex-row justify-between items-center mb-3">
-              <Text className="text-lg font-semibold">Folders</Text>
-              <TouchableOpacity
-                onPress={handleNewFolderPress}
-                className="flex-row items-center border border-neutral-400 rounded-lg px-3 py-1"
-              >
-                <Folder name="addfolder" size={16} />
-                <Text className="text-sm ml-1">New folder</Text>
-              </TouchableOpacity>
-            </View>
             {loading ? (
-              <CardSkeleton amount={1} width="w-full" height="h-[4.5rem]" />
+              <CardSkeleton amount={1} width="100%" height={160} />
             ) : (
-              <Folders
-                onDeleteFolder={handleDeleteFolder}
-                onEditPress={openEditModal}
-                onTapOutside={handleModalCancel}
-                registerCloseSwipeable={(fn) => {
-                  closeSwipeableFn.current = fn;
-                }}
+              <UserCard
+                name={employee?.employee_name}
+                employee_id={employee?.employee_id}
+                locker_number={employee?.locker_number}
+                knife_number={employee?.knife_number}
+                position={employee?.position}
+                department={employee?.department}
+                last_update={formatISODate(employee?.last_updated)}
+                status="Damaged"
               />
             )}
-          </View>
 
-          <View className="my-6">
-            <View className="flex-row justify-between items-center mb-3">
-              <Text className="text-lg font-semibold">Evaluations</Text>
-              <TouchableOpacity
-                onPress={() => router.push(`/users/${id}/evaluations`)}
-                className="flex-row items-center border border-blue-600 rounded-lg px-3 py-1"
+            <View style={{ marginTop: 24 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 12,
+                }}
               >
-                <Icon name="clipboard" size={16} color="blue" />
-                <Text className="text-sm ml-1 text-blue-600">Start</Text>
-              </TouchableOpacity>
+                <Text style={{ fontSize: 18, fontWeight: "600" }}>
+                  Evaluations
+                </Text>
+                <TouchableOpacity
+                  onPress={handleStartEvaluation}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    borderColor: "#2563EB",
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    paddingHorizontal: 12,
+                    paddingVertical: 4,
+                  }}
+                >
+                  <Icon name="plus" size={12} color="#2563EB" />
+                  <Text style={{ color: "#2563EB", marginLeft: 4 }}>
+                    Create
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {evaluationFiles.length === 0 ? (
+                <View
+                  style={{
+                    justifyContent: "center",
+                    alignItems: "center",
+                    marginTop: 48,
+                  }}
+                >
+                  <Icon name="clipboard" size={50} color="#9CA3AF" />
+                  <Text style={{ color: "#6B7280", marginTop: 16 }}>
+                    No evaluations yet.
+                  </Text>
+                </View>
+              ) : (
+                evaluationFiles.map((file: any) => {
+                  let swipeRef: Swipeable | null = null;
+                  return (
+                    <Swipeable
+                      key={file._id}
+                      ref={(ref) => (swipeRef = ref)}
+                      friction={0.8}
+                      overshootRight={true}
+                      rightThreshold={10}
+                      onSwipeableWillOpen={() =>
+                        swipeRef && handleSwipeableWillOpen(swipeRef)
+                      }
+                      renderRightActions={(progress) =>
+                        renderRightActions(progress, file._id)
+                      }
+                      containerStyle={{ width: "100%" }}
+                    >
+                      <TouchableOpacity
+                        onPress={() =>
+                          router.push(`/users/${id}/evaluations/${file._id}`)
+                        }
+                        activeOpacity={0.8}
+                        style={{
+                          width: "100%",
+                          alignSelf: "center",
+                          borderColor: "#E5E7EB",
+                          borderWidth: 1,
+                          borderRadius: 12,
+                          padding: 16,
+                          marginBottom: 12,
+                          backgroundColor: "#FFFFFF",
+                          flexDirection: "row",
+                          alignItems: "center",
+                        }}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 16, fontWeight: "600" }}>
+                            {file.jobTitle || "Untitled Job"}
+                          </Text>
+                          <Text style={{ color: "#9CA3AF", marginTop: 4 }}>
+                            Created: {formatISODate(file.createdAt)}
+                          </Text>
+                        </View>
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            paddingHorizontal: 8,
+                            paddingVertical: 4,
+                            borderRadius: 8,
+                            backgroundColor:
+                              file.status === "complete"
+                                ? "#D1FAE5"
+                                : "#DBEAFE",
+                            color:
+                              file.status === "complete"
+                                ? "#065F46"
+                                : "#1E3A8A",
+                          }}
+                        >
+                          {file.status.replace("_", " ")}
+                        </Text>
+                      </TouchableOpacity>
+                    </Swipeable>
+                  );
+                })
+              )}
             </View>
           </View>
-        </View>
-      </ScrollView>
-
-      <NewFolderModal
-        visible={modalVisible}
-        onClose={handleModalCancel}
-        onCreate={(name) => {
-          handleCreateFolder(name);
-          handleModalCancel();
-        }}
-        folderName={folderName}
-        setFolderName={setFolderName}
-      />
-
-      <EditFolderModal
-        visible={editModalVisible}
-        onClose={handleEditModalClose}
-        onSubmit={handleEditFolder}
-        folderName={editFolderName}
-        setFolderName={setEditFolderName}
-      />
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </TouchableWithoutFeedback>
   );
 };
 

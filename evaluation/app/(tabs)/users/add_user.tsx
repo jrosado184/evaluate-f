@@ -40,7 +40,6 @@ const AddUser = () => {
         <View className={errors.employee_id && "h-28"}>
           <FormField
             title="Name"
-            inputStyles="pl-4"
             placeholder="Enter name"
             rounded="rounded-[0.625rem]"
             handleChangeText={(value: any) =>
@@ -52,7 +51,6 @@ const AddUser = () => {
         <View className={errors.employee_id && "h-28"}>
           <FormField
             title="ID Number"
-            inputStyles="pl-4"
             placeholder="Enter ID number"
             rounded="rounded-[0.625rem]"
             handleChangeText={(value: any) =>
