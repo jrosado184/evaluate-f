@@ -1,3 +1,4 @@
+import React, { useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -6,8 +7,8 @@ import {
   Alert,
   Animated,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from "react-native";
-import React, { useCallback, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect, useGlobalSearchParams } from "expo-router";
 import Icon from "react-native-vector-icons/Feather";
@@ -16,41 +17,117 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import UserCard from "@/components/UserCard";
-import CardSkeleton from "@/app/skeletons/CardSkeleton";
 import useEmployeeContext from "@/app/context/EmployeeContext";
-import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import useAuthContext from "@/app/context/AuthContext";
+import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 
 const User = () => {
-  const { id } = useGlobalSearchParams();
+  const { id } = useGlobalSearchParams(); // employeeId
   const { employee, setEmployee, setAddEmployeeInfo } = useEmployeeContext();
   const { currentUser } = useAuthContext();
 
   const [loading, setLoading] = useState(true);
   const [evaluationFiles, setEvaluationFiles] = useState<any[]>([]);
   const openSwipeableRef = useRef<Swipeable | null>(null);
+  const isNavigatingRef = useRef(false);
 
+  // Fetch employee + evals
   const fetchEmployee = async () => {
-    const token = await AsyncStorage.getItem("token");
-    const baseUrl = await getServerIP();
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const baseUrl = await getServerIP();
 
-    const res = await axios.get(`${baseUrl}/employees/${id}`, {
-      headers: { Authorization: token },
-    });
-    setEmployee(res.data);
-    setAddEmployeeInfo(res.data);
-    setLoading(false);
+      const empRes = await axios.get(`${baseUrl}/employees/${id}`, {
+        headers: { Authorization: token! },
+      });
+      setEmployee(empRes.data);
+      setAddEmployeeInfo(empRes.data);
 
-    const evalRes = await axios.get(`${baseUrl}/employees/${id}/evaluations`, {
-      headers: { Authorization: token },
-    });
-    setEvaluationFiles(evalRes.data);
+      const evalRes = await axios.get(
+        `${baseUrl}/employees/${id}/evaluations`,
+        { headers: { Authorization: token! } }
+      );
+      setEvaluationFiles(evalRes.data);
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Could not load employee or evaluations.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleStartEvaluation = () => {
-    router.push(`/users/${id}/evaluations/step1`);
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchEmployee();
+      return () => setAddEmployeeInfo("");
+    }, [])
+  );
+
+  function randomHex24() {
+    return Array.from({ length: 24 })
+      .map(() => Math.floor(Math.random() * 16).toString(16))
+      .join("");
+  }
+
+  /** Navigate into step1 or summary—but only once per tap **/
+  const handleEvaluationPress = async (evaluationId: string) => {
+    if (isNavigatingRef.current) return;
+    isNavigatingRef.current = true;
+
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const baseUrl = await getServerIP();
+      const { data: evalDoc } = await axios.get(
+        `${baseUrl}/evaluations/${evaluationId}`,
+        { headers: { Authorization: token! } }
+      );
+
+      const info = evalDoc.personalInfo || {};
+      const hasInfo =
+        !!info.teamMemberName && !!info.jobTitle && !!info.department;
+
+      if (!hasInfo || evalDoc.status === "uploaded") {
+        router.push(`/users/${id}/evaluations/${evaluationId}/step1`);
+      } else {
+        router.push(`/users/${id}/evaluations/${evaluationId}`);
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Could not load evaluation details.");
+    } finally {
+      // re-enable after a short pause
+      setTimeout(() => {
+        isNavigatingRef.current = false;
+      }, 500);
+    }
   };
 
+  /** Always go to step1 when creating **/
+  const handleStartEvaluation = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const baseUrl = await getServerIP();
+
+      // create on backend
+      const res = await axios.post(
+        `${baseUrl}/employees/${id}/evaluations`,
+        {
+          jobTitle: "Untitled",
+          createdBy: currentUser,
+        },
+        { headers: { Authorization: token! } }
+      );
+
+      const newEvalId = res.data._id;
+      router.push(`/users/${id}/evaluations/${newEvalId}/step1`);
+    } catch (err) {
+      console.error("Failed to start evaluation:", err);
+      Alert.alert("Error", "Could not start evaluation.");
+    }
+  };
+
+  /** Swipe-to-delete **/
   const handleDeleteEvaluation = (evaluationId: string) => {
     Alert.alert(
       "Delete Evaluation",
@@ -61,12 +138,12 @@ const User = () => {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            const token = await AsyncStorage.getItem("token");
-            const baseUrl = await getServerIP();
             try {
+              const token = await AsyncStorage.getItem("token");
+              const baseUrl = await getServerIP();
               await axios.delete(
                 `${baseUrl}/employees/${id}/evaluations/${evaluationId}`,
-                { headers: { Authorization: token } }
+                { headers: { Authorization: token! } }
               );
               fetchEmployee();
             } catch {
@@ -78,13 +155,13 @@ const User = () => {
     );
   };
 
+  /** Only one row open at once **/
   const handleSwipeableWillOpen = (ref: Swipeable) => {
     if (openSwipeableRef.current && openSwipeableRef.current !== ref) {
       openSwipeableRef.current.close();
     }
     openSwipeableRef.current = ref;
   };
-
   const handleTapOutside = () => {
     if (openSwipeableRef.current) {
       openSwipeableRef.current.close();
@@ -92,13 +169,23 @@ const User = () => {
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchEmployee();
-      return () => setAddEmployeeInfo("");
-    }, [])
-  );
+  // Full-screen loader
+  if (loading) {
+    return (
+      <SafeAreaView
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#FFFFFF",
+        }}
+      >
+        <ActivityIndicator size="large" color="#1a237e" />
+      </SafeAreaView>
+    );
+  }
 
+  // Delete button on swipe
   const renderRightActions = (
     progress: Animated.AnimatedInterpolation<number>,
     evaluationId: string
@@ -144,6 +231,7 @@ const User = () => {
           scrollEventThrottle={16}
         >
           <View style={{ padding: 24 }}>
+            {/* Back */}
             <TouchableOpacity
               onPress={() => router.push("/users")}
               style={{
@@ -153,138 +241,132 @@ const User = () => {
               }}
             >
               <Icon name="chevron-left" size={28} />
-              <Text style={{ fontSize: 20, fontWeight: "600", marginLeft: 4 }}>
+              <Text
+                style={{
+                  marginLeft: 4,
+                  fontSize: 20,
+                  fontWeight: "600",
+                }}
+              >
                 Back
               </Text>
             </TouchableOpacity>
 
-            {loading ? (
-              <CardSkeleton amount={1} width="100%" height={160} />
-            ) : (
-              <UserCard
-                name={employee?.employee_name}
-                employee_id={employee?.employee_id}
-                locker_number={employee?.locker_number}
-                knife_number={employee?.knife_number}
-                position={employee?.position}
-                department={employee?.department}
-                last_update={formatISODate(employee?.last_updated)}
-                status="Damaged"
-              />
-            )}
+            {/* Employee card */}
+            <UserCard
+              name={employee?.employee_name}
+              employee_id={employee?.employee_id}
+              locker_number={employee?.locker_number}
+              knife_number={employee?.knife_number}
+              position={employee?.position}
+              department={employee?.department}
+              last_update={formatISODate(employee?.last_updated)}
+              status="Damaged"
+            />
 
-            <View style={{ marginTop: 24 }}>
-              <View
+            {/* Header + Create */}
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginTop: 24,
+                marginBottom: 12,
+              }}
+            >
+              <Text style={{ fontSize: 18, fontWeight: "600" }}>
+                Evaluations
+              </Text>
+              <TouchableOpacity
+                onPress={handleStartEvaluation}
                 style={{
                   flexDirection: "row",
-                  justifyContent: "space-between",
                   alignItems: "center",
-                  marginBottom: 12,
+                  borderColor: "#2563EB",
+                  borderWidth: 1,
+                  borderRadius: 8,
+                  paddingHorizontal: 12,
+                  paddingVertical: 4,
                 }}
               >
-                <Text style={{ fontSize: 18, fontWeight: "600" }}>
-                  Evaluations
-                </Text>
-                <TouchableOpacity
-                  onPress={handleStartEvaluation}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    borderColor: "#2563EB",
-                    borderWidth: 1,
-                    borderRadius: 8,
-                    paddingHorizontal: 12,
-                    paddingVertical: 4,
-                  }}
-                >
-                  <Icon name="plus" size={12} color="#2563EB" />
-                  <Text style={{ color: "#2563EB", marginLeft: 4 }}>
-                    Create
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                <Icon name="plus" size={12} color="#2563EB" />
+                <Text style={{ color: "#2563EB", marginLeft: 4 }}>Create</Text>
+              </TouchableOpacity>
+            </View>
 
-              {evaluationFiles.length === 0 ? (
-                <View
-                  style={{
-                    justifyContent: "center",
-                    alignItems: "center",
-                    marginTop: 48,
-                  }}
-                >
-                  <Icon name="clipboard" size={50} color="#9CA3AF" />
-                  <Text style={{ color: "#6B7280", marginTop: 16 }}>
-                    No evaluations yet.
-                  </Text>
-                </View>
-              ) : (
-                evaluationFiles.map((file: any) => {
-                  let swipeRef: Swipeable | null = null;
-                  return (
-                    <Swipeable
-                      key={file._id}
-                      ref={(ref) => (swipeRef = ref)}
-                      friction={0.8}
-                      overshootRight={true}
-                      rightThreshold={10}
-                      onSwipeableWillOpen={() =>
-                        swipeRef && handleSwipeableWillOpen(swipeRef)
-                      }
-                      renderRightActions={(progress) =>
-                        renderRightActions(progress, file._id)
-                      }
-                      containerStyle={{ width: "100%" }}
+            {/* Empty state */}
+            {evaluationFiles.length === 0 ? (
+              <View
+                style={{
+                  alignItems: "center",
+                  marginTop: 48,
+                }}
+              >
+                <Icon name="clipboard" size={50} color="#9CA3AF" />
+                <Text style={{ color: "#6B7280", marginTop: 16 }}>
+                  No evaluations yet.
+                </Text>
+              </View>
+            ) : (
+              /* Evaluation rows */
+              evaluationFiles.map((file) => {
+                let swipeRef: Swipeable | null = null;
+                return (
+                  <Swipeable
+                    key={file._id}
+                    ref={(ref) => (swipeRef = ref)}
+                    friction={0.8}
+                    overshootRight
+                    rightThreshold={10}
+                    onSwipeableWillOpen={() =>
+                      swipeRef && handleSwipeableWillOpen(swipeRef)
+                    }
+                    renderRightActions={(progress) =>
+                      renderRightActions(progress, file._id)
+                    }
+                    containerStyle={{ width: "100%" }}
+                  >
+                    <TouchableOpacity
+                      onPress={() => handleEvaluationPress(file._id)}
+                      activeOpacity={0.8}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        borderColor: "#E5E7EB",
+                        borderWidth: 1,
+                        borderRadius: 12,
+                        padding: 16,
+                        marginBottom: 12,
+                        backgroundColor: "#FFFFFF",
+                      }}
                     >
-                      <TouchableOpacity
-                        onPress={() =>
-                          router.push(`/users/${id}/evaluations/${file._id}`)
-                        }
-                        activeOpacity={0.8}
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 16, fontWeight: "600" }}>
+                          {file.jobTitle || "Untitled Job"}
+                        </Text>
+                        <Text style={{ color: "#9CA3AF", marginTop: 4 }}>
+                          Created: {formatISODate(file.uploadedAt)}
+                        </Text>
+                      </View>
+                      <Text
                         style={{
-                          width: "100%",
-                          alignSelf: "center",
-                          borderColor: "#E5E7EB",
-                          borderWidth: 1,
-                          borderRadius: 12,
-                          padding: 16,
-                          marginBottom: 12,
-                          backgroundColor: "#FFFFFF",
-                          flexDirection: "row",
-                          alignItems: "center",
+                          fontSize: 12,
+                          paddingHorizontal: 8,
+                          paddingVertical: 4,
+                          borderRadius: 8,
+                          backgroundColor:
+                            file.status === "complete" ? "#D1FAE5" : "#DBEAFE",
+                          color:
+                            file.status === "complete" ? "#065F46" : "#1E3A8A",
                         }}
                       >
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 16, fontWeight: "600" }}>
-                            {file.jobTitle || "Untitled Job"}
-                          </Text>
-                          <Text style={{ color: "#9CA3AF", marginTop: 4 }}>
-                            Created: {formatISODate(file.createdAt)}
-                          </Text>
-                        </View>
-                        <Text
-                          style={{
-                            fontSize: 12,
-                            paddingHorizontal: 8,
-                            paddingVertical: 4,
-                            borderRadius: 8,
-                            backgroundColor:
-                              file.status === "complete"
-                                ? "#D1FAE5"
-                                : "#DBEAFE",
-                            color:
-                              file.status === "complete"
-                                ? "#065F46"
-                                : "#1E3A8A",
-                          }}
-                        >
-                          {file.status.replace("_", " ")}
-                        </Text>
-                      </TouchableOpacity>
-                    </Swipeable>
-                  );
-                })
-              )}
-            </View>
+                        {file.status.replace("_", " ")}
+                      </Text>
+                    </TouchableOpacity>
+                  </Swipeable>
+                );
+              })
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>

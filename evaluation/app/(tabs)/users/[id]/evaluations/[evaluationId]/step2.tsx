@@ -1,5 +1,5 @@
 // Step2Form.tsx
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -96,7 +96,7 @@ const Step2Form = () => {
 
   // keep expectedQualified in sync
   useEffect(() => {
-    setFormData((f) => ({ ...f, expectedQualified: computedExpected }));
+    setFormData((f: any) => ({ ...f, expectedQualified: computedExpected }));
   }, [
     formData.hoursMonday,
     formData.hoursTuesday,
@@ -119,9 +119,7 @@ const Step2Form = () => {
         const weekData = evalDoc.evaluations.find(
           (e: any) => e.weekNumber === currentWeek
         );
-        if (weekData) {
-          setFormData(weekData);
-        }
+        if (weekData) setFormData(weekData);
       } catch {
         Alert.alert("Error", "Failed to load evaluation");
       } finally {
@@ -133,7 +131,6 @@ const Step2Form = () => {
   const handleChange = (key: string, value: string) => {
     let v = value;
     if (["yieldAuditDate", "knifeSkillsAuditDate"].includes(key)) {
-      // date mask
       v = v
         .replace(/\D/g, "")
         .slice(0, 8)
@@ -165,31 +162,41 @@ const Step2Form = () => {
       setErrors(newErrors);
       return;
     }
+
     try {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
-      // send new week
+
+      // 1) add or update this week
       await axios.patch(
-        `${baseUrl}/api/evaluations/${evaluationId}`,
+        `${baseUrl}/evaluations/${evaluationId}`,
         {
           action: "add_or_update_week",
-          weekData: {
-            ...formData,
-            weekNumber: currentWeek,
-            totalHours,
-            totalHoursOnJob,
-            totalHoursOffJob,
-            totalHoursWithTrainee,
+          data: {
+            weekData: {
+              ...formData,
+              weekNumber: currentWeek,
+              totalHours,
+              totalHoursOnJob,
+              totalHoursOffJob,
+              totalHoursWithTrainee,
+            },
           },
         },
         { headers: { Authorization: token! } }
       );
-      // also bump status on employee-evaluation join if you need:
+
+      // 2) bump status
       await axios.patch(
-        `${baseUrl}/api/employees/${employeeId}/evaluations/${evaluationId}/status`,
-        { status: "in_progress" },
+        `${baseUrl}/api/evaluations/${evaluationId}`,
+        {
+          action: "update_status",
+          data: { status: "in_progress" },
+        },
         { headers: { Authorization: token! } }
       );
+
+      // 3) navigate back to summary
       router.replace(`/users/${employeeId}/evaluations/${evaluationId}`);
     } catch {
       Alert.alert("Error", "Failed to save evaluation");
@@ -244,10 +251,13 @@ const Step2Form = () => {
           className="px-5 pt-5"
           contentContainerStyle={{ paddingBottom: 140 }}
         >
+          {/* Back + Title */}
           <View className="flex-row items-center mb-6">
             <TouchableOpacity
               onPress={() =>
-                router.replace(`/users/${employeeId}/evaluations/step1`)
+                router.replace(
+                  `/users/${employeeId}/evaluations/${evaluationId}`
+                )
               }
               className="mr-3"
             >
@@ -330,14 +340,15 @@ const Step2Form = () => {
                   : "Hand Stretch Exercises Completed"}
               </Text>
               <TouchableOpacity
-                onPress={() =>
-                  setFormData((f) => ({
-                    ...f,
-                    [k]: !f[k],
-                  }))
-                }
+                onPress={() => setFormData((f: any) => ({ ...f, [k]: !f[k] }))}
                 className={`py-3 rounded-md items-center ${
-                  formData[k] ? "bg-red-600" : "bg-gray-300"
+                  k === "hasPain"
+                    ? formData.hasPain
+                      ? "bg-red-600"
+                      : "bg-green-600"
+                    : formData.handStretchCompleted
+                    ? "bg-green-600"
+                    : "bg-red-600"
                 }`}
               >
                 <Text className="text-white text-lg font-semibold">
@@ -398,7 +409,7 @@ const Step2Form = () => {
       <SignatureModal
         visible={!!signatureType}
         onOK={(base64: string) => {
-          setFormData((f) => ({ ...f, [signatureType!]: base64 }));
+          setFormData((f: any) => ({ ...f, [signatureType!]: base64 }));
           setSignatureType(null);
         }}
         onCancel={() => setSignatureType(null)}

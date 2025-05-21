@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import StepProgressBar from "@/components/StepProgressBar";
-import PersonalInfoForm from "../../../../../evaluations/step1";
+import PersonalInfoForm from "../../../../../evaluations/[evaluationId]/step1";
 import Step2Form from "../../../../../evaluations/[evaluationId]/step2";
 
 const EditFormController = () => {
