@@ -16,9 +16,10 @@ import axios from "axios";
 import getServerIP from "@/app/requests/NetworkAddress";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import useAuthContext from "@/app/context/AuthContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const QualifyScreen = () => {
-  const { id, fileId, folderId } = useLocalSearchParams();
+  const { id, evaluationId } = useLocalSearchParams();
   const { employee } = useEmployeeContext();
   const { currentUser } = useAuthContext();
   const router = useRouter();
@@ -51,16 +52,36 @@ const QualifyScreen = () => {
   const handleMarkQualified = async () => {
     try {
       const baseUrl = await getServerIP();
+      const token = await AsyncStorage.getItem("token");
+
       await axios.patch(
-        `${baseUrl}/employees/${id}/folders/${folderId}/files/${fileId}`,
+        `${baseUrl}/evaluations/${evaluationId}`,
         {
           action: "final_signatures",
           data: { signatures },
+        },
+        {
+          headers: {
+            Authorization: token!,
+          },
         }
       );
 
-      router.replace(`/users/${id}/folders/${folderId}/files/${fileId}`);
+      await axios.patch(
+        `${baseUrl}/evaluations/${evaluationId}/status`,
+        {
+          status: "complete",
+        },
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
+      );
+
+      router.replace(`/users/${id}/evaluations/${evaluationId}`);
     } catch (error) {
+      console.error("Failed to mark as qualified:", error);
       Alert.alert("Error", "Failed to mark as qualified.");
     }
   };
@@ -75,12 +96,7 @@ const QualifyScreen = () => {
       >
         {/* Back Button */}
         <View className="flex-row items-center mb-6">
-          <TouchableOpacity
-            onPress={() =>
-              router.replace(`/users/${id}/folders/${folderId}/files/${fileId}`)
-            }
-            className="mr-3"
-          >
+          <TouchableOpacity onPress={() => router.back()} className="mr-3">
             <Icon name="chevron-left" size={28} color="#1a237e" />
           </TouchableOpacity>
           <Text className="text-2xl font-semibold text-gray-900">

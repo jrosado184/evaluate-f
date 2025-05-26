@@ -50,7 +50,7 @@ const EvaluationSummary = () => {
     setSubmitting(true);
 
     const weeksDone = evaluation.evaluations?.length || 0;
-    let nextRoute = "";
+    let nextRoute: any = "";
 
     if (evaluation.status === "uploaded") {
       nextRoute = `/users/${userId}/evaluations/${evaluationId}/step1`;
