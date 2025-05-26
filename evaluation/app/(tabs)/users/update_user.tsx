@@ -63,8 +63,6 @@ const update_user = () => {
     }
   };
 
-  console.log(addEmployeeInfo);
-
   const updateUser = async () => {
     const response = await updateEmployee(rest, addEmployeeInfo?._id);
     //most edges cases handles here, if any come up fix asap

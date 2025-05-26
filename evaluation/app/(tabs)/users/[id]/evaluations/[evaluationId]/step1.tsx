@@ -46,6 +46,7 @@ const PersonalInfoForm = () => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasInfo, setHasInfo] = useState(false);
 
   const prefilledFields = [
     "teamMemberName",
@@ -56,15 +57,15 @@ const PersonalInfoForm = () => {
   useEffect(() => {
     (async () => {
       try {
-        // 1) load saved personalInfo
         const token = await AsyncStorage.getItem("token");
         const baseUrl = await getServerIP();
         const res = await axios.get(`${baseUrl}/evaluations/${evaluationId}`, {
           headers: { Authorization: token! },
         });
         const info = res.data.personalInfo || {};
-
-        // 2) merge missing fields from employee context
+        const filled =
+          !!info.teamMemberName && !!info.jobTitle && !!info.department;
+        setHasInfo(filled);
         setFormData({
           trainingType: info.trainingType || "",
           teamMemberName: info.teamMemberName || employee?.employee_name || "",
@@ -101,36 +102,33 @@ const PersonalInfoForm = () => {
       "projectedTrainingHours",
       "projectedQualifyingDate",
     ] as const;
-
     const errs: Record<string, string> = {};
-    required.forEach((key) => {
-      if (!formData[key].trim()) errs[key] = "Required";
-    });
+    for (const key of required) {
+      if (!formData[key].trim()) {
+        errs[key] = "Required";
+      }
+    }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
   const handleChange = (key: keyof typeof formData, value: string) => {
     let v = value;
-    // date mask
     if (/(Date|QualifyingDate)/.test(key)) {
       const d = value.replace(/\D/g, "");
       if (d.length <= 2) v = d;
       else if (d.length <= 4) v = `${d.slice(0, 2)}/${d.slice(2)}`;
       else v = `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4, 8)}`;
     }
-    // phone mask
     if (key === "phoneNumber") {
       const d = value.replace(/\D/g, "").slice(0, 10);
       if (d.length <= 3) v = d;
       else if (d.length <= 6) v = `${d.slice(0, 3)}-${d.slice(3)}`;
       else v = `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
     }
-    // numeric only
     if (/(ID|Hours)/.test(key)) {
       v = v.replace(/\D/g, "");
     }
-
     setFormData((f) => ({ ...f, [key]: v }));
     if (errors[key]) {
       const e2 = { ...errors };
@@ -150,30 +148,18 @@ const PersonalInfoForm = () => {
     try {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
-
-      // PATCH personalInfo
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
-        {
-          action: "update_personal_info",
-          data: { personalInfo: formData },
-        },
+        { action: "update_personal_info", data: { personalInfo: formData } },
         { headers: { Authorization: token! } }
       );
-
-      // bump status if new
       if (from !== "details") {
         await axios.patch(
           `${baseUrl}/evaluations/${evaluationId}`,
-          {
-            action: "update_status",
-            data: { status: "in_progress" },
-          },
+          { action: "update_status", data: { status: "in_progress" } },
           { headers: { Authorization: token! } }
         );
       }
-
-      // navigate to step2
       router.replace(`/users/${employeeId}/evaluations/${evaluationId}/step2`);
     } catch (err) {
       console.error(err);
@@ -203,9 +189,19 @@ const PersonalInfoForm = () => {
           className="px-5 pt-5"
           contentContainerStyle={{ paddingBottom: 120 }}
         >
-          {/* Back + Title */}
           <View className="flex-row items-center mb-6">
-            <TouchableOpacity onPress={() => router.back()} className="mr-3">
+            <TouchableOpacity
+              onPress={() => {
+                if (hasInfo) {
+                  router.replace(
+                    `/users/${employeeId}/evaluations/${evaluationId}`
+                  );
+                } else {
+                  router.replace(`/users/${employeeId}`);
+                }
+              }}
+              className="mr-3"
+            >
               <Icon name="chevron-left" size={28} color="#1a237e" />
             </TouchableOpacity>
             <Text className="text-2xl font-semibold text-gray-900">
@@ -213,7 +209,6 @@ const PersonalInfoForm = () => {
             </Text>
           </View>
 
-          {/* Training Type */}
           <View className="mb-5">
             <Text className="text-base font-medium text-gray-700 mb-2">
               Training Type
@@ -257,38 +252,35 @@ const PersonalInfoForm = () => {
             )}
           </View>
 
-          {/* Other fields */}
-          {(
-            [
-              { key: "teamMemberName", label: "Team Member Name" },
-              { key: "employeeId", label: "Employee ID" },
-              { key: "hireDate", label: "Hire Date (MM/DD/YYYY)" },
-              { key: "jobTitle", label: "Job Title" },
-              { key: "department", label: "Department" },
-              { key: "lockerNumber", label: "Locker #" },
-              { key: "phoneNumber", label: "Phone Number" },
-              { key: "jobStartDate", label: "Job Start Date (MM/DD/YYYY)" },
-              {
-                key: "projectedTrainingHours",
-                label: "Projected Training Hours",
-              },
-              {
-                key: "projectedQualifyingDate",
-                label: "Projected Qualifying Date (MM/DD/YYYY)",
-              },
-            ] as const
-          ).map(({ key, label }) => (
+          {[
+            { key: "teamMemberName", label: "Team Member Name" },
+            { key: "employeeId", label: "Employee ID" },
+            { key: "hireDate", label: "Hire Date (MM/DD/YYYY)" },
+            { key: "jobTitle", label: "Job Title" },
+            { key: "department", label: "Department" },
+            { key: "lockerNumber", label: "Locker #" },
+            { key: "phoneNumber", label: "Phone Number" },
+            { key: "jobStartDate", label: "Job Start Date (MM/DD/YYYY)" },
+            {
+              key: "projectedTrainingHours",
+              label: "Projected Training Hours",
+            },
+            {
+              key: "projectedQualifyingDate",
+              label: "Projected Qualifying Date (MM/DD/YYYY)",
+            },
+          ].map(({ key, label }) => (
             <View key={key} className="mb-5">
               <FormField
                 title={label}
-                value={formData[key]}
+                value={formData[key as keyof typeof formData]}
                 placeholder={label}
-                handleChangeText={(t) => handleChange(key, t)}
+                handleChangeText={(t) => handleChange(key as any, t)}
                 error={errors[key]}
                 keyboardType={
                   /Date|Hours|ID|Number|Phone/.test(key) ? "numeric" : "default"
                 }
-                editable={!prefilledFields.includes(key)}
+                editable={!prefilledFields.includes(key as any)}
               />
             </View>
           ))}

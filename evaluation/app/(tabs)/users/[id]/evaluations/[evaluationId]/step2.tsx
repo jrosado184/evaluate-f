@@ -25,7 +25,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const Step2Form = () => {
   const router = useRouter();
-  const { id: employeeId, evaluationId, week } = useLocalSearchParams();
+  const { id: employeeId, evaluationId, week, step } = useLocalSearchParams();
   const { currentUser } = useAuthContext();
   const currentWeek = parseInt((week as string) || "1", 10);
 
@@ -188,7 +188,7 @@ const Step2Form = () => {
 
       // 2) bump status
       await axios.patch(
-        `${baseUrl}/api/evaluations/${evaluationId}`,
+        `${baseUrl}/evaluations/${evaluationId}`,
         {
           action: "update_status",
           data: { status: "in_progress" },
