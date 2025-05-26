@@ -20,6 +20,7 @@ import UserCard from "@/components/UserCard";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import useAuthContext from "@/app/context/AuthContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
+import EvaluationRow from "@/components/evaluations/EvaluationRow";
 
 const User = () => {
   const { id } = useGlobalSearchParams(); // employeeId
@@ -308,64 +309,19 @@ const User = () => {
                 </Text>
               </View>
             ) : (
-              /* Evaluation rows */
-              evaluationFiles.map((file) => {
-                let swipeRef: Swipeable | null = null;
-                return (
-                  <Swipeable
-                    key={file._id}
-                    ref={(ref) => (swipeRef = ref)}
-                    friction={0.8}
-                    overshootRight
-                    rightThreshold={10}
-                    onSwipeableWillOpen={() =>
-                      swipeRef && handleSwipeableWillOpen(swipeRef)
-                    }
-                    renderRightActions={(progress) =>
-                      renderRightActions(progress, file._id)
-                    }
-                    containerStyle={{ width: "100%" }}
-                  >
-                    <TouchableOpacity
-                      onPress={() => handleEvaluationPress(file._id)}
-                      activeOpacity={0.8}
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        borderColor: "#E5E7EB",
-                        borderWidth: 1,
-                        borderRadius: 12,
-                        padding: 16,
-                        marginBottom: 12,
-                        backgroundColor: "#FFFFFF",
-                      }}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 16, fontWeight: "600" }}>
-                          {file.jobTitle || "Untitled Job"}
-                        </Text>
-                        <Text style={{ color: "#9CA3AF", marginTop: 4 }}>
-                          Created: {formatISODate(file.uploadedAt)}
-                        </Text>
-                      </View>
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          paddingHorizontal: 8,
-                          paddingVertical: 4,
-                          borderRadius: 8,
-                          backgroundColor:
-                            file.status === "complete" ? "#D1FAE5" : "#DBEAFE",
-                          color:
-                            file.status === "complete" ? "#065F46" : "#1E3A8A",
-                        }}
-                      >
-                        {file.status.replace("_", " ")}
-                      </Text>
-                    </TouchableOpacity>
-                  </Swipeable>
-                );
-              })
+              evaluationFiles.map((file) => (
+                <EvaluationRow
+                  key={file._id}
+                  file={file}
+                  onDelete={handleDeleteEvaluation}
+                  onPress={handleEvaluationPress}
+                  handleSwipeableWillOpen={(ref: any) =>
+                    openSwipeableRef.current && openSwipeableRef.current !== ref
+                      ? openSwipeableRef.current.close()
+                      : (openSwipeableRef.current = ref)
+                  }
+                />
+              ))
             )}
           </View>
         </ScrollView>

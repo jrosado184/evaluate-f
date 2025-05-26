@@ -12,7 +12,7 @@ import { useLocalSearchParams, useFocusEffect, router } from "expo-router";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
-import EvaluationTimeline from "@/components/EvaluationTimeline";
+import EvaluationTimeline from "@/components/evaluations/EvaluationTimeline";
 import EvaluationButton from "@/components/buttons/EvaluationButton";
 import Icon from "react-native-vector-icons/Feather";
 
@@ -90,6 +90,7 @@ const EvaluationSummary = () => {
 
   const weeksDone = evaluation.evaluations?.length || 0;
   const canQualify = weeksDone >= 3;
+  const pdfpreview = evaluation?.fileUrl?.split("/")[2];
 
   return (
     <SafeAreaView className="flex-1 bg-white pb-40">
@@ -150,7 +151,7 @@ const EvaluationSummary = () => {
             <TouchableOpacity
               onPress={handleContinue}
               disabled={submitting}
-              className="mt-4 bg-[#1a237e] px-6 py-2 rounded-md"
+              className="mt-4 w-42 h-12 flex items-center justify-center bg-[#1a237e] px-6 py-2 rounded-md"
             >
               <Text className="text-white font-semibold">Start Evaluation</Text>
             </TouchableOpacity>
@@ -166,6 +167,38 @@ const EvaluationSummary = () => {
               onPress={handleContinue}
               isLoading={submitting}
             />
+          </View>
+        )}
+
+        {/* View PDF */}
+        {evaluation.status === "complete" && (
+          <View className="w-full items-center bg-white mt-4">
+            <TouchableOpacity
+              onPress={() =>
+                router.push({
+                  pathname: `/users/${userId}/evaluations/${evaluationId}/${pdfpreview}`,
+                  params: { filename: pdfpreview },
+                })
+              }
+              activeOpacity={0.85}
+              className="w-[90vw] border border-gray-300 rounded-lg bg-white px-4 py-3"
+            >
+              <View className="flex-row justify-between items-center">
+                <View className="flex-1 pr-2">
+                  <Text className="text-base font-inter-medium">
+                    Evaluation Summary
+                  </Text>
+                  <Text className="text-sm text-neutral-500">
+                    View as PDF document
+                  </Text>
+                </View>
+                <View className="px-3 py-1 rounded-full bg-blue-100">
+                  <Text className="text-xs font-inter-semibold text-blue-700">
+                    View PDF
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>

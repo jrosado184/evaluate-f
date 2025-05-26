@@ -18,6 +18,11 @@ import useEmployeeContext from "@/app/context/EmployeeContext";
 import useAuthContext from "@/app/context/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+type SignatureData = {
+  image: string;
+  signedAt: string;
+};
+
 const QualifyScreen = () => {
   const { id, evaluationId } = useLocalSearchParams();
   const { employee } = useEmployeeContext();
@@ -29,21 +34,27 @@ const QualifyScreen = () => {
   const position = employee?.position;
 
   const [signatureType, setSignatureType] = useState<string | null>(null);
-  const [signatures, setSignatures] = useState<Record<string, string>>({
-    teamMember: "",
-    trainer: "",
-    supervisor: "",
-    trainingSupervisor: "",
-    superintendent: "",
+  const [signatures, setSignatures] = useState<Record<string, SignatureData>>({
+    teamMember: { image: "", signedAt: "" },
+    trainer: { image: "", signedAt: "" },
+    supervisor: { image: "", signedAt: "" },
+    trainingSupervisor: { image: "", signedAt: "" },
+    superintendent: { image: "", signedAt: "" },
   });
 
-  const allSigned = Object.values(signatures).every((sig) => sig);
+  const allSigned = Object.values(signatures).every((sig) => sig.image);
 
   const handleSignature = (base64: string) => {
     if (signatureType) {
+      const now = new Date();
+      const formattedDate = `${String(now.getMonth() + 1).padStart(
+        2,
+        "0"
+      )}/${String(now.getDate()).padStart(2, "0")}/${now.getFullYear()}`;
+
       setSignatures((prev) => ({
         ...prev,
-        [signatureType]: base64,
+        [signatureType]: { image: base64, signedAt: formattedDate },
       }));
       setSignatureType(null);
     }
@@ -53,6 +64,11 @@ const QualifyScreen = () => {
     try {
       const baseUrl = await getServerIP();
       const token = await AsyncStorage.getItem("token");
+
+      // Use the date from the final signatures
+      const firstSignatureKey = Object.keys(signatures)[0];
+      const qualifiedAtDate =
+        signatures[firstSignatureKey]?.signedAt || new Date().toISOString();
 
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
@@ -67,10 +83,12 @@ const QualifyScreen = () => {
         }
       );
 
+      // Also update the status AND add qualifiedAt
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}/status`,
         {
           status: "complete",
+          qualifiedAt: qualifiedAtDate, // include qualifiedAt in the final update
         },
         {
           headers: {
@@ -119,7 +137,7 @@ const QualifyScreen = () => {
 
         {/* Signatures */}
         <View className="gap-y-5">
-          {Object.entries(signatures).map(([role, image]) => (
+          {Object.entries(signatures).map(([role, { image, signedAt }]) => (
             <View key={role}>
               <Text className="text-base font-medium text-gray-700 mb-2 capitalize">
                 {role.replace(/([A-Z])/g, " $1")}
@@ -138,6 +156,11 @@ const QualifyScreen = () => {
                   <Text className="text-gray-400">Tap to Sign</Text>
                 )}
               </TouchableOpacity>
+              {signedAt && (
+                <Text className="text-xs text-gray-400 mt-1">
+                  Signed at: {new Date(signedAt).toLocaleString()}
+                </Text>
+              )}
             </View>
           ))}
         </View>

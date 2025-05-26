@@ -235,19 +235,22 @@ const EvaluationTimeline = ({ fileData }: any) => {
                   { label: "Trainer", key: "trainer" },
                   { label: "Supervisor", key: "supervisor" },
                   { label: "Training Supervisor", key: "trainingSupervisor" },
-                ].map(
-                  ({ label, key }) =>
-                    fileData.finalSignatures[key] && (
+                ].map(({ label, key }) => {
+                  const signature = fileData.finalSignatures[key];
+                  const imageUrl =
+                    typeof signature === "string"
+                      ? signature
+                      : signature?.image;
+                  return (
+                    imageUrl && (
                       <Pressable
                         key={key}
-                        onPress={() =>
-                          setSelectedImage(fileData.finalSignatures[key])
-                        }
+                        onPress={() => setSelectedImage(imageUrl)}
                         className="items-center"
                       >
                         <View className="w-48 h-20 flex justify-center items-center bg-neutral-50 border border-neutral-400 rounded-md overflow-hidden">
                           <Image
-                            source={{ uri: fileData.finalSignatures[key] }}
+                            source={{ uri: imageUrl }}
                             className="w-full h-full"
                             resizeMode="contain"
                           />
@@ -257,7 +260,8 @@ const EvaluationTimeline = ({ fileData }: any) => {
                         </Text>
                       </Pressable>
                     )
-                )}
+                  );
+                })}
               </View>
             </>
           )}
