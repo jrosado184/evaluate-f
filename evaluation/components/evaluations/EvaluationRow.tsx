@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import { View, Text, TouchableOpacity, Animated } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import Icon from "react-native-vector-icons/Feather";
@@ -11,6 +11,7 @@ const EvaluationRow = ({
   onPress,
   handleSwipeableWillOpen,
 }: any) => {
+  const swipeableRef = useRef<Swipeable>(null);
   const router = useRouter();
 
   const renderRightActions = (
@@ -50,11 +51,11 @@ const EvaluationRow = ({
 
   return (
     <Swipeable
-      key={file._id}
+      ref={swipeableRef}
       friction={0.8}
       overshootRight
       rightThreshold={10}
-      onSwipeableWillOpen={(ref) => handleSwipeableWillOpen(ref)}
+      onSwipeableWillOpen={() => handleSwipeableWillOpen(swipeableRef.current)}
       renderRightActions={renderRightActions}
       containerStyle={{ width: "100%" }}
     >

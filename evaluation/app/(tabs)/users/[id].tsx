@@ -156,15 +156,21 @@ const User = () => {
   };
 
   /** Only one row open at once **/
-  const handleSwipeableWillOpen = (ref: Swipeable) => {
+  /** Only one row open at once **/
+  const handleSwipeableWillOpen = (ref: Swipeable | null) => {
+    // If there’s an open swipeable and it’s not the same as the newly opened one
     if (openSwipeableRef.current && openSwipeableRef.current !== ref) {
-      openSwipeableRef.current.close();
+      openSwipeableRef.current.close?.();
     }
+
+    // Store the currently opened swipeable
     openSwipeableRef.current = ref;
   };
+
   const handleTapOutside = () => {
+    // Close and clear reference if a swipeable is open
     if (openSwipeableRef.current) {
-      openSwipeableRef.current.close();
+      openSwipeableRef.current.close?.();
       openSwipeableRef.current = null;
     }
   };
@@ -184,43 +190,6 @@ const User = () => {
       </SafeAreaView>
     );
   }
-
-  // Delete button on swipe
-  const renderRightActions = (
-    progress: Animated.AnimatedInterpolation<number>,
-    evaluationId: string
-  ) => {
-    const translateX = progress.interpolate({
-      inputRange: [0, 1],
-      outputRange: [80, 8],
-      extrapolate: "clamp",
-    });
-    return (
-      <Animated.View
-        style={{
-          transform: [{ translateX }],
-          flexDirection: "row",
-          height: "85%",
-          marginRight: 5,
-          width: "20%",
-        }}
-      >
-        <TouchableOpacity
-          onPress={() => handleDeleteEvaluation(evaluationId)}
-          style={{
-            width: 70,
-            backgroundColor: "#EF4444",
-            justifyContent: "center",
-            alignItems: "center",
-            borderTopRightRadius: 8,
-            borderBottomRightRadius: 8,
-          }}
-        >
-          <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>Delete</Text>
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  };
 
   return (
     <TouchableWithoutFeedback onPress={handleTapOutside}>
@@ -314,10 +283,8 @@ const User = () => {
                   file={file}
                   onDelete={handleDeleteEvaluation}
                   onPress={handleEvaluationPress}
-                  handleSwipeableWillOpen={(ref: any) =>
-                    openSwipeableRef.current && openSwipeableRef.current !== ref
-                      ? openSwipeableRef.current.close()
-                      : (openSwipeableRef.current = ref)
+                  handleSwipeableWillOpen={(ref: Swipeable | null) =>
+                    handleSwipeableWillOpen(ref)
                   }
                 />
               ))

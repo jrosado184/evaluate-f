@@ -92,6 +92,8 @@ const EvaluationSummary = () => {
   const canQualify = weeksDone >= 3;
   const pdfpreview = evaluation?.fileUrl?.split("/")[2];
 
+  console.log(weeksDone);
+
   return (
     <SafeAreaView className="flex-1 bg-white mb-14">
       {/* Header */}
