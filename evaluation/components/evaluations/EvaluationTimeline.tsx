@@ -1,4 +1,3 @@
-// EvaluationTimeline.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -12,32 +11,24 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 
 const EvaluationTimeline = ({ fileData }: any) => {
   const router = useRouter();
-  const { id, fileId, folderId } = useLocalSearchParams();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const completedWeeks = new Map(
     fileData.evaluations?.map((e: any) => [e.weekNumber, e]) || []
   );
 
-  const nextAvailableWeek = (() => {
-    for (let i = 1; i <= 6; i++) {
-      if (!completedWeeks.has(i)) return i;
-    }
-    return null;
-  })();
-
   const projectedTrainingWeeks =
     fileData.personalInfo.projectedTrainingHours / 40;
 
   const handleEdit = (weekNumber: number) => {
     router.push(
-      `/users/${id}/folders/${folderId}/files/${fileId}/edit-form?step=2&week=${weekNumber}`
+      `/users/${fileData?.employeeId}/evaluations/${fileData?._id}/step2?week=${weekNumber}`
     );
   };
 
   const handleStart = (weekNumber: number) => {
     router.push(
-      `/users/${id}/folders/${folderId}/files/${fileId}/edit-form?step=2&week=${weekNumber}`
+      `/users/${fileData?.employeeId}/evaluations/${fileData?._id}/step2?week=${weekNumber}`
     );
   };
 
@@ -64,21 +55,22 @@ const EvaluationTimeline = ({ fileData }: any) => {
       }).map((_, i) => {
         const week = i + 1;
         const evaluation: any = completedWeeks.get(week);
-        const nextWeekComplete = completedWeeks.has(week + 1);
+        const prevWeekComplete = completedWeeks.has(week - 1) || week === 1;
+        const nextWeek = week + 1;
+        const nextWeekExists = completedWeeks.has(nextWeek);
+
         const isComplete = !!evaluation;
-        const isNext = week === nextAvailableWeek;
 
         return (
           <View
             key={week}
-            className="mb-5 p-4 bg-gray-50 rounded-xl border border-gray-200"
+            className="mb-5 p-4 bg-gray-50 rounded-xl border border-gray-200 w-[90%] self-center"
           >
             <Text className="text-lg font-semibold mb-3">Week {week}</Text>
 
-            {isComplete ? (
+            {isComplete && (
               <>
                 <View className="flex-row flex-wrap gap-y-1">
-                  {/* Time & Qualification */}
                   <View className="w-1/2 pr-2">
                     <Text className="text-sm text-gray-700">
                       Total Hours on Job:{" "}
@@ -111,58 +103,6 @@ const EvaluationTimeline = ({ fileData }: any) => {
                       </Text>
                     </Text>
                   </View>
-
-                  {/* Audits */}
-                  <View className="w-1/2 pr-2 mt-1">
-                    <Text className="text-sm text-gray-700">
-                      Yield Audit:{" "}
-                      <Text className="font-semibold text-gray-900">
-                        {evaluation.yieldAuditDate || "-"}
-                      </Text>
-                    </Text>
-                  </View>
-                  <View className="w-1/2 pr-2 mt-1">
-                    <Text className="text-sm text-gray-700">
-                      Knife Skills Audit:{" "}
-                      <Text className="font-semibold text-gray-900">
-                        {evaluation.knifeSkillsAuditDate || "-"}
-                      </Text>
-                    </Text>
-                  </View>
-                  <View className="w-1/2 pr-2 mt-1">
-                    <Text className="text-sm text-gray-700">
-                      Knife Score:{" "}
-                      <Text className="font-semibold text-gray-900">
-                        {evaluation.knifeScore ?? "-"}
-                      </Text>
-                    </Text>
-                  </View>
-
-                  {/* Physical Wellness */}
-                  <View className="w-1/2 pr-2 mt-1">
-                    <Text className="text-sm text-gray-700">
-                      Pain/Numbness:{" "}
-                      <Text className="font-semibold text-gray-900">
-                        {evaluation.hasPain ? "Yes" : "No"}
-                      </Text>
-                    </Text>
-                  </View>
-                  <View className="w-1/2 pr-2 mt-1">
-                    <Text className="text-sm text-gray-700">
-                      Hand Stretch Completed:{" "}
-                      <Text className="font-semibold text-gray-900">
-                        {evaluation.handStretchCompleted ? "Yes" : "No"}
-                      </Text>
-                    </Text>
-                  </View>
-                  <View className="w-1/2 pr-2 mt-1">
-                    <Text className="text-sm text-gray-700">
-                      RE Time Achieved:{" "}
-                      <Text className="font-semibold text-gray-900">
-                        {evaluation.reTimeAchieved ?? "-"} secs
-                      </Text>
-                    </Text>
-                  </View>
                 </View>
 
                 {evaluation.comments && (
@@ -174,7 +114,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
                   </Text>
                 )}
 
-                {/* Signature Previews */}
+                {/* Signatures */}
                 <View className="mt-3 flex-row justify-between gap-2">
                   {[
                     { label: "Trainer", key: "trainerSignature" },
@@ -208,7 +148,8 @@ const EvaluationTimeline = ({ fileData }: any) => {
                   )}
                 </View>
 
-                {!nextWeekComplete && !isComplete && (
+                {/* Edit button */}
+                {!nextWeekExists && !isComplete && (
                   <TouchableOpacity
                     onPress={() => handleEdit(week)}
                     className="mt-4 bg-[#1a237e] px-5 py-3 rounded-md self-start shadow-sm"
@@ -219,7 +160,9 @@ const EvaluationTimeline = ({ fileData }: any) => {
                   </TouchableOpacity>
                 )}
               </>
-            ) : isNext && !isComplete ? (
+            )}
+
+            {!isComplete && prevWeekComplete && (
               <TouchableOpacity
                 onPress={() => handleStart(week)}
                 className="mt-2 bg-emerald-600 px-5 py-3 rounded-md self-start shadow-sm"
@@ -228,7 +171,9 @@ const EvaluationTimeline = ({ fileData }: any) => {
                   Get Started
                 </Text>
               </TouchableOpacity>
-            ) : (
+            )}
+
+            {!isComplete && !prevWeekComplete && (
               <Text className="text-sm text-gray-400 mt-1">
                 Locked until previous week is complete
               </Text>
@@ -237,9 +182,9 @@ const EvaluationTimeline = ({ fileData }: any) => {
         );
       })}
 
-      {/* Final Totals + Final Signatures */}
+      {/* Final Totals & Final Signatures */}
       {fileData?.evaluations?.length > 0 && (
-        <View className="mt-6 p-4 bg-white border border-gray-300 rounded-xl">
+        <View className="mt-6 p-4 bg-white border border-gray-300 rounded-xl w-[90%] self-center">
           <Text className="text-lg font-semibold text-gray-900 mb-3">
             Totals
           </Text>
@@ -290,19 +235,22 @@ const EvaluationTimeline = ({ fileData }: any) => {
                   { label: "Trainer", key: "trainer" },
                   { label: "Supervisor", key: "supervisor" },
                   { label: "Training Supervisor", key: "trainingSupervisor" },
-                ].map(
-                  ({ label, key }) =>
-                    fileData.finalSignatures[key] && (
+                ].map(({ label, key }) => {
+                  const signature = fileData.finalSignatures[key];
+                  const imageUrl =
+                    typeof signature === "string"
+                      ? signature
+                      : signature?.image;
+                  return (
+                    imageUrl && (
                       <Pressable
                         key={key}
-                        onPress={() =>
-                          setSelectedImage(fileData.finalSignatures[key])
-                        }
+                        onPress={() => setSelectedImage(imageUrl)}
                         className="items-center"
                       >
                         <View className="w-48 h-20 flex justify-center items-center bg-neutral-50 border border-neutral-400 rounded-md overflow-hidden">
                           <Image
-                            source={{ uri: fileData.finalSignatures[key] }}
+                            source={{ uri: imageUrl }}
                             className="w-full h-full"
                             resizeMode="contain"
                           />
@@ -312,7 +260,8 @@ const EvaluationTimeline = ({ fileData }: any) => {
                         </Text>
                       </Pressable>
                     )
-                )}
+                  );
+                })}
               </View>
             </>
           )}

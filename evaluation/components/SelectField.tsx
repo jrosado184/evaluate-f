@@ -33,13 +33,13 @@ const SelectInput: React.FC<SelectInputProps> = ({
 
   return (
     <View className={`gap-y-2 ${containerStyles}`}>
-      <Text className="text-base font-inter-medium">{title}</Text>
+      <Text className="text-base font-inter-regular">{title}</Text>
       <TouchableOpacity
         onPress={handlePress}
         className={`border ${borderColor} w-full h-16 flex-row items-center ${rounded}`}
       >
         <Text
-          className={`pl-4 font-inter-semibold flex-1 ${
+          className={`pl-4 font-inter-regular flex-1 ${
             selectedValue ? "text-neutral-700" : "text-[#929292]"
           }`}
         >

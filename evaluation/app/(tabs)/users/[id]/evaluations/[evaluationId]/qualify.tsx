@@ -16,9 +16,15 @@ import axios from "axios";
 import getServerIP from "@/app/requests/NetworkAddress";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import useAuthContext from "@/app/context/AuthContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+type SignatureData = {
+  image: string;
+  signedAt: string;
+};
 
 const QualifyScreen = () => {
-  const { id, fileId, folderId } = useLocalSearchParams();
+  const { id, evaluationId } = useLocalSearchParams();
   const { employee } = useEmployeeContext();
   const { currentUser } = useAuthContext();
   const router = useRouter();
@@ -28,21 +34,27 @@ const QualifyScreen = () => {
   const position = employee?.position;
 
   const [signatureType, setSignatureType] = useState<string | null>(null);
-  const [signatures, setSignatures] = useState<Record<string, string>>({
-    teamMember: "",
-    trainer: "",
-    supervisor: "",
-    trainingSupervisor: "",
-    superintendent: "",
+  const [signatures, setSignatures] = useState<Record<string, SignatureData>>({
+    teamMember: { image: "", signedAt: "" },
+    trainer: { image: "", signedAt: "" },
+    supervisor: { image: "", signedAt: "" },
+    trainingSupervisor: { image: "", signedAt: "" },
+    superintendent: { image: "", signedAt: "" },
   });
 
-  const allSigned = Object.values(signatures).every((sig) => sig);
+  const allSigned = Object.values(signatures).every((sig) => sig.image);
 
   const handleSignature = (base64: string) => {
     if (signatureType) {
+      const now = new Date();
+      const formattedDate = `${String(now.getMonth() + 1).padStart(
+        2,
+        "0"
+      )}/${String(now.getDate()).padStart(2, "0")}/${now.getFullYear()}`;
+
       setSignatures((prev) => ({
         ...prev,
-        [signatureType]: base64,
+        [signatureType]: { image: base64, signedAt: formattedDate },
       }));
       setSignatureType(null);
     }
@@ -51,16 +63,43 @@ const QualifyScreen = () => {
   const handleMarkQualified = async () => {
     try {
       const baseUrl = await getServerIP();
+      const token = await AsyncStorage.getItem("token");
+
+      // Use the date from the final signatures
+      const firstSignatureKey = Object.keys(signatures)[0];
+      const qualifiedAtDate =
+        signatures[firstSignatureKey]?.signedAt || new Date().toISOString();
+
       await axios.patch(
-        `${baseUrl}/employees/${id}/folders/${folderId}/files/${fileId}`,
+        `${baseUrl}/evaluations/${evaluationId}`,
         {
           action: "final_signatures",
           data: { signatures },
+        },
+        {
+          headers: {
+            Authorization: token!,
+          },
         }
       );
 
-      router.replace(`/users/${id}/folders/${folderId}/files/${fileId}`);
+      // Also update the status AND add qualifiedAt
+      await axios.patch(
+        `${baseUrl}/evaluations/${evaluationId}/status`,
+        {
+          status: "complete",
+          qualifiedAt: qualifiedAtDate, // include qualifiedAt in the final update
+        },
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
+      );
+
+      router.replace(`/users/${id}/evaluations/${evaluationId}`);
     } catch (error) {
+      console.error("Failed to mark as qualified:", error);
       Alert.alert("Error", "Failed to mark as qualified.");
     }
   };
@@ -75,12 +114,7 @@ const QualifyScreen = () => {
       >
         {/* Back Button */}
         <View className="flex-row items-center mb-6">
-          <TouchableOpacity
-            onPress={() =>
-              router.replace(`/users/${id}/folders/${folderId}/files/${fileId}`)
-            }
-            className="mr-3"
-          >
+          <TouchableOpacity onPress={() => router.back()} className="mr-3">
             <Icon name="chevron-left" size={28} color="#1a237e" />
           </TouchableOpacity>
           <Text className="text-2xl font-semibold text-gray-900">
@@ -103,7 +137,7 @@ const QualifyScreen = () => {
 
         {/* Signatures */}
         <View className="gap-y-5">
-          {Object.entries(signatures).map(([role, image]) => (
+          {Object.entries(signatures).map(([role, { image, signedAt }]) => (
             <View key={role}>
               <Text className="text-base font-medium text-gray-700 mb-2 capitalize">
                 {role.replace(/([A-Z])/g, " $1")}
@@ -122,6 +156,11 @@ const QualifyScreen = () => {
                   <Text className="text-gray-400">Tap to Sign</Text>
                 )}
               </TouchableOpacity>
+              {signedAt && (
+                <Text className="text-xs text-gray-400 mt-1">
+                  Signed at: {new Date(signedAt).toLocaleString()}
+                </Text>
+              )}
             </View>
           ))}
         </View>
