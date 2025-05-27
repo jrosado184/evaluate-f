@@ -85,7 +85,7 @@ const User = () => {
 
       const info = evalDoc.personalInfo || {};
       const hasInfo =
-        !!info.teamMemberName && !!info.jobTitle && !!info.department;
+        !!info.teamMemberName && !!info.position && !!info.department;
 
       if (!hasInfo || evalDoc.status === "uploaded") {
         router.push(`/users/${id}/evaluations/${evaluationId}/step1`);
