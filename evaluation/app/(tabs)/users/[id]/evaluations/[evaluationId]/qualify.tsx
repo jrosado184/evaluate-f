@@ -158,7 +158,7 @@ const QualifyScreen = () => {
               </TouchableOpacity>
               {signedAt && (
                 <Text className="text-xs text-gray-400 mt-1">
-                  Signed at: {new Date(signedAt).toLocaleString()}
+                  Signed at: {signedAt}
                 </Text>
               )}
             </View>
