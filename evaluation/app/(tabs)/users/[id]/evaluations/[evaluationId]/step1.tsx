@@ -29,12 +29,12 @@ const PersonalInfoForm = () => {
   const { currentUser } = useAuthContext();
   const { employee } = useEmployeeContext();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     trainingType: "",
     teamMemberName: "",
     employeeId: "",
     hireDate: "",
-    jobTitle: "",
+    position: "",
     department: "",
     lockerNumber: "",
     phoneNumber: "",
@@ -64,14 +64,14 @@ const PersonalInfoForm = () => {
         });
         const info = res.data.personalInfo || {};
         const filled =
-          !!info.teamMemberName && !!info.jobTitle && !!info.department;
+          !!info.teamMemberName && !!info.position && !!info.department;
         setHasInfo(filled);
         setFormData({
           trainingType: info.trainingType || "",
           teamMemberName: info.teamMemberName || employee?.employee_name || "",
           employeeId: info.employeeId || String(employee?.employee_id || ""),
           hireDate: info.hireDate || "",
-          jobTitle: info.jobTitle || "",
+          position: info.position || "",
           department: info.department || "",
           lockerNumber:
             info.lockerNumber || String(employee?.locker_number || ""),
@@ -95,7 +95,7 @@ const PersonalInfoForm = () => {
       "teamMemberName",
       "employeeId",
       "hireDate",
-      "jobTitle",
+      "position",
       "department",
       "lockerNumber",
       "jobStartDate",
@@ -148,11 +148,16 @@ const PersonalInfoForm = () => {
     try {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
+
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
-        { action: "update_personal_info", data: { personalInfo: formData } },
+        {
+          action: "update_personal_info",
+          data: { personalInfo: formData },
+        },
         { headers: { Authorization: token! } }
       );
+
       if (from !== "details") {
         await axios.patch(
           `${baseUrl}/evaluations/${evaluationId}`,
@@ -160,6 +165,7 @@ const PersonalInfoForm = () => {
           { headers: { Authorization: token! } }
         );
       }
+
       router.replace(`/users/${employeeId}/evaluations/${evaluationId}/step2`);
     } catch (err) {
       console.error(err);
@@ -256,7 +262,7 @@ const PersonalInfoForm = () => {
             { key: "teamMemberName", label: "Team Member Name" },
             { key: "employeeId", label: "Employee ID" },
             { key: "hireDate", label: "Hire Date (MM/DD/YYYY)" },
-            { key: "jobTitle", label: "Job Title" },
+            { key: "position", label: "Job Title" },
             { key: "department", label: "Department" },
             { key: "lockerNumber", label: "Locker #" },
             { key: "phoneNumber", label: "Phone Number" },
@@ -275,7 +281,7 @@ const PersonalInfoForm = () => {
                 title={label}
                 value={formData[key as keyof typeof formData]}
                 placeholder={label}
-                handleChangeText={(t) => handleChange(key as any, t)}
+                handleChangeText={(t: any) => handleChange(key as any, t)}
                 error={errors[key]}
                 keyboardType={
                   /Date|Hours|ID|Number|Phone/.test(key) ? "numeric" : "default"

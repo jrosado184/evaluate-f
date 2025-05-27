@@ -93,7 +93,7 @@ const EvaluationSummary = () => {
   const pdfpreview = evaluation?.fileUrl?.split("/")[2];
 
   return (
-    <SafeAreaView className="flex-1 bg-white pb-40">
+    <SafeAreaView className="flex-1 bg-white mb-14">
       {/* Header */}
       <View className="flex-row items-center p-4">
         <TouchableOpacity onPress={handleClose} className="mr-4">

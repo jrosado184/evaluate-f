@@ -61,7 +61,6 @@ const User = () => {
     useCallback(() => {
       setLoading(true);
       fetchEmployee();
-      return () => setAddEmployeeInfo("");
     }, [])
   );
 
@@ -114,7 +113,7 @@ const User = () => {
       const res = await axios.post(
         `${baseUrl}/employees/${id}/evaluations`,
         {
-          jobTitle: "Untitled",
+          position: "Untitled",
           createdBy: currentUser,
         },
         { headers: { Authorization: token! } }

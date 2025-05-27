@@ -74,7 +74,7 @@ const EvaluationRow = ({
       >
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 16, fontWeight: "600" }}>
-            {file.jobTitle || "Untitled Job"}
+            {file.position}
           </Text>
           <Text style={{ color: "#9CA3AF", marginTop: 4 }}>
             Created: {formatISODate(file.uploadedAt)}

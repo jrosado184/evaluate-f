@@ -52,8 +52,8 @@ const LockerCard: React.FC<LockerCardTypes> = ({
               </Text>
               <View className="flex-row items-center">
                 <Text
-                  className={`${vacant && "invisible"}`}
-                >{`Occupied by ${Assigned_to}`}</Text>
+                  className={`w-54 ${vacant && "invisible"}`}
+                >{`Occupied by: ${Assigned_to}`}</Text>
               </View>
               <Text
                 className={`text-neutral-600 text-sm ${vacant && "invisible"}`}
@@ -66,7 +66,7 @@ const LockerCard: React.FC<LockerCardTypes> = ({
               <Text className="font-inter-bold">{location}</Text>
             </Text>
           </View>
-          <View className="h-full justify-around items-end pr-4">
+          <View className="h-full justify-around items-end pr-4 w-20">
             <View className="gap-y-2 items-end my-2">
               <View className="flex-row gap-3 items-center">
                 <View

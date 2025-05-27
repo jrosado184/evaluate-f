@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -27,6 +27,10 @@ const AddUser = () => {
   const { setAddEmployeeInfo, addEmployeeInfo, loading } = useEmployeeContext();
   const { fetchJobs } = useGetJobs();
 
+  useEffect(() => {
+    setAddEmployeeInfo({});
+  }, []);
+
   return (
     <SafeAreaView className="bg-white h-full p-6">
       <TouchableOpacity
@@ -37,7 +41,7 @@ const AddUser = () => {
         <Text className="text-[1.3rem]">Add user</Text>
       </TouchableOpacity>
       <View className="w-full gap-8 my-4">
-        <View className={errors.employee_id && "h-28"}>
+        <View className={`${errors.employee_id ? "h-28" : ""}`}>
           <FormField
             title="Name"
             placeholder="Enter name"
@@ -48,7 +52,7 @@ const AddUser = () => {
           />
           <Error hidden={!errors.employee_name} title={errors.employee_name} />
         </View>
-        <View className={errors.employee_id && "h-28"}>
+        <View className={`${errors.employee_id ? "h-28" : ""}`}>
           <FormField
             title="ID Number"
             placeholder="Enter ID number"
@@ -62,7 +66,7 @@ const AddUser = () => {
           />
           <Error hidden={!errors.employee_id} title={errors.employee_id} />
         </View>
-        <View className={errors.position && "h-28"}>
+        <View className={`${errors.position ? "h-28" : ""}`}>
           <SelectField
             title="Position"
             placeholder="Select Position"
@@ -99,7 +103,11 @@ const AddUser = () => {
           }}
           selectedValue={addEmployeeInfo?.location}
         />
-        <View className={errors.existing_employee && "h-28"}>
+        <View
+          className={`${
+            errors.existing_employee || errors.locker_number ? "h-28" : ""
+          }`}
+        >
           <SelectField
             title="Locker Number"
             placeholder="Select Locker"

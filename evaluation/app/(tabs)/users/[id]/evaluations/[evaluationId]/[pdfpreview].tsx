@@ -34,7 +34,7 @@ const PDFPreview = () => {
       // Clean up the cached PDF file when leaving
       if (localPdfUri) {
         FileSystem.deleteAsync(localPdfUri, { idempotent: true })
-          .then(() => console.log("Cached PDF file deleted."))
+          .then()
           .catch((err) =>
             console.error("Error deleting cached PDF file:", err)
           );
@@ -63,8 +63,7 @@ const PDFPreview = () => {
           }
         );
 
-        const { uri } = await downloadResumable.downloadAsync();
-        console.log("PDF downloaded to:", uri);
+        const { uri }: any = await downloadResumable.downloadAsync();
         setLocalPdfUri(uri);
       } catch (error) {
         console.error("Error downloading PDF:", error);
