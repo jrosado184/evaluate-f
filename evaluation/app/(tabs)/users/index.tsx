@@ -1,5 +1,12 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Text, TouchableOpacity, View, Animated } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import {
+  Text,
+  TouchableOpacity,
+  View,
+  Animated,
+  Alert,
+  StyleSheet,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import UserCard from "@/components/UserCard";
@@ -19,6 +26,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import { ActivityIndicator } from "react-native-paper";
+import { Swipeable } from "react-native-gesture-handler";
 
 const Users = () => {
   const { getUsers, fetchAndSetUsers } = useGetUsers();
@@ -45,6 +53,7 @@ const Users = () => {
   const { successfullyAddedEmployee, setSuccessfullyAddedEmployee } =
     useEmployeeContext();
   const { actionsMessage, setActionsMessage } = useActionContext();
+  const swipeableRefs = useRef(new Map<string, Swipeable | null>());
 
   const debouncedFetch = useCallback(
     debounce(async (searchTerm: string) => {
@@ -88,12 +97,9 @@ const Users = () => {
       }
 
       setIsSearching(false);
-
-      // Force trigger pagination in case scroll doesn't
       setTimeout(() => {
         getMoreData();
       }, 100);
-
       return;
     }
 
@@ -106,7 +112,6 @@ const Users = () => {
   }, []);
 
   useEffect(() => {
-    // Auto-trigger pagination if exactly 4 items on reset
     if (employees.length === 4 && query.trim() === "") {
       getMoreData();
     }
@@ -120,25 +125,107 @@ const Users = () => {
     }, [])
   );
 
+  const deleteUser = async (userId: string) => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const baseUrl = await getServerIP();
+
+      await axios.delete(`${baseUrl}/employees/${userId}`, {
+        headers: {
+          Authorization: token,
+        },
+      });
+
+      setEmployees((prev: any) =>
+        prev.filter((user: any) => user._id !== userId)
+      );
+      setActionsMessage("User deleted successfully");
+    } catch (error) {
+      console.error("Delete error:", error);
+      Alert.alert("Error", "Failed to delete user");
+    }
+  };
+
+  const handleSwipeableWillOpen = (openedSwipeable: Swipeable | null) => {
+    swipeableRefs.current.forEach((ref) => {
+      if (ref && ref !== openedSwipeable) {
+        ref.close();
+      }
+    });
+  };
+
+  const renderRightActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    userId: string
+  ) => {
+    const translateX = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [80, 8],
+      extrapolate: "clamp",
+    });
+
+    return (
+      <Animated.View
+        style={[
+          {
+            transform: [{ translateX }],
+            flexDirection: "row",
+            height: "100%",
+            marginRight: 5,
+            width: "20%",
+          },
+        ]}
+      >
+        <TouchableOpacity
+          onPress={() => deleteUser(userId)}
+          style={{
+            width: 70,
+            backgroundColor: "#EF4444",
+            justifyContent: "center",
+            alignItems: "center",
+            borderTopRightRadius: 12,
+            borderBottomRightRadius: 12,
+          }}
+        >
+          <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>Delete</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
   const renderUserCard = useCallback(({ item }: any) => {
     return (
-      <TouchableOpacity
-        key={item?._id}
-        onPress={() => router.push(`/users/${item?._id}`)}
-        activeOpacity={0.8}
+      <Swipeable
+        ref={(ref) => swipeableRefs.current.set(item._id, ref)}
+        friction={0.8}
+        overshootRight
+        rightThreshold={10}
+        onSwipeableWillOpen={() =>
+          handleSwipeableWillOpen(swipeableRefs.current.get(item._id))
+        }
+        renderRightActions={(progress) =>
+          renderRightActions(progress, item._id)
+        }
+        containerStyle={{ width: "100%" }}
       >
-        <UserCard
-          position={item?.position}
-          name={item?.employee_name}
-          department={item?.department}
-          employee_id={item?.employee_id}
-          last_update={formatISODate(item?.last_updated)}
-          locker_number={item?.locker_number}
-          knife_number={item?.knife_number}
-          status={item?.status}
-          button="arrow"
-        />
-      </TouchableOpacity>
+        <TouchableOpacity
+          key={item?._id}
+          onPress={() => router.push(`/users/${item?._id}`)}
+          activeOpacity={0.8}
+        >
+          <UserCard
+            position={item?.position}
+            name={item?.employee_name}
+            department={item?.department}
+            employee_id={item?.employee_id}
+            last_update={formatISODate(item?.last_updated)}
+            locker_number={item?.locker_number}
+            knife_number={item?.knife_number}
+            status={item?.status}
+            button="arrow"
+          />
+        </TouchableOpacity>
+      </Swipeable>
     );
   }, []);
 
