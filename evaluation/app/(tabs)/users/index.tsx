@@ -1,11 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import {
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-  View,
-  Animated,
-} from "react-native";
+import { Text, TouchableOpacity, View, Animated } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import UserCard from "@/components/UserCard";
@@ -24,6 +18,7 @@ import debounce from "lodash.debounce";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
+import { ActivityIndicator } from "react-native-paper";
 
 const Users = () => {
   const { getUsers, fetchAndSetUsers } = useGetUsers();

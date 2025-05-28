@@ -7,7 +7,6 @@ import {
   Alert,
   Animated,
   TouchableWithoutFeedback,
-  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect, useGlobalSearchParams } from "expo-router";
@@ -21,6 +20,7 @@ import useEmployeeContext from "@/app/context/EmployeeContext";
 import useAuthContext from "@/app/context/AuthContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import EvaluationRow from "@/components/evaluations/EvaluationRow";
+import { ActivityIndicator } from "react-native-paper";
 
 const User = () => {
   const { id } = useGlobalSearchParams(); // employeeId

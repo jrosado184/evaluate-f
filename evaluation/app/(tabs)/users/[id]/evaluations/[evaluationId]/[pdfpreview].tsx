@@ -1,11 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
+import { View, Text, TouchableOpacity, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
 import { useLocalSearchParams, router } from "expo-router";
@@ -16,6 +10,7 @@ import useEmployeeContext from "@/app/context/EmployeeContext";
 import * as FileSystem from "expo-file-system";
 import { WebView } from "react-native-webview";
 import * as Sharing from "expo-sharing";
+import { ActivityIndicator } from "react-native-paper";
 
 const PDFPreview = () => {
   const { employee } = useEmployeeContext();

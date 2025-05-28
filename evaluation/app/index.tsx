@@ -9,25 +9,6 @@ import { isTokenExpired } from "@/constants/utilities/isTokenExpired";
 import axios from "axios";
 
 export default function Index() {
-  useEffect(() => {
-    // Set up global Axios interceptor for 401 responses
-    const interceptor = axios.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        if (error.response && error.response.status === 401) {
-          console.log("401 detected - redirecting to /sign-in");
-          await AsyncStorage.removeItem("token");
-          router.replace("/sign-in");
-        }
-        return Promise.reject(error);
-      }
-    );
-
-    // Cleanup interceptor on unmount
-    return () => {
-      axios.interceptors.response.eject(interceptor);
-    };
-  }, []);
   useFocusEffect(
     useCallback(() => {
       const timer = setTimeout(async () => {

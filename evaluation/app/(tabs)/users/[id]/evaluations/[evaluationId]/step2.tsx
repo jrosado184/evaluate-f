@@ -1,4 +1,3 @@
-// Step2Form.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -10,7 +9,6 @@ import {
   Platform,
   StatusBar,
   Alert,
-  ActivityIndicator,
   Image,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -22,10 +20,11 @@ import SignatureModal from "@/components/SignatureModal";
 import useAuthContext from "@/app/context/AuthContext";
 import useEvaluationsValidation from "@/app/validation/useEvaluationsValidation";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator } from "react-native-paper";
 
 const Step2Form = () => {
   const router = useRouter();
-  const { id: employeeId, evaluationId, week, step } = useLocalSearchParams();
+  const { id: employeeId, evaluationId, week } = useLocalSearchParams();
   const { currentUser } = useAuthContext();
   const currentWeek = parseInt((week as string) || "1", 10);
 
@@ -60,13 +59,14 @@ const Step2Form = () => {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [signatureType, setSignatureType] = useState<null | string>(null);
   const [traineeName, setTraineeName] = useState("Trainee");
+  const [projectedTrainingHours, setProjectedTrainingHours] = useState(200);
 
-  // precompute totals & expectedQualified
-  const projectedTrainingHours = 40;
   const sum = (keys: string[]) =>
     keys.reduce((acc, k) => acc + (Number(formData[k]) || 0), 0);
+
   const totalHoursOnJob = sum([
     "hoursMonday",
     "hoursTuesday",
@@ -81,6 +81,7 @@ const Step2Form = () => {
     "hoursOffJobThursday",
     "hoursOffJobFriday",
   ]);
+  const totalHours = totalHoursOnJob + totalHoursOffJob;
   const totalHoursWithTrainee = sum([
     "hoursWithTraineeMonday",
     "hoursWithTraineeTuesday",
@@ -88,13 +89,11 @@ const Step2Form = () => {
     "hoursWithTraineeThursday",
     "hoursWithTraineeFriday",
   ]);
-  const totalHours = totalHoursOnJob + totalHoursOffJob;
-  const computedExpected = (
-    (totalHoursOnJob / projectedTrainingHours) *
-    100
-  ).toFixed(1);
 
-  // keep expectedQualified in sync
+  const computedExpected = projectedTrainingHours
+    ? ((totalHours / projectedTrainingHours) * 100).toFixed(1)
+    : "0";
+
   useEffect(() => {
     setFormData((f: any) => ({ ...f, expectedQualified: computedExpected }));
   }, [
@@ -103,9 +102,13 @@ const Step2Form = () => {
     formData.hoursWednesday,
     formData.hoursThursday,
     formData.hoursFriday,
+    formData.hoursOffJobMonday,
+    formData.hoursOffJobTuesday,
+    formData.hoursOffJobWednesday,
+    formData.hoursOffJobThursday,
+    formData.hoursOffJobFriday,
   ]);
 
-  // fetch single evaluation
   useEffect(() => {
     (async () => {
       try {
@@ -116,6 +119,9 @@ const Step2Form = () => {
         });
         const evalDoc = res.data;
         setTraineeName(evalDoc.personalInfo.teamMemberName || "Trainee");
+        setProjectedTrainingHours(
+          evalDoc.personalInfo.projectedTrainingHours || 200
+        );
         const weekData = evalDoc.evaluations.find(
           (e: any) => e.weekNumber === currentWeek
         );
@@ -158,6 +164,7 @@ const Step2Form = () => {
   const { newErrors } = useEvaluationsValidation(formData);
 
   const handleSubmit = async () => {
+    setIsSubmitting(true);
     if (Object.keys(newErrors).length) {
       setErrors(newErrors);
       return;
@@ -167,7 +174,6 @@ const Step2Form = () => {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
 
-      // 1) add or update this week
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
         {
@@ -186,7 +192,6 @@ const Step2Form = () => {
         { headers: { Authorization: token! } }
       );
 
-      // 2) bump status
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
         {
@@ -196,10 +201,11 @@ const Step2Form = () => {
         { headers: { Authorization: token! } }
       );
 
-      // 3) navigate back to summary
       router.replace(`/users/${employeeId}/evaluations/${evaluationId}`);
     } catch {
       Alert.alert("Error", "Failed to save evaluation");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -251,7 +257,6 @@ const Step2Form = () => {
           className="px-5 pt-5"
           contentContainerStyle={{ paddingBottom: 140 }}
         >
-          {/* Back + Title */}
           <View className="flex-row items-center mb-6">
             <TouchableOpacity
               onPress={() =>
@@ -292,9 +297,14 @@ const Step2Form = () => {
             "hoursWithTraineeFriday",
           ])}
 
-          {/* other metrics */}
+          {/* Other metrics */}
           {[
             { label: "Percent Qualified (%)", key: "percentQualified" },
+            {
+              label: "Expected Qualified (%)",
+              key: "expectedQualified",
+              editable: false,
+            },
             { label: "RE Time (s)", key: "reTimeAchieved" },
             { label: "Yield Audit Date", key: "yieldAuditDate" },
             { label: "Knife Audit Date", key: "knifeSkillsAuditDate" },
@@ -309,17 +319,23 @@ const Step2Form = () => {
                 value={formData[f.key]}
                 onChangeText={(t) => handleChange(f.key, t)}
                 placeholder={f.label}
+                editable={f.editable !== false}
                 multiline={!!f.multiline}
                 keyboardType={
-                  ["percentQualified", "reTimeAchieved", "knifeScore"].includes(
-                    f.key
-                  )
+                  [
+                    "percentQualified",
+                    "expectedQualified",
+                    "reTimeAchieved",
+                    "knifeScore",
+                  ].includes(f.key)
                     ? "numeric"
                     : "default"
                 }
                 className={`border ${
                   errors[f.key] ? "border-red-500" : "border-gray-300"
-                } rounded-md px-4 py-3 text-gray-900`}
+                } rounded-md px-4 py-3 text-gray-900 ${
+                  f.editable === false ? "bg-gray-100 text-gray-400" : ""
+                }`}
                 style={{ textAlignVertical: f.multiline ? "top" : "center" }}
                 numberOfLines={f.multiline ? 4 : 1}
               />
@@ -331,7 +347,7 @@ const Step2Form = () => {
             </View>
           ))}
 
-          {/* toggles */}
+          {/* Toggles */}
           {["hasPain", "handStretchCompleted"].map((k) => (
             <View key={k} className="mb-6">
               <Text className="text-base font-medium text-gray-700 mb-2">
@@ -358,7 +374,7 @@ const Step2Form = () => {
             </View>
           ))}
 
-          {/* signatures */}
+          {/* Signatures */}
           {[
             { key: "trainerSignature", label: currentUser.name },
             { key: "teamMemberSignature", label: traineeName },
@@ -379,7 +395,7 @@ const Step2Form = () => {
                 {formData[s.key] ? (
                   <Image
                     source={{ uri: formData[s.key] }}
-                    className="w-full h-28"
+                    className="w-full h-16"
                     resizeMode="contain"
                   />
                 ) : (
@@ -398,10 +414,15 @@ const Step2Form = () => {
             onPress={handleSubmit}
             activeOpacity={0.85}
             className="bg-[#1a237e] py-4 rounded-md items-center"
+            disabled={isSubmitting}
           >
-            <Text className="text-white text-lg font-semibold">
-              Save & Continue
-            </Text>
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Text className="text-white text-lg font-semibold">
+                Save & Continue
+              </Text>
+            )}
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

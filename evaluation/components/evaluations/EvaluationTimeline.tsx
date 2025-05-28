@@ -7,7 +7,7 @@ import {
   Modal,
   Pressable,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter } from "expo-router";
 
 const EvaluationTimeline = ({ fileData }: any) => {
   const router = useRouter();
@@ -32,17 +32,21 @@ const EvaluationTimeline = ({ fileData }: any) => {
     );
   };
 
-  const totalOnJob = fileData.evaluations?.reduce(
-    (sum: number, e: any) => sum + (Number(e.totalHoursOnJob) || 0),
-    0
-  );
-  const totalOffJob = fileData.evaluations?.reduce(
-    (sum: number, e: any) => sum + (Number(e.totalHoursOffJob) || 0),
-    0
-  );
-  const totalWithTrainee = fileData.evaluations?.reduce(
-    (sum: number, e: any) => sum + (Number(e.totalHoursWithTrainee) || 0),
-    0
+  const renderSignature = (label: string, uri: string) => (
+    <Pressable
+      key={label}
+      onPress={() => setSelectedImage(uri)}
+      className="items-center flex-1"
+    >
+      <View className="w-32 h-16 bg-neutral-50 border border-neutral-400 rounded-md overflow-hidden">
+        <Image
+          source={{ uri }}
+          className="w-full h-full"
+          resizeMode="contain"
+        />
+      </View>
+      <Text className="text-xs text-gray-400 mt-1">{label}</Text>
+    </Pressable>
   );
 
   return (
@@ -54,12 +58,12 @@ const EvaluationTimeline = ({ fileData }: any) => {
             : projectedTrainingWeeks,
       }).map((_, i) => {
         const week = i + 1;
-        const evaluation: any = completedWeeks.get(week);
+        const evaluation: any = completedWeeks.get(week) || {};
         const prevWeekComplete = completedWeeks.has(week - 1) || week === 1;
-        const nextWeek = week + 1;
-        const nextWeekExists = completedWeeks.has(nextWeek);
+        const isComplete = completedWeeks.has(week);
 
-        const isComplete = !!evaluation;
+        // determine if next week exists
+        const nextWeekExists = completedWeeks.has(week + 1);
 
         return (
           <View
@@ -70,32 +74,33 @@ const EvaluationTimeline = ({ fileData }: any) => {
 
             {isComplete && (
               <>
-                <View className="flex-row flex-wrap gap-y-1">
-                  <View className="w-1/2 pr-2">
+                {/* Key Metrics */}
+                <View className="flex-row flex-wrap">
+                  <View className="w-1/2 p-1">
                     <Text className="text-sm text-gray-700">
                       Total Hours on Job:{" "}
                       <Text className="font-semibold text-gray-900">
-                        {evaluation.totalHoursOnJob ?? "0"}
+                        {evaluation.totalHoursOnJob ?? 0}
                       </Text>
                     </Text>
                   </View>
-                  <View className="w-1/2 pr-2">
+                  <View className="w-1/2 p-1">
                     <Text className="text-sm text-gray-700">
                       Total Hours Off Job:{" "}
                       <Text className="font-semibold text-gray-900">
-                        {evaluation.totalHoursOffJob ?? "0"}
+                        {evaluation.totalHoursOffJob ?? 0}
                       </Text>
                     </Text>
                   </View>
-                  <View className="w-1/2 pr-2">
+                  <View className="w-1/2 p-1">
                     <Text className="text-sm text-gray-700">
                       Total Hours With Trainee:{" "}
                       <Text className="font-semibold text-gray-900">
-                        {evaluation.totalHoursWithTrainee ?? "0"}
+                        {evaluation.totalHoursWithTrainee ?? 0}
                       </Text>
                     </Text>
                   </View>
-                  <View className="w-1/2 pr-2">
+                  <View className="w-1/2 p-1">
                     <Text className="text-sm text-gray-700">
                       Percent Qualified:{" "}
                       <Text className="font-semibold text-gray-900">
@@ -103,53 +108,90 @@ const EvaluationTimeline = ({ fileData }: any) => {
                       </Text>
                     </Text>
                   </View>
+                  <View className="w-1/2 p-1">
+                    <Text className="text-sm text-gray-700">
+                      Expected Qualified:{" "}
+                      <Text className="font-semibold text-gray-900">
+                        {evaluation.expectedQualified ?? "-"}%
+                      </Text>
+                    </Text>
+                  </View>
+                  <View className="w-1/2 p-1">
+                    <Text className="text-sm text-gray-700">
+                      RE Time Achieved:{" "}
+                      <Text className="font-semibold text-gray-900">
+                        {evaluation.reTimeAchieved ?? "-"}
+                      </Text>
+                    </Text>
+                  </View>
+                  <View className="w-1/2 p-1">
+                    <Text className="text-sm text-gray-700">
+                      Knife Audit Date:{" "}
+                      <Text className="font-semibold text-gray-900">
+                        {evaluation.knifeSkillsAuditDate ?? "-"}
+                      </Text>
+                    </Text>
+                  </View>
+                  <View className="w-1/2 p-1">
+                    <Text className="text-sm text-gray-700">
+                      Yield Audit Date:{" "}
+                      <Text className="font-semibold text-gray-900">
+                        {evaluation.yieldAuditDate ?? "-"}
+                      </Text>
+                    </Text>
+                  </View>
+                  <View className="w-1/2 p-1">
+                    <Text className="text-sm text-gray-700">
+                      Knife Score:{" "}
+                      <Text className="font-semibold text-gray-900">
+                        {evaluation.knifeScore ?? "-"}
+                      </Text>
+                    </Text>
+                  </View>
+                  <View className="w-1/2 p-1">
+                    <Text className="text-sm text-gray-700">
+                      Hand Stretch Completed:{" "}
+                      <Text className="font-semibold text-gray-900">
+                        {evaluation.handStretchCompleted ? "Yes" : "No"}
+                      </Text>
+                    </Text>
+                  </View>
+                  <View className="w-1/2 p-1">
+                    <Text className="text-sm text-gray-700">
+                      Experiencing Pain:{" "}
+                      <Text className="font-semibold text-gray-900">
+                        {evaluation.hasPain ? "Yes" : "No"}
+                      </Text>
+                    </Text>
+                  </View>
                 </View>
 
-                {evaluation.comments && (
-                  <Text className="text-sm text-gray-500 mt-2">
-                    Comments:{" "}
-                    <Text className="font-medium text-gray-700">
-                      {evaluation.comments}
-                    </Text>
+                {/* Comments */}
+                <Text className="text-sm text-gray-500 mt-2">
+                  Comments:{" "}
+                  <Text className="font-medium text-gray-700">
+                    {evaluation.comments ?? "None"}
                   </Text>
-                )}
+                </Text>
 
                 {/* Signatures */}
                 <View className="mt-3 flex-row justify-between gap-2">
-                  {[
-                    { label: "Trainer", key: "trainerSignature" },
-                    {
-                      label: "Trainee",
-                      key: evaluation.traineeSignature
-                        ? "traineeSignature"
-                        : "teamMemberSignature",
-                    },
-                    { label: "Supervisor", key: "supervisorSignature" },
-                  ].map(
-                    (sig) =>
-                      evaluation[sig.key] && (
-                        <Pressable
-                          key={sig.key}
-                          onPress={() => setSelectedImage(evaluation[sig.key])}
-                          className="flex-1 items-center"
-                        >
-                          <View className="w-32 h-16 bg-neutral-50 border border-neutral-400 rounded-md overflow-hidden">
-                            <Image
-                              source={{ uri: evaluation[sig.key] }}
-                              className="w-full h-full"
-                              resizeMode="contain"
-                            />
-                          </View>
-                          <Text className="text-xs text-gray-400 mt-1">
-                            {sig.label}
-                          </Text>
-                        </Pressable>
-                      )
-                  )}
+                  {evaluation.trainerSignature &&
+                    renderSignature("Trainer", evaluation.trainerSignature)}
+                  {evaluation.teamMemberSignature &&
+                    renderSignature(
+                      "Team Member",
+                      evaluation.teamMemberSignature
+                    )}
+                  {evaluation.supervisorSignature &&
+                    renderSignature(
+                      "Supervisor",
+                      evaluation.supervisorSignature
+                    )}
                 </View>
 
-                {/* Edit button */}
-                {!nextWeekExists && !isComplete && (
+                {/* Edit button (only if next week does not exist) */}
+                {!nextWeekExists && fileData?.status !== "complete" && (
                   <TouchableOpacity
                     onPress={() => handleEdit(week)}
                     className="mt-4 bg-[#1a237e] px-5 py-3 rounded-md self-start shadow-sm"
@@ -162,6 +204,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
               </>
             )}
 
+            {/* Get Started / Locked */}
             {!isComplete && prevWeekComplete && (
               <TouchableOpacity
                 onPress={() => handleStart(week)}
@@ -182,93 +225,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
         );
       })}
 
-      {/* Final Totals & Final Signatures */}
-      {fileData?.evaluations?.length > 0 && (
-        <View className="mt-6 p-4 bg-white border border-gray-300 rounded-xl w-[90%] self-center">
-          <Text className="text-lg font-semibold text-gray-900 mb-3">
-            Totals
-          </Text>
-          <View className="flex-row flex-wrap gap-y-1">
-            <View className="w-1/2 pr-2">
-              <Text className="text-sm text-gray-700">
-                Total Hours on Job:{" "}
-                <Text className="font-semibold text-gray-900">
-                  {totalOnJob}
-                </Text>
-              </Text>
-            </View>
-            <View className="w-1/2 pr-2">
-              <Text className="text-sm text-gray-700">
-                Total Hours Off Job:{" "}
-                <Text className="font-semibold text-gray-900">
-                  {totalOffJob}
-                </Text>
-              </Text>
-            </View>
-            <View className="w-1/2 pr-2">
-              <Text className="text-sm text-gray-700">
-                Total Hours With Trainee:{" "}
-                <Text className="font-semibold text-gray-900">
-                  {totalWithTrainee}
-                </Text>
-              </Text>
-            </View>
-            <View className="w-1/2 pr-2">
-              <Text className="text-sm text-gray-700">
-                Total:{" "}
-                <Text className="font-semibold text-gray-900">
-                  {totalOnJob + totalOffJob}
-                </Text>
-              </Text>
-            </View>
-          </View>
-
-          {/* Final Signature Preview */}
-          {fileData.finalSignatures && (
-            <>
-              <Text className="text-md font-semibold text-gray-900 mt-6 mb-2">
-                Final Signatures
-              </Text>
-              <View className="flex-row flex-wrap gap-4 justify-center">
-                {[
-                  { label: "Team Member", key: "teamMember" },
-                  { label: "Trainer", key: "trainer" },
-                  { label: "Supervisor", key: "supervisor" },
-                  { label: "Training Supervisor", key: "trainingSupervisor" },
-                ].map(({ label, key }) => {
-                  const signature = fileData.finalSignatures[key];
-                  const imageUrl =
-                    typeof signature === "string"
-                      ? signature
-                      : signature?.image;
-                  return (
-                    imageUrl && (
-                      <Pressable
-                        key={key}
-                        onPress={() => setSelectedImage(imageUrl)}
-                        className="items-center"
-                      >
-                        <View className="w-48 h-20 flex justify-center items-center bg-neutral-50 border border-neutral-400 rounded-md overflow-hidden">
-                          <Image
-                            source={{ uri: imageUrl }}
-                            className="w-full h-full"
-                            resizeMode="contain"
-                          />
-                        </View>
-                        <Text className="text-xs text-gray-400 mt-1">
-                          {label}
-                        </Text>
-                      </Pressable>
-                    )
-                  );
-                })}
-              </View>
-            </>
-          )}
-        </View>
-      )}
-
-      {/* Fullscreen Signature Modal */}
+      {/* Signature Preview */}
       <Modal visible={!!selectedImage} transparent animationType="fade">
         <Pressable
           className="flex-1 bg-black bg-opacity-90 justify-center items-center"

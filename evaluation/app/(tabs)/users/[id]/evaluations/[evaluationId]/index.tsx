@@ -1,12 +1,5 @@
 import React, { useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-  ScrollView,
-  Alert,
-} from "react-native";
+import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useFocusEffect, router } from "expo-router";
 import axios from "axios";
@@ -15,6 +8,7 @@ import getServerIP from "@/app/requests/NetworkAddress";
 import EvaluationTimeline from "@/components/evaluations/EvaluationTimeline";
 import EvaluationButton from "@/components/buttons/EvaluationButton";
 import Icon from "react-native-vector-icons/Feather";
+import { ActivityIndicator } from "react-native-paper";
 
 const EvaluationSummary = () => {
   const { id: userId, evaluationId } = useLocalSearchParams();
@@ -70,7 +64,7 @@ const EvaluationSummary = () => {
     setTimeout(() => setSubmitting(false), 300);
   };
 
-  const handleClose = () => router.back();
+  const handleClose = () => router.replace(`/(tabs)/users/${userId}`);
 
   if (loading) {
     return (
@@ -91,8 +85,6 @@ const EvaluationSummary = () => {
   const weeksDone = evaluation.evaluations?.length || 0;
   const canQualify = weeksDone >= 3;
   const pdfpreview = evaluation?.fileUrl?.split("/")[2];
-
-  console.log(weeksDone);
 
   return (
     <SafeAreaView className="flex-1 bg-white mb-14">

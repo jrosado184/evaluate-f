@@ -10,11 +10,14 @@ import { ActionsProvider } from "./context/ActionsContext";
 import * as SplashScreen from "expo-splash-screen";
 import * as Font from "expo-font";
 import "@/global.css";
+import useAxios401Interceptor from "@/hooks/useAxios401Interceptor";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded, setFontsLoaded] = useState(false);
+
+  useAxios401Interceptor();
 
   useEffect(() => {
     async function loadFonts() {

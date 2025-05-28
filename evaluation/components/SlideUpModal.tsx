@@ -8,13 +8,13 @@ import {
   StyleSheet,
   Dimensions,
   FlatList,
-  ActivityIndicator,
 } from "react-native";
 import Icon from "react-native-vector-icons/EvilIcons";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import useGetLockers from "@/app/requests/useGetLockers";
 import usePagination from "@/hooks/usePagination";
 import AssignCard from "./AssignCard";
+import { ActivityIndicator } from "react-native-paper";
 
 const SlideUpModal = ({ visible, onClose }: any) => {
   const screenHeight = Dimensions.get("window").height;

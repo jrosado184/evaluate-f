@@ -1,5 +1,6 @@
-import { ActivityIndicator, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
 import React from "react";
+import { ActivityIndicator } from "react-native-paper";
 const SpinningCircle = ({ color }: any) => {
   return (
     <ActivityIndicator

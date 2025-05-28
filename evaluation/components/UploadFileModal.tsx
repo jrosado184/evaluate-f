@@ -8,9 +8,9 @@ import {
   Platform,
   Animated,
   Easing,
-  ActivityIndicator,
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
+import { ActivityIndicator } from "react-native-paper";
 
 interface UploadModalProps {
   visible: boolean;

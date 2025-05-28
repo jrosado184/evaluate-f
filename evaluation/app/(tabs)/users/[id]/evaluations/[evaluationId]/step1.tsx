@@ -8,12 +8,15 @@ import {
   Platform,
   StatusBar,
   Alert,
-  ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Icon from "react-native-vector-icons/Feather";
-import { Menu, Button as PaperButton } from "react-native-paper";
+import {
+  ActivityIndicator,
+  Menu,
+  Button as PaperButton,
+} from "react-native-paper";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";

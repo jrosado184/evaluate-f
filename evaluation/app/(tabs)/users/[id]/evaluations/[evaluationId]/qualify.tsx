@@ -17,6 +17,7 @@ import getServerIP from "@/app/requests/NetworkAddress";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import useAuthContext from "@/app/context/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ActivityIndicator } from "react-native-paper";
 
 type SignatureData = {
   image: string;
@@ -27,6 +28,7 @@ const QualifyScreen = () => {
   const { id, evaluationId } = useLocalSearchParams();
   const { employee } = useEmployeeContext();
   const { currentUser } = useAuthContext();
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const traineeName = employee?.employee_name;
@@ -61,6 +63,7 @@ const QualifyScreen = () => {
   };
 
   const handleMarkQualified = async () => {
+    setLoading(true);
     try {
       const baseUrl = await getServerIP();
       const token = await AsyncStorage.getItem("token");
@@ -101,6 +104,8 @@ const QualifyScreen = () => {
     } catch (error) {
       console.error("Failed to mark as qualified:", error);
       Alert.alert("Error", "Failed to mark as qualified.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -168,11 +173,17 @@ const QualifyScreen = () => {
         {allSigned && (
           <TouchableOpacity
             onPress={handleMarkQualified}
-            className="bg-[#1a237e] mt-10 py-4 rounded-md items-center"
+            disabled={loading} // Disable while loading
+            className={`mt-10 py-4 rounded-md items-center bg-emerald-600
+            `}
           >
-            <Text className="text-white text-lg font-semibold">
-              Mark as Qualified
-            </Text>
+            {loading ? (
+              <ActivityIndicator size="small" color="#ffffff" />
+            ) : (
+              <Text className="text-white text-lg font-semibold">
+                Mark as Qualified
+              </Text>
+            )}
           </TouchableOpacity>
         )}
       </ScrollView>
