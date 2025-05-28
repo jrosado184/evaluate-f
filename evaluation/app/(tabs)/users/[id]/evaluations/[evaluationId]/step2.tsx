@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -63,6 +63,8 @@ const Step2Form = () => {
   const [signatureType, setSignatureType] = useState<null | string>(null);
   const [traineeName, setTraineeName] = useState("Trainee");
   const [projectedTrainingHours, setProjectedTrainingHours] = useState(200);
+
+  const inputRefs = useRef<Array<TextInput | null>>([]);
 
   const sum = (keys: string[]) =>
     keys.reduce((acc, k) => acc + (Number(formData[k]) || 0), 0);
@@ -134,7 +136,7 @@ const Step2Form = () => {
     })();
   }, [evaluationId, currentWeek]);
 
-  const handleChange = (key: string, value: string) => {
+  const handleChange = (key: string, value: string, index?: number) => {
     let v = value;
     if (["yieldAuditDate", "knifeSkillsAuditDate"].includes(key)) {
       v = v
@@ -144,10 +146,13 @@ const Step2Form = () => {
           [a, b, c].filter(Boolean).join("/")
         );
     }
+    if (key === "knifeScore") {
+      v = v.replace(/[^0-9.]/g, "").slice(0, 3);
+    }
     if (
       key.startsWith("hours") ||
-      key === "knifeScore" ||
-      key === "percentQualified"
+      key === "percentQualified" ||
+      key === "reTimeAchieved"
     ) {
       v = v.replace(/\D/g, "");
     }
@@ -159,6 +164,10 @@ const Step2Form = () => {
         return c;
       });
     }
+
+    if (index !== undefined && v.length === 1 && inputRefs.current[index + 1]) {
+      inputRefs.current[index + 1]?.focus();
+    }
   };
 
   const { newErrors } = useEvaluationsValidation(formData);
@@ -167,6 +176,7 @@ const Step2Form = () => {
     setIsSubmitting(true);
     if (Object.keys(newErrors).length) {
       setErrors(newErrors);
+      setIsSubmitting(false);
       return;
     }
 
@@ -217,7 +227,11 @@ const Step2Form = () => {
     );
   }
 
-  const renderFieldGroup = (title: string, keys: string[]) => (
+  const renderFieldGroup = (
+    title: string,
+    keys: string[],
+    startIndex: number
+  ) => (
     <View className="mb-6">
       <Text className="text-lg font-semibold text-gray-800 mb-3">{title}</Text>
       {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map(
@@ -227,13 +241,15 @@ const Step2Form = () => {
             <View key={key} className="mb-4">
               <Text className="text-base text-gray-700 mb-2">{day}</Text>
               <TextInput
+                ref={(ref) => (inputRefs.current[startIndex + i] = ref)}
                 value={formData[key]}
-                onChangeText={(t) => handleChange(key, t)}
+                onChangeText={(t) => handleChange(key, t, startIndex + i)}
                 placeholder="0"
                 keyboardType="numeric"
                 className={`border ${
                   errors[key] ? "border-red-500" : "border-gray-300"
                 } rounded-md px-4 py-3 text-gray-900`}
+                maxLength={1}
               />
               {errors[key] && (
                 <Text className="text-sm text-red-500 mt-1">{errors[key]}</Text>
@@ -275,40 +291,73 @@ const Step2Form = () => {
             </Text>
           </View>
 
-          {renderFieldGroup("Hours On Job", [
-            "hoursMonday",
-            "hoursTuesday",
-            "hoursWednesday",
-            "hoursThursday",
-            "hoursFriday",
-          ])}
-          {renderFieldGroup("Hours Off Job", [
-            "hoursOffJobMonday",
-            "hoursOffJobTuesday",
-            "hoursOffJobWednesday",
-            "hoursOffJobThursday",
-            "hoursOffJobFriday",
-          ])}
-          {renderFieldGroup("Hours with Trainee", [
-            "hoursWithTraineeMonday",
-            "hoursWithTraineeTuesday",
-            "hoursWithTraineeWednesday",
-            "hoursWithTraineeThursday",
-            "hoursWithTraineeFriday",
-          ])}
+          {renderFieldGroup(
+            "Hours On Job",
+            [
+              "hoursMonday",
+              "hoursTuesday",
+              "hoursWednesday",
+              "hoursThursday",
+              "hoursFriday",
+            ],
+            0
+          )}
+          {renderFieldGroup(
+            "Hours Off Job",
+            [
+              "hoursOffJobMonday",
+              "hoursOffJobTuesday",
+              "hoursOffJobWednesday",
+              "hoursOffJobThursday",
+              "hoursOffJobFriday",
+            ],
+            5
+          )}
+          {renderFieldGroup(
+            "Hours with Trainee",
+            [
+              "hoursWithTraineeMonday",
+              "hoursWithTraineeTuesday",
+              "hoursWithTraineeWednesday",
+              "hoursWithTraineeThursday",
+              "hoursWithTraineeFriday",
+            ],
+            10
+          )}
 
-          {/* Other metrics */}
+          {/* Additional metrics */}
           {[
-            { label: "Percent Qualified (%)", key: "percentQualified" },
+            {
+              label: "Percent Qualified (%)",
+              key: "percentQualified",
+              keyboardType: "numeric",
+            },
             {
               label: "Expected Qualified (%)",
               key: "expectedQualified",
               editable: false,
+              keyboardType: "numeric",
             },
-            { label: "RE Time (s)", key: "reTimeAchieved" },
-            { label: "Yield Audit Date", key: "yieldAuditDate" },
-            { label: "Knife Audit Date", key: "knifeSkillsAuditDate" },
-            { label: "Knife Score (%)", key: "knifeScore" },
+            {
+              label: "RE Time (s)",
+              key: "reTimeAchieved",
+              keyboardType: "numeric",
+            },
+            {
+              label: "Yield Audit Date",
+              key: "yieldAuditDate",
+              keyboardType: "numeric",
+            },
+            {
+              label: "Knife Audit Date",
+              key: "knifeSkillsAuditDate",
+              keyboardType: "numeric",
+            },
+            {
+              label: "Knife Score (%)",
+              key: "knifeScore",
+              keyboardType: "decimal-pad",
+            },
             { label: "Comments", key: "comments", multiline: true },
           ].map((f) => (
             <View key={f.key} className="mb-5">
@@ -321,16 +370,7 @@ const Step2Form = () => {
                 placeholder={f.label}
                 editable={f.editable !== false}
                 multiline={!!f.multiline}
-                keyboardType={
-                  [
-                    "percentQualified",
-                    "expectedQualified",
-                    "reTimeAchieved",
-                    "knifeScore",
-                  ].includes(f.key)
-                    ? "numeric"
-                    : "default"
-                }
+                keyboardType={f.keyboardType || "default"}
                 className={`border ${
                   errors[f.key] ? "border-red-500" : "border-gray-300"
                 } rounded-md px-4 py-3 text-gray-900 ${
