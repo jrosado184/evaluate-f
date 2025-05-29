@@ -92,25 +92,6 @@ const Step2Form = () => {
     "hoursWithTraineeFriday",
   ]);
 
-  const computedExpected = projectedTrainingHours
-    ? ((totalHours / projectedTrainingHours) * 100).toFixed(1)
-    : "0";
-
-  useEffect(() => {
-    setFormData((f: any) => ({ ...f, expectedQualified: computedExpected }));
-  }, [
-    formData.hoursMonday,
-    formData.hoursTuesday,
-    formData.hoursWednesday,
-    formData.hoursThursday,
-    formData.hoursFriday,
-    formData.hoursOffJobMonday,
-    formData.hoursOffJobTuesday,
-    formData.hoursOffJobWednesday,
-    formData.hoursOffJobThursday,
-    formData.hoursOffJobFriday,
-  ]);
-
   useEffect(() => {
     (async () => {
       try {
@@ -124,17 +105,34 @@ const Step2Form = () => {
         setProjectedTrainingHours(
           evalDoc.personalInfo.projectedTrainingHours || 200
         );
+
+        const cumulativeTotalHoursOnJob = evalDoc.evaluations
+          .filter((e: any) => e.weekNumber <= currentWeek)
+          .reduce((sum: number, e: any) => sum + (e.totalHoursOnJob || 0), 0);
+
+        const computedExpected = projectedTrainingHours
+          ? (
+              (cumulativeTotalHoursOnJob / projectedTrainingHours) *
+              100
+            ).toFixed(1)
+          : "0";
+
+        setFormData((f: any) => ({
+          ...f,
+          expectedQualified: computedExpected,
+        }));
+
         const weekData = evalDoc.evaluations.find(
           (e: any) => e.weekNumber === currentWeek
         );
-        if (weekData) setFormData(weekData);
+        if (weekData) setFormData((f: any) => ({ ...f, ...weekData }));
       } catch {
         Alert.alert("Error", "Failed to load evaluation");
       } finally {
         setLoading(false);
       }
     })();
-  }, [evaluationId, currentWeek]);
+  }, [evaluationId, currentWeek, projectedTrainingHours]);
 
   const handleChange = (key: string, value: string, index?: number) => {
     let v = value;
@@ -325,7 +323,6 @@ const Step2Form = () => {
             10
           )}
 
-          {/* Additional metrics */}
           {[
             {
               label: "Percent Qualified (%)",
@@ -387,7 +384,6 @@ const Step2Form = () => {
             </View>
           ))}
 
-          {/* Toggles */}
           {["hasPain", "handStretchCompleted"].map((k) => (
             <View key={k} className="mb-6">
               <Text className="text-base font-medium text-gray-700 mb-2">
@@ -414,7 +410,6 @@ const Step2Form = () => {
             </View>
           ))}
 
-          {/* Signatures */}
           {[
             { key: "trainerSignature", label: currentUser.name },
             { key: "teamMemberSignature", label: traineeName },

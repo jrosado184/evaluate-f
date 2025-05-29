@@ -114,7 +114,7 @@ const User = () => {
         `${baseUrl}/employees/${id}/evaluations`,
         {
           position: "Untitled",
-          createdBy: currentUser,
+          createdBy: currentUser?.name,
         },
         { headers: { Authorization: token! } }
       );

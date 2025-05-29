@@ -49,6 +49,28 @@ const EvaluationTimeline = ({ fileData }: any) => {
     </Pressable>
   );
 
+  // Calculate current total hours
+  const totalHoursOnJob = fileData.evaluations?.reduce(
+    (sum: number, e: any) => sum + (e.totalHoursOnJob || 0),
+    0
+  );
+  const totalHoursOffJob = fileData.evaluations?.reduce(
+    (sum: number, e: any) => sum + (e.totalHoursOffJob || 0),
+    0
+  );
+  const totalHoursWithTrainee = fileData.evaluations?.reduce(
+    (sum: number, e: any) => sum + (e.totalHoursWithTrainee || 0),
+    0
+  );
+
+  // Calculate on track to qualify status
+  const expectedQualified = fileData.expectedQualified || 0;
+  const projectedTrainingHours =
+    fileData.personalInfo.projectedTrainingHours || 0;
+  const onTrack =
+    projectedTrainingHours > 0 &&
+    totalHoursOnJob / projectedTrainingHours >= expectedQualified / 100;
+
   return (
     <View className="mt-2">
       {Array.from({
@@ -62,7 +84,6 @@ const EvaluationTimeline = ({ fileData }: any) => {
         const prevWeekComplete = completedWeeks.has(week - 1) || week === 1;
         const isComplete = completedWeeks.has(week);
 
-        // determine if next week exists
         const nextWeekExists = completedWeeks.has(week + 1);
 
         return (
@@ -204,7 +225,6 @@ const EvaluationTimeline = ({ fileData }: any) => {
               </>
             )}
 
-            {/* Get Started / Locked */}
             {!isComplete && prevWeekComplete && (
               <TouchableOpacity
                 onPress={() => handleStart(week)}
@@ -225,7 +245,54 @@ const EvaluationTimeline = ({ fileData }: any) => {
         );
       })}
 
-      {/* Signature Preview */}
+      {/* On Track to Qualify Summary */}
+      <View className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200 w-[90%] self-center">
+        <Text className="text-base font-semibold mb-2">Summary</Text>
+        <View className="flex flex-wrap flex-row">
+          {/* Row 1 */}
+          <View className="w-1/2 p-1">
+            <Text className="text-sm text-gray-700">
+              Total Hours on Job:{" "}
+              <Text className="font-semibold text-gray-900">
+                {totalHoursOnJob ?? 0}
+              </Text>
+            </Text>
+          </View>
+          <View className="w-1/2 p-1">
+            <Text className="text-sm text-gray-700">
+              Total Hours Off Job:{" "}
+              <Text className="font-semibold text-gray-900">
+                {totalHoursOffJob ?? 0}
+              </Text>
+            </Text>
+          </View>
+          {/* Row 2 */}
+          <View className="w-1/2 p-1">
+            <Text className="text-sm text-gray-700">
+              Total Hours With Trainee:{" "}
+              <Text className="font-semibold text-gray-900">
+                {totalHoursWithTrainee ?? 0}
+              </Text>
+            </Text>
+          </View>
+          <View className="w-1/2 p-1 flex-row items-center gap-3">
+            <Text className="text-sm text-gray-700">On track to qualify?</Text>
+            <View className=" flex-row items-center">
+              <View
+                className={`px-3 py-1 rounded-full ${
+                  onTrack ? "bg-emerald-500" : "bg-gray-400"
+                }`}
+              >
+                <Text className="text-white font-semibold text-sm">
+                  {onTrack ? "Yes" : "No"}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* Signature Preview Modal */}
       <Modal visible={!!selectedImage} transparent animationType="fade">
         <Pressable
           className="flex-1 bg-black bg-opacity-90 justify-center items-center"
