@@ -6,7 +6,6 @@ import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { jwtDecode } from "jwt-decode";
 import { isTokenExpired } from "@/constants/utilities/isTokenExpired";
-import axios from "axios";
 
 export default function Index() {
   useFocusEffect(
