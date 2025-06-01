@@ -31,12 +31,14 @@ const Users = () => {
     setEmployees,
     setLoading,
     userDetails,
+    sortingBy,
+    setSuccessfullyAddedEmployee,
   } = useEmployeeContext();
 
   const { getMoreData, setIsSearching, fetchingMoreUsers, resetPagination } =
     usePagination(
       employees,
-      getUsers,
+      (page: any) => getUsers(page, computeSort()),
       setEmployees,
       setUserDetails,
       userDetails
@@ -44,10 +46,21 @@ const Users = () => {
 
   const [query, setQuery] = useState("");
   const { onScrollHandler } = useScrollHandler();
-  const { successfullyAddedEmployee, setSuccessfullyAddedEmployee } =
-    useEmployeeContext();
   const { actionsMessage, setActionsMessage } = useActionContext();
   const swipeableRefs = useRef(new Map<string, Swipeable | any>());
+
+  const computeSort = () => {
+    switch (sortingBy) {
+      case "Lockers":
+        return "locker_number";
+      case "Unassigned":
+        return "unassigned";
+      default:
+        return "default";
+    }
+  };
+
+  const sort = computeSort();
 
   const debouncedFetch = useCallback(
     debounce(async (searchTerm: string) => {
@@ -80,7 +93,7 @@ const Users = () => {
       debouncedFetch.cancel();
       resetPagination();
 
-      const data = await getUsers(1, 4);
+      const data = await getUsers(1, sort);
       if (data) {
         setEmployees(data.results);
         setUserDetails((prev: any) => ({
@@ -102,8 +115,8 @@ const Users = () => {
 
   useEffect(() => {
     setLoading(true);
-    fetchAndSetUsers(1);
-  }, []);
+    fetchAndSetUsers(1, sort);
+  }, [sort]);
 
   useEffect(() => {
     if (employees.length === 4 && query.trim() === "") {
@@ -118,7 +131,7 @@ const Users = () => {
       setIsSearching(false);
 
       setLoading(true);
-      fetchAndSetUsers(1);
+      fetchAndSetUsers(1, sort);
 
       setSuccessfullyAddedEmployee(false);
     }, [])

@@ -13,7 +13,6 @@ const Sort = () => {
   const sortOptions = [
     { label: "Default", value: "Default" },
     { label: "Lockers", value: "Lockers" },
-    { label: "Unassigned", value: "Unassigned" },
   ];
 
   const handleSortSelect = (value: string) => {
