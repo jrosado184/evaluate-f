@@ -10,9 +10,7 @@ type Employee = {
   department: string;
   position: string;
   assigned_by: string;
-  location: string;
   last_updated: string;
-  folders: any[];
 };
 
 // Define the context type
@@ -52,15 +50,12 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
     employee_name: "",
     locker_number: null,
     employee_id: null,
-    knife_number: "N/A",
     department: "",
-    assigned_by: "",
-    last_updated: formatISODate(Date.now()),
     position: "",
+    knife_number: "N/A",
+    added_by: "",
+    last_updated: formatISODate(Date.now()),
     createdAt: formatISODate(Date.now()),
-    unassigned: true,
-    location: "",
-    folders: [],
   });
   const [locker, setLocker] = useState();
   const [lockers, setLockers] = useState<any>();

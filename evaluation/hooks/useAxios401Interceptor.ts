@@ -8,12 +8,11 @@ const useAxios401Interceptor = () => {
     const interceptor = axios.interceptors.response.use(
       (response) => response,
       async (error) => {
-        // Debug logs for troubleshooting
-
-        if (error.response) {
+        if (error.response.status === 401) {
+          return;
         }
 
-        if (error.response && error.response.status === 401) {
+        if (error?.response?.status === 403) {
           await AsyncStorage.removeItem("token");
 
           setTimeout(() => {
@@ -21,7 +20,6 @@ const useAxios401Interceptor = () => {
           }, 100);
         }
 
-        // Always rethrow the error
         return Promise.reject(error);
       }
     );
