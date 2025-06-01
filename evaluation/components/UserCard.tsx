@@ -1,11 +1,11 @@
 import { View, Text } from "react-native";
-import React, { memo, useEffect } from "react";
+import React, { memo } from "react";
 import RightIcon from "@/constants/icons/RightIcon";
 import WarningIcon from "@/constants/icons/WarningIcon";
 import Entypo from "@expo/vector-icons/Entypo";
 import CheckIcon from "@/constants/icons/CheckIcon";
 import Icon from "react-native-vector-icons/Feather";
-import { router, useGlobalSearchParams } from "expo-router";
+import { router } from "expo-router";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 
 /**

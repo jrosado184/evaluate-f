@@ -47,7 +47,7 @@ const Users = () => {
   const { successfullyAddedEmployee, setSuccessfullyAddedEmployee } =
     useEmployeeContext();
   const { actionsMessage, setActionsMessage } = useActionContext();
-  const swipeableRefs = useRef(new Map<string, Swipeable | null>());
+  const swipeableRefs = useRef(new Map<string, Swipeable | any>());
 
   const debouncedFetch = useCallback(
     debounce(async (searchTerm: string) => {
@@ -124,15 +124,21 @@ const Users = () => {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
 
-      await axios.delete(`${baseUrl}/employees/${userId}`, {
-        headers: {
-          Authorization: token,
-        },
-      });
+      const response: any = await axios.delete(
+        `${baseUrl}/employees/${userId}`,
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
+      );
 
       setEmployees((prev: any) =>
         prev.filter((user: any) => user._id !== userId)
       );
+      setUserDetails({
+        totalUsers: response?.data?.totalUsers,
+      });
       setActionsMessage("User deleted successfully");
     } catch (error) {
       console.error("Delete error:", error);
