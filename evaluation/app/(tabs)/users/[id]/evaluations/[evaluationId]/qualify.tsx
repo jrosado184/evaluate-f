@@ -3,7 +3,6 @@ import {
   View,
   Text,
   SafeAreaView,
-  TouchableOpacity,
   StatusBar,
   ScrollView,
   Image,
@@ -18,6 +17,7 @@ import useEmployeeContext from "@/app/context/EmployeeContext";
 import useAuthContext from "@/app/context/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ActivityIndicator } from "react-native-paper";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 type SignatureData = {
   image: string;
@@ -119,9 +119,9 @@ const QualifyScreen = () => {
       >
         {/* Back Button */}
         <View className="flex-row items-center mb-6">
-          <TouchableOpacity onPress={() => router.back()} className="mr-3">
+          <SinglePressTouchable onPress={() => router.back()} className="mr-3">
             <Icon name="chevron-left" size={28} color="#1a237e" />
-          </TouchableOpacity>
+          </SinglePressTouchable>
           <Text className="text-2xl font-semibold text-gray-900">
             Final Qualification
           </Text>
@@ -147,7 +147,7 @@ const QualifyScreen = () => {
               <Text className="text-base font-medium text-gray-700 mb-2 capitalize">
                 {role.replace(/([A-Z])/g, " $1")}
               </Text>
-              <TouchableOpacity
+              <SinglePressTouchable
                 onPress={() => setSignatureType(role)}
                 className="border border-gray-300 bg-gray-100 rounded-md h-20 justify-center items-center overflow-hidden"
               >
@@ -160,7 +160,7 @@ const QualifyScreen = () => {
                 ) : (
                   <Text className="text-gray-400">Tap to Sign</Text>
                 )}
-              </TouchableOpacity>
+              </SinglePressTouchable>
               {signedAt && (
                 <Text className="text-xs text-gray-400 mt-1">
                   Signed at: {signedAt}
@@ -171,7 +171,7 @@ const QualifyScreen = () => {
         </View>
 
         {allSigned && (
-          <TouchableOpacity
+          <SinglePressTouchable
             onPress={handleMarkQualified}
             disabled={loading} // Disable while loading
             className={`mt-10 py-4 rounded-md items-center bg-emerald-600
@@ -184,7 +184,7 @@ const QualifyScreen = () => {
                 Mark as Qualified
               </Text>
             )}
-          </TouchableOpacity>
+          </SinglePressTouchable>
         )}
       </ScrollView>
 

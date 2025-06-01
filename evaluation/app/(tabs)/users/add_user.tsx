@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import { View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import SlideUpModal from "@/components/SlideUpModal";
@@ -12,6 +12,7 @@ import useEmployeeContext from "@/app/context/EmployeeContext";
 import useSelect from "@/hooks/useSelect";
 import Error from "@/components/ErrorText";
 import useAddUser from "@/hooks/useAddUser";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const AddUser = () => {
   const { setSelectedValue } = useSelect();
@@ -28,26 +29,34 @@ const AddUser = () => {
   const { fetchJobs } = useGetJobs();
 
   useEffect(() => {
-    setAddEmployeeInfo({});
+    setAddEmployeeInfo({
+      ...addEmployeeInfo,
+      employee_name: "",
+      locker_number: null,
+      employee_id: null,
+      department: "",
+      position: "",
+      knife_number: null,
+      added_by: "",
+      date_of_hire: "",
+    });
   }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-white p-6">
-      <TouchableOpacity
+      <SinglePressTouchable
         onPress={router.back}
         className="flex-row h-10 items-center"
       >
         <Icon name="chevron-left" size={29} />
         <Text className="text-[1.3rem]">Add user</Text>
-      </TouchableOpacity>
-
-      {/* Add ScrollView here for scrollable form content */}
-      <ScrollView
+      </SinglePressTouchable>
+      <View
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="w-full gap-8 my-4">
+        <View className="w-full gap-7 my-4">
           {/* Name Field */}
           <View className={`${errors.employee_id ? "h-28" : ""}`}>
             <FormField
@@ -70,6 +79,7 @@ const AddUser = () => {
               title="ID Number"
               placeholder="Enter ID number"
               rounded="rounded-[0.625rem]"
+              keyboardType="numeric"
               handleChangeText={(value: any) =>
                 handleEmployeeInfo(
                   "employee_id",
@@ -106,7 +116,7 @@ const AddUser = () => {
           {/* Hire Date Field */}
           <View className={`${errors.hire_date ? "h-28" : ""}`}>
             <FormField
-              value={addEmployeeInfo.hire_date}
+              value={addEmployeeInfo.date_of_hire}
               title="Hire Date"
               placeholder="MM/DD/YYYY"
               rounded="rounded-[0.625rem]"
@@ -126,7 +136,7 @@ const AddUser = () => {
                   )}/${cleaned.slice(4)}`;
                 }
 
-                handleEmployeeInfo("hire_date", formatted);
+                handleEmployeeInfo("date_of_hire", formatted);
               }}
             />
             <Error hidden={!errors.hire_date} title={errors.hire_date} />
@@ -187,7 +197,7 @@ const AddUser = () => {
             />
           </View>
         </View>
-      </ScrollView>
+      </View>
 
       <SlideUpModal
         visible={modalVisible}

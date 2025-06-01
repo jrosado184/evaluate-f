@@ -1,9 +1,10 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text } from "react-native";
 import React from "react";
 import WarningIcon from "@/constants/icons/WarningIcon";
 import CheckIcon from "@/constants/icons/CheckIcon";
 import RightIcon from "@/constants/icons/RightIcon";
 import Gender from "react-native-vector-icons/MaterialIcons";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 interface LockerCardTypes {
   button: string | undefined;
@@ -94,12 +95,12 @@ const LockerCard: React.FC<LockerCardTypes> = ({
             {button === "arrow" && !vacant ? (
               <RightIcon />
             ) : (
-              <TouchableOpacity
+              <SinglePressTouchable
                 activeOpacity={0.8}
                 className="w-24 h-9 border border-gray-500 justify-center items-center rounded-md my-2"
               >
                 <Text>{vacant ? "Assign" : "Update"}</Text>
-              </TouchableOpacity>
+              </SinglePressTouchable>
             )}
           </View>
         </View>

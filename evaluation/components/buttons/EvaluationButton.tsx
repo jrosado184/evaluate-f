@@ -1,6 +1,7 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text } from "react-native";
 import React from "react";
 import SpinningCircle from "@/constants/animations/spinning-circle";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 interface EvaluationButtonProps {
   status: "incomplete" | "in_progress" | "complete";
@@ -32,7 +33,7 @@ const EvaluationButton: React.FC<EvaluationButtonProps> = ({
 
   return (
     <View className={`justify-center items-center w-[100%] ${styles}`}>
-      <TouchableOpacity
+      <SinglePressTouchable
         onPress={disabled ? undefined : onPress}
         activeOpacity={disabled ? 1 : 0.85}
         disabled={disabled}
@@ -47,7 +48,7 @@ const EvaluationButton: React.FC<EvaluationButtonProps> = ({
             {label}
           </Text>
         )}
-      </TouchableOpacity>
+      </SinglePressTouchable>
 
       {!canQualify && status !== "incomplete" && !isLoading && (
         <Text className="text-xs mt-2 text-white opacity-70">

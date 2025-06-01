@@ -1,8 +1,9 @@
-import { View, Text, TextInput, TouchableOpacity } from "react-native";
+import { View, Text, TextInput } from "react-native";
 import React, { useState } from "react";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Entypo from "@expo/vector-icons/Entypo";
 import ErrorText from "./ErrorText";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 interface FormFieldProps {
   title?: string;
@@ -65,13 +66,13 @@ const FormField: React.FC<FormFieldProps> = ({
           }}
         />
         {isPassword && (
-          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+          <SinglePressTouchable onPress={() => setShowPassword(!showPassword)}>
             {showPassword ? (
               <Entypo name="eye-with-line" size={18} color="#6b7280" />
             ) : (
               <AntDesign name="eye" size={18} color="#6b7280" />
             )}
-          </TouchableOpacity>
+          </SinglePressTouchable>
         )}
       </View>
       {error && <ErrorText title={error} hidden={!error} />}

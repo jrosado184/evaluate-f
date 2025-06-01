@@ -3,7 +3,6 @@ import {
   Modal,
   View,
   Text,
-  TouchableOpacity,
   Animated,
   StyleSheet,
   Dimensions,
@@ -15,6 +14,7 @@ import useGetLockers from "@/app/requests/useGetLockers";
 import usePagination from "@/hooks/usePagination";
 import AssignCard from "./AssignCard";
 import { ActivityIndicator } from "react-native-paper";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const SlideUpModal = ({ visible, onClose }: any) => {
   const screenHeight = Dimensions.get("window").height;
@@ -76,13 +76,13 @@ const SlideUpModal = ({ visible, onClose }: any) => {
 
   const renderItem = useCallback(
     ({ item }: any) => (
-      <TouchableOpacity key={item._id} activeOpacity={0.8}>
+      <SinglePressTouchable key={item._id} activeOpacity={0.8}>
         <AssignCard
           locker_number={item.locker_number}
           location={item.location}
           onClose={onClose}
         />
-      </TouchableOpacity>
+      </SinglePressTouchable>
     ),
     []
   );
@@ -90,7 +90,7 @@ const SlideUpModal = ({ visible, onClose }: any) => {
   return (
     <Modal transparent visible={visible} animationType="slide">
       <View style={styles.overlay}>
-        <TouchableOpacity style={styles.overlay} onPress={onClose} />
+        <SinglePressTouchable style={styles.overlay} onPress={onClose} />
         <Animated.View
           style={[
             styles.modalContent,
@@ -100,9 +100,9 @@ const SlideUpModal = ({ visible, onClose }: any) => {
           <View className="gap-1 flex-row items-center">
             <View className="flex-row items-center w-full justify-between">
               <View className="flex-row items-center">
-                <TouchableOpacity onPress={onClose}>
+                <SinglePressTouchable onPress={onClose}>
                   <Icon name="close" size={32} className="pr-4" />
-                </TouchableOpacity>
+                </SinglePressTouchable>
                 <Text className="font-inter-medium">Choose Locker</Text>
               </View>
             </View>

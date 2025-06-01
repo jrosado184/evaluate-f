@@ -1,8 +1,9 @@
-import { View, Text, Image, TouchableOpacity } from "react-native";
+import { View, Text, Image } from "react-native";
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { avatar_url } from "@/constants/links";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const Profile = () => {
   const logout = async () => {
@@ -32,11 +33,11 @@ const Profile = () => {
             <Text>View actiity</Text>
           </View>
         </View>
-        <TouchableOpacity activeOpacity={0.8}>
+        <SinglePressTouchable activeOpacity={0.8}>
           <View className="w-28 h-10 rounded-lg border border-[#616161] items-center justify-center">
             <Text>Log out</Text>
           </View>
-        </TouchableOpacity>
+        </SinglePressTouchable>
       </View>
     </SafeAreaView>
   );

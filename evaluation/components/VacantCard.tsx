@@ -1,7 +1,8 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text } from "react-native";
 import React from "react";
 import WarningIcon from "@/constants/icons/WarningIcon";
 import CheckIcon from "@/constants/icons/CheckIcon";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 interface VacantCardTypes {
   status: string;
@@ -39,12 +40,12 @@ const VacantCard: React.FC<VacantCardTypes> = ({
           <View className="gap-y-2 items-end">
             {status === "Damaged" ? <WarningIcon /> : <CheckIcon />}
           </View>
-          <TouchableOpacity
+          <SinglePressTouchable
             activeOpacity={0.8}
             className="w-28 h-10 border border-gray-500 justify-center items-center rounded-md"
           >
             <Text>{button}</Text>
-          </TouchableOpacity>
+          </SinglePressTouchable>
         </View>
       </View>
     </View>

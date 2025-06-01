@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
+import { View, Text, ScrollView, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useFocusEffect, router } from "expo-router";
 import axios from "axios";
@@ -9,6 +9,7 @@ import EvaluationTimeline from "@/components/evaluations/EvaluationTimeline";
 import EvaluationButton from "@/components/buttons/EvaluationButton";
 import Icon from "react-native-vector-icons/Feather";
 import { ActivityIndicator } from "react-native-paper";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const EvaluationSummary = () => {
   const { id: userId, evaluationId } = useLocalSearchParams();
@@ -90,9 +91,9 @@ const EvaluationSummary = () => {
     <SafeAreaView className="flex-1 bg-white mb-14">
       {/* Header */}
       <View className="flex-row items-center p-4">
-        <TouchableOpacity onPress={handleClose} className="mr-4">
+        <SinglePressTouchable onPress={handleClose} className="mr-4">
           <Icon name="x" size={26} color="#1a237e" />
-        </TouchableOpacity>
+        </SinglePressTouchable>
         <Text className="text-xl font-semibold">Evaluation Summary</Text>
       </View>
 
@@ -107,7 +108,7 @@ const EvaluationSummary = () => {
               <Text className="text-lg font-bold text-gray-900">
                 Personal Information
               </Text>
-              <TouchableOpacity
+              <SinglePressTouchable
                 onPress={() =>
                   router.push(
                     `/users/${userId}/evaluations/${evaluationId}/step1?from=details`
@@ -116,7 +117,7 @@ const EvaluationSummary = () => {
                 className="px-3 py-1 border border-gray-300 rounded-md"
               >
                 <Text className="text-sm text-[#1a237e] font-medium">Edit</Text>
-              </TouchableOpacity>
+              </SinglePressTouchable>
             </View>
             {Object.entries(evaluation.personalInfo).map(
               ([key, value]: [string, any]) => (
@@ -142,13 +143,13 @@ const EvaluationSummary = () => {
             <Text className="mt-3 text-center text-gray-600">
               No Evaluations Added Yet{"\n"}Tap below to start.
             </Text>
-            <TouchableOpacity
+            <SinglePressTouchable
               onPress={handleContinue}
               disabled={submitting}
               className="mt-4 w-42 h-12 flex items-center justify-center bg-[#1a237e] px-6 py-2 rounded-md"
             >
               <Text className="text-white font-semibold">Start Evaluation</Text>
-            </TouchableOpacity>
+            </SinglePressTouchable>
           </View>
         )}
 
@@ -167,7 +168,7 @@ const EvaluationSummary = () => {
         {/* View PDF */}
         {evaluation.status === "complete" && (
           <View className="w-full items-center bg-white mt-4">
-            <TouchableOpacity
+            <SinglePressTouchable
               onPress={() =>
                 router.push({
                   pathname: `/users/${userId}/evaluations/${evaluationId}/${pdfpreview}`,
@@ -192,7 +193,7 @@ const EvaluationSummary = () => {
                   </Text>
                 </View>
               </View>
-            </TouchableOpacity>
+            </SinglePressTouchable>
           </View>
         )}
       </ScrollView>

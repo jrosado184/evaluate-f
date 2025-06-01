@@ -1,13 +1,7 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  Modal,
-  Pressable,
-} from "react-native";
+import { View, Text, Image, Modal, Pressable } from "react-native";
 import { useRouter } from "expo-router";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const EvaluationTimeline = ({ fileData }: any) => {
   const router = useRouter();
@@ -213,27 +207,27 @@ const EvaluationTimeline = ({ fileData }: any) => {
 
                 {/* Edit button (only if next week does not exist) */}
                 {!nextWeekExists && fileData?.status !== "complete" && (
-                  <TouchableOpacity
+                  <SinglePressTouchable
                     onPress={() => handleEdit(week)}
                     className="mt-4 bg-[#1a237e] px-5 py-3 rounded-md self-start shadow-sm"
                   >
                     <Text className="text-white font-semibold text-sm">
                       Edit
                     </Text>
-                  </TouchableOpacity>
+                  </SinglePressTouchable>
                 )}
               </>
             )}
 
             {!isComplete && prevWeekComplete && (
-              <TouchableOpacity
+              <SinglePressTouchable
                 onPress={() => handleStart(week)}
                 className="mt-2 bg-emerald-600 px-5 py-3 rounded-md self-start shadow-sm"
               >
                 <Text className="text-white font-semibold text-sm">
                   Get Started
                 </Text>
-              </TouchableOpacity>
+              </SinglePressTouchable>
             )}
 
             {!isComplete && !prevWeekComplete && (
@@ -299,9 +293,9 @@ const EvaluationTimeline = ({ fileData }: any) => {
           onPress={() => setSelectedImage(null)}
         >
           <View className="absolute top-10 right-5 z-50">
-            <TouchableOpacity onPress={() => setSelectedImage(null)}>
+            <SinglePressTouchable onPress={() => setSelectedImage(null)}>
               <Text className="text-white text-2xl">✕</Text>
-            </TouchableOpacity>
+            </SinglePressTouchable>
           </View>
           <View className="bg-white p-4 rounded-lg w-[90%] h-[60%]">
             <Image

@@ -8,7 +8,6 @@ import {
   Platform,
   StatusBar,
   Alert,
-  TouchableOpacity,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import Icon from "react-native-vector-icons/Feather";
@@ -25,6 +24,7 @@ import Button from "@/components/Button";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useAuthContext from "@/app/context/AuthContext";
 import useEmployeeContext from "@/app/context/EmployeeContext";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const PersonalInfoForm = () => {
   const router = useRouter();
@@ -199,7 +199,7 @@ const PersonalInfoForm = () => {
           contentContainerStyle={{ paddingBottom: 120 }}
         >
           <View className="flex-row items-center mb-6">
-            <TouchableOpacity
+            <SinglePressTouchable
               onPress={() => {
                 if (hasInfo) {
                   router.replace(
@@ -212,7 +212,7 @@ const PersonalInfoForm = () => {
               className="mr-3"
             >
               <Icon name="chevron-left" size={28} color="#1a237e" />
-            </TouchableOpacity>
+            </SinglePressTouchable>
             <Text className="text-2xl font-semibold text-gray-900">
               Personal Information
             </Text>

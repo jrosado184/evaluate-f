@@ -1,9 +1,10 @@
 import React, { useRef } from "react";
-import { View, Text, TouchableOpacity, Animated } from "react-native";
+import { View, Text, Animated } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import Icon from "react-native-vector-icons/Feather";
 import { useRouter } from "expo-router";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const EvaluationRow = ({
   file,
@@ -32,7 +33,7 @@ const EvaluationRow = ({
           width: "20%",
         }}
       >
-        <TouchableOpacity
+        <SinglePressTouchable
           onPress={() => onDelete(file._id)}
           style={{
             width: 70,
@@ -44,7 +45,7 @@ const EvaluationRow = ({
           }}
         >
           <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>Delete</Text>
-        </TouchableOpacity>
+        </SinglePressTouchable>
       </Animated.View>
     );
   };
@@ -59,7 +60,7 @@ const EvaluationRow = ({
       renderRightActions={renderRightActions}
       containerStyle={{ width: "100%" }}
     >
-      <TouchableOpacity
+      <SinglePressTouchable
         onPress={() => onPress(file._id)}
         activeOpacity={0.8}
         style={{
@@ -93,7 +94,7 @@ const EvaluationRow = ({
         >
           {file.status.replace("_", " ")}
         </Text>
-      </TouchableOpacity>
+      </SinglePressTouchable>
     </Swipeable>
   );
 };

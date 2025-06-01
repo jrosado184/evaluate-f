@@ -1,5 +1,6 @@
+import SinglePressTouchable from "@/app/utils/SinglePress";
 import React, { useRef } from "react";
-import { Modal, View, TouchableOpacity, Text } from "react-native";
+import { Modal, View, Text } from "react-native";
 import SignatureScreen from "react-native-signature-canvas";
 
 interface Props {
@@ -46,7 +47,7 @@ const SignatureModal = ({ visible, onOK, onCancel }: Props) => {
         />
 
         <View className="flex-row justify-between px-6 py-4 bg-white border-t border-gray-200">
-          <TouchableOpacity
+          <SinglePressTouchable
             onPress={() => {
               ref.current?.clearSignature();
               onCancel();
@@ -56,13 +57,13 @@ const SignatureModal = ({ visible, onOK, onCancel }: Props) => {
             <Text className="text-gray-800 font-semibold text-base">
               Cancel
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </SinglePressTouchable>
+          <SinglePressTouchable
             onPress={() => ref.current?.readSignature()}
             className="bg-emerald-600 px-6 py-3 rounded-md"
           >
             <Text className="text-white font-semibold text-base">Save</Text>
-          </TouchableOpacity>
+          </SinglePressTouchable>
         </View>
       </View>
     </Modal>

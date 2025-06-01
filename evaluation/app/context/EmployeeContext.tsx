@@ -10,7 +10,9 @@ type Employee = {
   department: string;
   position: string;
   assigned_by: string;
+  date_of_hire: string;
   last_updated: string;
+  createdAt: string;
 };
 
 // Define the context type
@@ -52,8 +54,9 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
     employee_id: null,
     department: "",
     position: "",
-    knife_number: "N/A",
+    knife_number: null,
     added_by: "",
+    date_of_hire: "",
     last_updated: formatISODate(Date.now()),
     createdAt: formatISODate(Date.now()),
   });

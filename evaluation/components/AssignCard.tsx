@@ -1,8 +1,9 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text } from "react-native";
 import React from "react";
 import Gender from "react-native-vector-icons/MaterialIcons";
 import CheckIcon from "@/constants/icons/CheckIcon";
 import useEmployeeContext from "@/app/context/EmployeeContext";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 interface AssignCardTypes {
   locker_number: string | undefined;
@@ -48,13 +49,13 @@ const AssignCard: React.FC<AssignCardTypes> = ({
             />
             <CheckIcon />
           </View>
-          <TouchableOpacity
+          <SinglePressTouchable
             onPress={() => handleAssign(onClose)}
             activeOpacity={0.8}
             className="w-20 h-8 border border-gray-400 justify-center items-center rounded-md my-2"
           >
             <Text className="text-sm">Assign</Text>
-          </TouchableOpacity>
+          </SinglePressTouchable>
         </View>
       </View>
     </View>

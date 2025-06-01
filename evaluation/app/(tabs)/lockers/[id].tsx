@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import LeftButton from "@/components/LeftButton";
@@ -13,6 +13,7 @@ import CardSkeleton from "@/app/skeletons/CardSkeleton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import axios from "axios";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const Locker = () => {
   const [status, setStatus] = useState("Functional");
@@ -92,12 +93,12 @@ const Locker = () => {
         <View className="border border-gray-400 h-14 rounded-md my-3 flex-row items-center relative"></View>
       </View>
       <View className="py-36 items-center justify-center">
-        <TouchableOpacity
+        <SinglePressTouchable
           activeOpacity={0.8}
           className="w-32 h-10 border border-red-500 justify-center items-center rounded-md my-2"
         >
           <Text className="text-red-500">Delete user</Text>
-        </TouchableOpacity>
+        </SinglePressTouchable>
       </View>
     </SafeAreaView>
   );

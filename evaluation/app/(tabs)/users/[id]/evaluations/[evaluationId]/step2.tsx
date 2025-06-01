@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   ScrollView,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   StatusBar,
@@ -21,6 +20,7 @@ import useAuthContext from "@/app/context/AuthContext";
 import useEvaluationsValidation from "@/app/validation/useEvaluationsValidation";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ActivityIndicator } from "react-native-paper";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const Step2Form = () => {
   const router = useRouter();
@@ -272,7 +272,7 @@ const Step2Form = () => {
           contentContainerStyle={{ paddingBottom: 140 }}
         >
           <View className="flex-row items-center mb-6">
-            <TouchableOpacity
+            <SinglePressTouchable
               onPress={() =>
                 router.replace(
                   `/users/${employeeId}/evaluations/${evaluationId}`
@@ -281,7 +281,7 @@ const Step2Form = () => {
               className="mr-3"
             >
               <Icon name="chevron-left" size={28} color="#1a237e" />
-            </TouchableOpacity>
+            </SinglePressTouchable>
             <Text className="text-2xl font-semibold text-gray-900">
               {`${currentWeek}${
                 ["st", "nd", "rd"][currentWeek - 1] || "th"
@@ -391,7 +391,7 @@ const Step2Form = () => {
                   ? "Any pain/numbness?"
                   : "Hand Stretch Exercises Completed"}
               </Text>
-              <TouchableOpacity
+              <SinglePressTouchable
                 onPress={() => setFormData((f: any) => ({ ...f, [k]: !f[k] }))}
                 className={`py-3 rounded-md items-center ${
                   k === "hasPain"
@@ -406,7 +406,7 @@ const Step2Form = () => {
                 <Text className="text-white text-lg font-semibold">
                   {formData[k] ? "Yes" : "No"}
                 </Text>
-              </TouchableOpacity>
+              </SinglePressTouchable>
             </View>
           ))}
 
@@ -419,7 +419,7 @@ const Step2Form = () => {
               <Text className="text-base font-medium text-gray-700 mb-2">
                 {s.label}
               </Text>
-              <TouchableOpacity
+              <SinglePressTouchable
                 onPress={() => setSignatureType(s.key)}
                 className={`rounded-md px-4 py-3 justify-center items-center ${
                   errors[s.key]
@@ -436,7 +436,7 @@ const Step2Form = () => {
                 ) : (
                   <Text className="text-gray-500">Tap to sign</Text>
                 )}
-              </TouchableOpacity>
+              </SinglePressTouchable>
               {errors[s.key] && (
                 <Text className="text-sm text-red-500 mt-1">
                   {errors[s.key]}
@@ -445,7 +445,7 @@ const Step2Form = () => {
             </View>
           ))}
 
-          <TouchableOpacity
+          <SinglePressTouchable
             onPress={handleSubmit}
             activeOpacity={0.85}
             className="bg-[#1a237e] py-4 rounded-md items-center"
@@ -458,7 +458,7 @@ const Step2Form = () => {
                 Save & Continue
               </Text>
             )}
-          </TouchableOpacity>
+          </SinglePressTouchable>
         </ScrollView>
       </KeyboardAvoidingView>
 

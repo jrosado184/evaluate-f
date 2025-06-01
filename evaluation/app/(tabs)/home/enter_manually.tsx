@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text } from "react-native";
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Header from "@/components/Header";
@@ -6,6 +6,7 @@ import FormField from "@/components/FormField";
 import LeftIcon from "@/constants/icons/LeftIcon";
 import { router } from "expo-router";
 import LeftButton from "@/components/LeftButton";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const enter_manually = () => {
   return (
@@ -40,12 +41,12 @@ const enter_manually = () => {
         />
       </View>
       <View className="w-full items-center justify-center h-[5.2rem] ">
-        <TouchableOpacity
+        <SinglePressTouchable
           activeOpacity={0.8}
           className="w-28 h-10 border border-gray-700 justify-center items-center rounded-md my-2"
         >
           <Text>Add User</Text>
-        </TouchableOpacity>
+        </SinglePressTouchable>
       </View>
     </SafeAreaView>
   );

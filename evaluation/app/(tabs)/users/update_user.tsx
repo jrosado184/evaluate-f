@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import SlideUpModal from "@/components/SlideUpModal";
@@ -15,6 +15,7 @@ import useAddUser from "@/hooks/useAddUser";
 import useActionContext from "@/app/context/ActionsContext";
 import updateEmployee from "@/app/requests/updateEmployee";
 import useValidation from "@/app/validation/useValidation";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const UpdateUser = () => {
   const { setSelectedValue } = useSelect();
@@ -87,13 +88,13 @@ const UpdateUser = () => {
 
   return (
     <SafeAreaView className="bg-white h-full p-6">
-      <TouchableOpacity
+      <SinglePressTouchable
         onPress={router.back}
         className="flex-row h-10 items-center"
       >
         <Icon name="chevron-left" size={29} />
         <Text className="text-[1.3rem]">Edit user</Text>
-      </TouchableOpacity>
+      </SinglePressTouchable>
 
       <View className="w-full gap-8 my-4">
         {/* Name */}

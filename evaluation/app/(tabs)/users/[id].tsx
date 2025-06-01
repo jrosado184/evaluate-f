@@ -2,7 +2,6 @@ import React, { useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   ScrollView,
   Alert,
   Animated,
@@ -21,6 +20,7 @@ import useAuthContext from "@/app/context/AuthContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import EvaluationRow from "@/components/evaluations/EvaluationRow";
 import { ActivityIndicator } from "react-native-paper";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const User = () => {
   const { id } = useGlobalSearchParams(); // employeeId
@@ -201,7 +201,7 @@ const User = () => {
         >
           <View style={{ padding: 24 }}>
             {/* Back */}
-            <TouchableOpacity
+            <SinglePressTouchable
               onPress={() => router.push("/users")}
               style={{
                 flexDirection: "row",
@@ -219,7 +219,7 @@ const User = () => {
               >
                 Back
               </Text>
-            </TouchableOpacity>
+            </SinglePressTouchable>
 
             {/* Employee card */}
             <UserCard
@@ -246,7 +246,7 @@ const User = () => {
               <Text style={{ fontSize: 18, fontWeight: "600" }}>
                 Evaluations
               </Text>
-              <TouchableOpacity
+              <SinglePressTouchable
                 onPress={handleStartEvaluation}
                 style={{
                   flexDirection: "row",
@@ -260,7 +260,7 @@ const User = () => {
               >
                 <Icon name="plus" size={12} color="#2563EB" />
                 <Text style={{ color: "#2563EB", marginLeft: 4 }}>Create</Text>
-              </TouchableOpacity>
+              </SinglePressTouchable>
             </View>
 
             {/* Empty state */}

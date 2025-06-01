@@ -8,8 +8,9 @@ import {
   ActionsheetItem,
   ActionsheetItemText,
 } from "./ui/actionsheet";
-import { ScrollView, Text, TouchableOpacity } from "react-native";
+import { ScrollView, Text } from "react-native";
 import Icon from "react-native-vector-icons/Feather";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 interface ActionBarProps {
   showActionSheet: boolean;
@@ -95,13 +96,13 @@ const ActionBar: React.FC<ActionBarProps> = ({
             style={{ padding: 10 }}
             onPress={handleBack}
           >
-            <TouchableOpacity
+            <SinglePressTouchable
               onPress={handleBack}
               className="flex-row items-center"
             >
               <Icon name="chevron-left" size={20} />
               <Text className="text-[1rem]">Back</Text>
-            </TouchableOpacity>
+            </SinglePressTouchable>
           </ActionsheetItemText>
         )}
 

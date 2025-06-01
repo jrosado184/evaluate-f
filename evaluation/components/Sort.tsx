@@ -1,7 +1,8 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text } from "react-native";
 import React, { useState } from "react";
 import ActionBar from "./ActionBar";
 import useEmployeeContext from "@/app/context/EmployeeContext";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const Sort = () => {
   const [showActionsheet, setShowActionsheet] = React.useState(false);
@@ -23,7 +24,7 @@ const Sort = () => {
   return (
     <View className="gap-2 flex-row items-center">
       <Text className="text-neutral-500 font-inter-regular">Sort By</Text>
-      <TouchableOpacity
+      <SinglePressTouchable
         activeOpacity={0.8}
         onPress={() => setShowActionsheet(true)}
         className="border border-neutral-400 w-24 h-8 rounded-lg mr-2 justify-center items-center z-10"
@@ -36,7 +37,7 @@ const Sort = () => {
           onSelect={handleSortSelect}
           title="Sort By"
         />
-      </TouchableOpacity>
+      </SinglePressTouchable>
     </View>
   );
 };

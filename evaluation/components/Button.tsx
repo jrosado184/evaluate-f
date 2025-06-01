@@ -1,6 +1,7 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text } from "react-native";
 import React from "react";
 import SpinningCircle from "@/constants/animations/spinning-circle";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 //make this reusable
 
@@ -21,7 +22,7 @@ const Button: React.FC<ButtonTypes> = ({
 }) => {
   return (
     <View className={`justify-center items-center w-full ${styles}`}>
-      <TouchableOpacity
+      <SinglePressTouchable
         onPress={handlePress}
         disabled={isLoading}
         activeOpacity={0.8}
@@ -30,7 +31,7 @@ const Button: React.FC<ButtonTypes> = ({
         <Text className="font-inter-medium text-white text-[1rem]">
           {isLoading ? <SpinningCircle color="white" /> : title}
         </Text>
-      </TouchableOpacity>
+      </SinglePressTouchable>
     </View>
   );
 };

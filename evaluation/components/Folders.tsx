@@ -1,11 +1,4 @@
-import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  Alert,
-  Animated,
-} from "react-native";
+import { View, Text, Image, Alert, Animated } from "react-native";
 import React, { useRef, useEffect } from "react";
 import { router, useGlobalSearchParams } from "expo-router";
 import { Swipeable } from "react-native-gesture-handler";
@@ -13,6 +6,7 @@ import useEmployeeContext from "@/app/context/EmployeeContext";
 import RightIcon from "@/constants/icons/RightIcon";
 import formatISODate from "@/app/conversions/ConvertIsoDate";
 import Icon from "react-native-vector-icons/AntDesign";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 interface FoldersProps {
   onDeleteFolder: (folderId: string) => void;
@@ -73,14 +67,14 @@ const Folders = ({
           gap: 4,
         }}
       >
-        <TouchableOpacity
+        <SinglePressTouchable
           onPress={() => onEditPress(folderId, folderName)}
           className="justify-center items-center w-20 h-full rounded-l-lg bg-blue-600"
         >
           <Text className="text-white font-inter-semibold text-sm">Edit</Text>
-        </TouchableOpacity>
+        </SinglePressTouchable>
 
-        <TouchableOpacity
+        <SinglePressTouchable
           onPress={() =>
             Alert.alert("Delete folder", "Are you sure?", [
               {
@@ -102,7 +96,7 @@ const Folders = ({
           }}
         >
           <Text className="text-white font-inter-semibold text-sm">Delete</Text>
-        </TouchableOpacity>
+        </SinglePressTouchable>
       </Animated.View>
     );
   };
@@ -143,7 +137,7 @@ const Folders = ({
               containerStyle={{ width: "100%" }}
             >
               <View className="w-full items-center bg-white">
-                <TouchableOpacity
+                <SinglePressTouchable
                   onPress={() =>
                     router.push(`/users/${id}/folders/${folder._id}`)
                   }
@@ -175,7 +169,7 @@ const Folders = ({
                       </View>
                     </View>
                   </View>
-                </TouchableOpacity>
+                </SinglePressTouchable>
               </View>
             </Swipeable>
           );

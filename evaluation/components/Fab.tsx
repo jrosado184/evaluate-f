@@ -1,10 +1,11 @@
 import { useEffect, useRef } from "react";
-import { TouchableOpacity, Animated, Easing, StyleSheet } from "react-native";
+import { Animated, Easing, StyleSheet } from "react-native";
 import React from "react";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import Icon from "react-native-vector-icons/Feather";
 import { useTabBar } from "@/app/(tabs)/_layout";
 import { useRouter } from "expo-router";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const Fab = ({ icon, route }: any) => {
   const { loading } = useEmployeeContext();
@@ -30,13 +31,13 @@ const Fab = ({ icon, route }: any) => {
         <Animated.View
           style={[styles.fabContainer, { bottom: bottomPosition }]}
         >
-          <TouchableOpacity
+          <SinglePressTouchable
             onPress={() => router.push(`/${route}`)}
             activeOpacity={0.8}
             style={styles.fabButton}
           >
             <Icon name={icon} size={19} color="white" />
-          </TouchableOpacity>
+          </SinglePressTouchable>
         </Animated.View>
       )}
     </>

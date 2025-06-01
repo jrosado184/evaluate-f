@@ -1,10 +1,4 @@
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  FlatList,
-} from "react-native";
+import { View, Text, ScrollView, FlatList } from "react-native";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect, useGlobalSearchParams } from "expo-router";
@@ -20,6 +14,7 @@ import Folders from "@/components/Folders";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import EditFolderModal from "@/components/EditFolderModal";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const User = () => {
   const { id } = useGlobalSearchParams();
@@ -131,7 +126,7 @@ const User = () => {
   );
 
   const renderEvaluationCard = ({ item }: { item: any }) => (
-    <TouchableOpacity
+    <SinglePressTouchable
       onPress={() => router.push(`/users/${id}/evaluations/${item._id}`)}
       className="bg-white shadow-md rounded-xl px-4 py-3 mb-3 mx-6 border border-gray-200"
     >
@@ -141,20 +136,20 @@ const User = () => {
       <Text className="text-xs text-gray-400 mt-1">
         Uploaded: {formatISODate(item.uploadedAt)}
       </Text>
-    </TouchableOpacity>
+    </SinglePressTouchable>
   );
 
   return (
     <SafeAreaView className="bg-white h-full">
       <ScrollView contentContainerStyle={{ paddingBottom: 80 }}>
         <View className="p-6">
-          <TouchableOpacity
+          <SinglePressTouchable
             onPress={() => router.push("/users")}
             className="flex-row items-center mb-4"
           >
             <Icon name="chevron-left" size={28} />
             <Text className="text-xl font-semibold ml-1">Back</Text>
-          </TouchableOpacity>
+          </SinglePressTouchable>
 
           {loading ? (
             <CardSkeleton amount={1} width="w-full" height="h-40" />
@@ -174,13 +169,13 @@ const User = () => {
           <View className="my-6">
             <View className="flex-row justify-between items-center mb-3">
               <Text className="text-lg font-semibold">Folders</Text>
-              <TouchableOpacity
+              <SinglePressTouchable
                 onPress={handleNewFolderPress}
                 className="flex-row items-center border border-neutral-400 rounded-lg px-3 py-1"
               >
                 <Folder name="addfolder" size={16} />
                 <Text className="text-sm ml-1">New folder</Text>
-              </TouchableOpacity>
+              </SinglePressTouchable>
             </View>
             {loading ? (
               <CardSkeleton amount={1} width="w-full" height="h-[4.5rem]" />
@@ -199,13 +194,13 @@ const User = () => {
           <View className="my-6">
             <View className="flex-row justify-between items-center mb-3">
               <Text className="text-lg font-semibold">Evaluations</Text>
-              <TouchableOpacity
+              <SinglePressTouchable
                 onPress={() => router.push(`/users/${id}/evaluations`)}
                 className="flex-row items-center border border-blue-600 rounded-lg px-3 py-1"
               >
                 <Icon name="clipboard" size={16} color="blue" />
                 <Text className="text-sm ml-1 text-blue-600">Start</Text>
-              </TouchableOpacity>
+              </SinglePressTouchable>
             </View>
 
             <FlatList

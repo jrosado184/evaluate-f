@@ -1,7 +1,8 @@
 import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text } from "react-native";
 import ActionBar from "./ActionBar";
 import useSelect from "@/hooks/useSelect";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 interface SelectInputProps {
   title: string;
@@ -34,7 +35,7 @@ const SelectInput: React.FC<SelectInputProps> = ({
   return (
     <View className={`gap-y-2 ${containerStyles}`}>
       <Text className="text-base font-inter-regular">{title}</Text>
-      <TouchableOpacity
+      <SinglePressTouchable
         onPress={handlePress}
         className={`border ${borderColor} w-full h-16 flex-row items-center ${rounded}`}
       >
@@ -45,7 +46,7 @@ const SelectInput: React.FC<SelectInputProps> = ({
         >
           {selectedValue || placeholder}
         </Text>
-      </TouchableOpacity>
+      </SinglePressTouchable>
       <ActionBar
         showActionSheet={showActionSheet}
         setShowActionsheet={setShowActionSheet}

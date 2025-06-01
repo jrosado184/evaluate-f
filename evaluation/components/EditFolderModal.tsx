@@ -1,14 +1,13 @@
+import SinglePressTouchable from "@/app/utils/SinglePress";
 import React, { useRef, useEffect } from "react";
 import {
   Text,
   TextInput,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   Animated,
   Easing,
   View,
-  Dimensions,
 } from "react-native";
 
 interface Props {
@@ -133,20 +132,20 @@ const EditFolderModal: React.FC<Props> = ({
           />
 
           <View className="flex-row justify-end gap-5">
-            <TouchableOpacity onPress={onClose} className="justify-center">
+            <SinglePressTouchable onPress={onClose} className="justify-center">
               <Text className="text-base text-neutral-500 font-inter-regular">
                 Cancel
               </Text>
-            </TouchableOpacity>
+            </SinglePressTouchable>
 
-            <TouchableOpacity
+            <SinglePressTouchable
               onPress={() => onSubmit(folderName)}
               className="bg-blue-600 px-5 py-2 rounded-lg justify-center"
             >
               <Text className="text-white font-inter-semibold text-base">
                 Save
               </Text>
-            </TouchableOpacity>
+            </SinglePressTouchable>
           </View>
         </Animated.View>
       </KeyboardAvoidingView>

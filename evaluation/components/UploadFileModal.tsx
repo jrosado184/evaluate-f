@@ -2,7 +2,6 @@ import React, { useRef, useEffect, useState } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   TextInput,
   KeyboardAvoidingView,
   Platform,
@@ -11,6 +10,7 @@ import {
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { ActivityIndicator } from "react-native-paper";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 interface UploadModalProps {
   visible: boolean;
@@ -110,14 +110,14 @@ const UploadModal: React.FC<UploadModalProps> = ({
           Upload PDF
         </Text>
 
-        <TouchableOpacity
+        <SinglePressTouchable
           onPress={pickDocument}
           className="border border-blue-500 px-4 py-2 rounded-md mb-4"
         >
           <Text className="text-blue-500 text-center font-inter-regular">
             {file ? "Change File" : "Choose PDF"}
           </Text>
-        </TouchableOpacity>
+        </SinglePressTouchable>
 
         {file && (
           <Text className="text-sm mb-2 text-neutral-700 text-center">
@@ -135,12 +135,12 @@ const UploadModal: React.FC<UploadModalProps> = ({
         />
 
         <View className="flex-row justify-end gap-5">
-          <TouchableOpacity onPress={onClose}>
+          <SinglePressTouchable onPress={onClose}>
             <Text className="text-base text-neutral-500 font-inter-regular">
               Cancel
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </SinglePressTouchable>
+          <SinglePressTouchable
             onPress={handleSubmit}
             disabled={loading || !file || !filename.trim()}
             className={`px-5 py-2 rounded-lg justify-center ${
@@ -156,7 +156,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
                 Upload
               </Text>
             )}
-          </TouchableOpacity>
+          </SinglePressTouchable>
         </View>
       </Animated.View>
     </KeyboardAvoidingView>

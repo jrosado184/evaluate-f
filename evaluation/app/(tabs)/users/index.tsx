@@ -1,12 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import {
-  Text,
-  TouchableOpacity,
-  View,
-  Animated,
-  Alert,
-  StyleSheet,
-} from "react-native";
+import { Text, View, Animated, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import UserCard from "@/components/UserCard";
@@ -27,6 +20,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import { ActivityIndicator } from "react-native-paper";
 import { Swipeable } from "react-native-gesture-handler";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const Users = () => {
   const { getUsers, fetchAndSetUsers } = useGetUsers();
@@ -176,7 +170,7 @@ const Users = () => {
           },
         ]}
       >
-        <TouchableOpacity
+        <SinglePressTouchable
           onPress={() => deleteUser(userId)}
           style={{
             width: 70,
@@ -188,7 +182,7 @@ const Users = () => {
           }}
         >
           <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>Delete</Text>
-        </TouchableOpacity>
+        </SinglePressTouchable>
       </Animated.View>
     );
   };
@@ -208,7 +202,7 @@ const Users = () => {
         }
         containerStyle={{ width: "100%" }}
       >
-        <TouchableOpacity
+        <SinglePressTouchable
           key={item?._id}
           onPress={() => router.push(`/users/${item?._id}`)}
           activeOpacity={0.8}
@@ -224,7 +218,7 @@ const Users = () => {
             status={item?.status}
             button="arrow"
           />
-        </TouchableOpacity>
+        </SinglePressTouchable>
       </Swipeable>
     );
   }, []);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, Alert } from "react-native";
+import { View, Text, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/Feather";
 import { useLocalSearchParams, router } from "expo-router";
@@ -11,6 +11,7 @@ import * as FileSystem from "expo-file-system";
 import { WebView } from "react-native-webview";
 import * as Sharing from "expo-sharing";
 import { ActivityIndicator } from "react-native-paper";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const PDFPreview = () => {
   const { employee } = useEmployeeContext();
@@ -103,13 +104,13 @@ const PDFPreview = () => {
           borderColor: "#eee",
         }}
       >
-        <TouchableOpacity onPress={router.back}>
+        <SinglePressTouchable onPress={router.back}>
           <Icon name="chevron-left" size={28} />
-        </TouchableOpacity>
+        </SinglePressTouchable>
         <Text style={{ fontSize: 18, fontWeight: "600" }}>PDF Preview</Text>
-        <TouchableOpacity onPress={handleDownloadToFiles}>
+        <SinglePressTouchable onPress={handleDownloadToFiles}>
           <Icon name="download" size={24} color="#1a237e" />
-        </TouchableOpacity>
+        </SinglePressTouchable>
       </View>
 
       {/* Loading / WebView / Fallback */}

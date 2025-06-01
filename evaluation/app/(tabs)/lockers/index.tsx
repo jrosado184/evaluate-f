@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Text, TouchableOpacity, View, Animated } from "react-native";
+import { Text, View, Animated } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
@@ -17,6 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import getServerIP from "@/app/requests/NetworkAddress";
 import { ActivityIndicator } from "react-native-paper";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const Lockers = () => {
   const {
@@ -139,7 +140,7 @@ const Lockers = () => {
 
   const renderLockerCard = useCallback(({ item }: any) => {
     return (
-      <TouchableOpacity
+      <SinglePressTouchable
         key={item._id}
         onPress={() => router.push(`/lockers/${String(item._id)}`)}
         activeOpacity={0.8}
@@ -154,7 +155,7 @@ const Lockers = () => {
           status={item.status}
           location={item.location}
         />
-      </TouchableOpacity>
+      </SinglePressTouchable>
     );
   }, []);
 

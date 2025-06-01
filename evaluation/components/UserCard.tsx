@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text } from "react-native";
 import React, { memo, useEffect } from "react";
 import RightIcon from "@/constants/icons/RightIcon";
 import WarningIcon from "@/constants/icons/WarningIcon";
@@ -6,6 +6,7 @@ import Entypo from "@expo/vector-icons/Entypo";
 import CheckIcon from "@/constants/icons/CheckIcon";
 import Icon from "react-native-vector-icons/Feather";
 import { router, useGlobalSearchParams } from "expo-router";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 /**
  * Props for the UserCard component
@@ -90,12 +91,12 @@ const UserCard: React.FC<UserCardTypes> = ({
                   {button === "arrow" ? (
                     <RightIcon />
                   ) : (
-                    <TouchableOpacity
+                    <SinglePressTouchable
                       onPress={() => router.push(`/(tabs)/users/update_user`)}
                       activeOpacity={0.8}
                     >
                       <Icon name="edit-3" size={20} />
-                    </TouchableOpacity>
+                    </SinglePressTouchable>
                   )}
                 </View>
               </View>
