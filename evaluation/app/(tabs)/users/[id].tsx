@@ -20,7 +20,8 @@ import useAuthContext from "@/app/context/AuthContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import EvaluationRow from "@/components/evaluations/EvaluationRow";
 import { ActivityIndicator } from "react-native-paper";
-import SinglePressTouchable from "@/app/utils/SinglePress";
+import SinglePressTouchableTouchable from "@/app/utils/SinglePress";
+import { useShowTabBarOnFocus } from "@/hooks/useShowTabBarOnFocus";
 
 const User = () => {
   const { id } = useGlobalSearchParams(); // employeeId
@@ -30,7 +31,6 @@ const User = () => {
   const [loading, setLoading] = useState(true);
   const [evaluationFiles, setEvaluationFiles] = useState<any[]>([]);
   const openSwipeableRef = useRef<Swipeable | null>(null);
-  const isNavigatingRef = useRef(false);
 
   // Fetch employee + evals
   const fetchEmployee = async () => {
@@ -72,9 +72,6 @@ const User = () => {
 
   /** Navigate into step1 or summary—but only once per tap **/
   const handleEvaluationPress = async (evaluationId: string) => {
-    if (isNavigatingRef.current) return;
-    isNavigatingRef.current = true;
-
     try {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
@@ -95,11 +92,6 @@ const User = () => {
     } catch (err) {
       console.error(err);
       Alert.alert("Error", "Could not load evaluation details.");
-    } finally {
-      // re-enable after a short pause
-      setTimeout(() => {
-        isNavigatingRef.current = false;
-      }, 500);
     }
   };
 
@@ -201,7 +193,7 @@ const User = () => {
         >
           <View style={{ padding: 24 }}>
             {/* Back */}
-            <SinglePressTouchable
+            <SinglePressTouchableTouchable
               onPress={() => router.push("/users")}
               style={{
                 flexDirection: "row",
@@ -219,7 +211,7 @@ const User = () => {
               >
                 Back
               </Text>
-            </SinglePressTouchable>
+            </SinglePressTouchableTouchable>
 
             {/* Employee card */}
             <UserCard
@@ -246,7 +238,7 @@ const User = () => {
               <Text style={{ fontSize: 18, fontWeight: "600" }}>
                 Evaluations
               </Text>
-              <SinglePressTouchable
+              <SinglePressTouchableTouchable
                 onPress={handleStartEvaluation}
                 style={{
                   flexDirection: "row",
@@ -260,7 +252,7 @@ const User = () => {
               >
                 <Icon name="plus" size={12} color="#2563EB" />
                 <Text style={{ color: "#2563EB", marginLeft: 4 }}>Create</Text>
-              </SinglePressTouchable>
+              </SinglePressTouchableTouchable>
             </View>
 
             {/* Empty state */}

@@ -2,24 +2,26 @@ import { useCallback, useRef } from "react";
 import { router, useFocusEffect, useSegments } from "expo-router";
 
 const useResetOnTabReturn = (tabName: any) => {
-  const segments = useSegments(); // Get the current navigation segments
-  const previousTab = useRef<any | null>(null); // Track the previous tab state
-  const wasNested = useRef(false); // Track if the user was nested
+  const segments = useSegments();
+  const previousTab = useRef<any | null>(null);
+  const wasNested = useRef(false);
+  const didReset = useRef(false); // 👈 new flag!
 
   useFocusEffect(
     useCallback(() => {
-      const currentTab = segments[1]; // Current tab (based on segments)
-      const isNested = segments.length > 2; // Check if in a nested route
+      const currentTab = segments[1];
+      const isNested = segments.length > 2;
 
-      // Only replace if coming back from a nested state and tabs have changed
       if (isNested) {
         wasNested.current = true;
-      } else if (wasNested.current && previousTab.current !== currentTab) {
-        wasNested.current = false; // Reset nested state
-        router.replace(tabName); // Reset to the tab root
+        didReset.current = false;
+      } else if (wasNested.current && !didReset.current) {
+        if (currentTab === tabName.replace("/(tabs)/", "")) {
+          router.replace(tabName);
+          didReset.current = true; // ✅ only do this once
+        }
       }
 
-      // Update the previous tab state
       previousTab.current = currentTab;
     }, [segments, tabName])
   );

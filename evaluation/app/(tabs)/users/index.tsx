@@ -113,9 +113,14 @@ const Users = () => {
 
   useFocusEffect(
     useCallback(() => {
-      return () => {
-        setSuccessfullyAddedEmployee(false);
-      };
+      resetPagination();
+      setQuery("");
+      setIsSearching(false);
+
+      setLoading(true);
+      fetchAndSetUsers(1);
+
+      setSuccessfullyAddedEmployee(false);
     }, [])
   );
 

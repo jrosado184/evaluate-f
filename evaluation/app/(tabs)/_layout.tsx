@@ -13,7 +13,6 @@ import LockIcon from "@/constants/icons/LockIcon";
 import ProfileIcon from "@/constants/icons/ProfileIcon";
 import { TabIcon } from "@/components/navigation/TabBarIcon";
 
-// ✨ This tells Expo Router to treat (tabs) folder independently
 export const unstable_settings = {
   initialRouteName: "home",
 };
@@ -45,7 +44,7 @@ export default function TabsLayout() {
     >
       <Tabs
         screenOptions={{
-          headerShown: false, // disables all tabs header
+          headerShown: false,
           tabBarShowLabel: false,
           tabBarHideOnKeyboard: true,
           tabBarStyle: {

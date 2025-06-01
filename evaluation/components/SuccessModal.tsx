@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Animated } from "react-native";
+import { Animated, View } from "react-native";
 import { Alert, AlertText } from "@/components/ui/alert";
 import Icon from "react-native-vector-icons/Octicons";
 
@@ -27,7 +27,7 @@ const SuccessModal = ({ message, trigger, clearMessage }: Props) => {
         duration: 800,
         useNativeDriver: true,
       }).start(() => {
-        clearMessage && clearMessage(); // reset state after fade-out
+        clearMessage && clearMessage();
       });
     }, 3000);
 
@@ -37,27 +37,33 @@ const SuccessModal = ({ message, trigger, clearMessage }: Props) => {
   if (!message) return null;
 
   return (
-    <Animated.View
-      className="w-full"
+    <View
       style={{
-        opacity: fadeAnim,
         zIndex: 9999,
         position: "absolute",
         bottom: 0,
         left: 20,
+        width: "100%",
       }}
     >
-      <Alert
-        className="mb-48 w-full bg-[#008000] justify-center items-center"
-        action="success"
-        variant="solid"
+      <Animated.View
+        className="w-full"
+        style={{
+          opacity: fadeAnim,
+        }}
       >
-        <Icon name="check-circle" size={16} color="#ffffff" />
-        <AlertText className="font-inter-bold text-neutral-50">
-          {message}
-        </AlertText>
-      </Alert>
-    </Animated.View>
+        <Alert
+          className="mb-48 w-full bg-[#008000] justify-center items-center"
+          action="success"
+          variant="solid"
+        >
+          <Icon name="check-circle" size={16} color="#ffffff" />
+          <AlertText className="font-inter-bold text-neutral-50">
+            {message}
+          </AlertText>
+        </Alert>
+      </Animated.View>
+    </View>
   );
 };
 
