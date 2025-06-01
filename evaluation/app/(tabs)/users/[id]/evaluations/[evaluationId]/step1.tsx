@@ -167,9 +167,12 @@ const PersonalInfoForm = () => {
           { action: "update_status", data: { status: "in_progress" } },
           { headers: { Authorization: token! } }
         );
+        router.replace(
+          `/users/${employeeId}/evaluations/${evaluationId}/step2`
+        );
+      } else {
+        router.replace(`/users/${employeeId}/evaluations/${evaluationId}`);
       }
-
-      router.replace(`/users/${employeeId}/evaluations/${evaluationId}/step2`);
     } catch (err) {
       console.error(err);
       Alert.alert("Error", "Failed to save information.");
