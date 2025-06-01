@@ -1,4 +1,4 @@
-import { Slot } from "expo-router";
+import { Slot, Stack } from "expo-router"; // ✅ Add Stack here
 import React, { useEffect, useState } from "react";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -39,6 +39,7 @@ export default function RootLayout() {
   if (!fontsLoaded) {
     return null;
   }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <GluestackUIProvider mode="light">
@@ -47,7 +48,15 @@ export default function RootLayout() {
             <EmployeeProvider>
               <JobsProvider>
                 <ActionsProvider>
-                  <Slot />
+                  <Stack
+                    screenOptions={{
+                      animation: "slide_from_right", // animation style
+                      gestureEnabled: true, // allows swipe-back gesture (optional)
+                      headerShown: false,
+                    }}
+                  >
+                    <Slot /> {/* The Slot will render your screens */}
+                  </Stack>
                 </ActionsProvider>
               </JobsProvider>
             </EmployeeProvider>
