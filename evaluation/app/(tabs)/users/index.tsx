@@ -200,7 +200,30 @@ const Users = () => {
         ]}
       >
         <SinglePressTouchable
-          onPress={() => deleteUser(userId)}
+          onPress={() => {
+            Alert.alert(
+              "Delete User",
+              "Are you sure you want to delete this user?",
+              [
+                {
+                  text: "Cancel",
+                  style: "cancel",
+                  onPress: () => {
+                    // Close the currently open swipeable
+                    const swipeable = swipeableRefs.current.get(userId);
+                    if (swipeable) {
+                      swipeable.close?.();
+                    }
+                  },
+                },
+                {
+                  text: "Delete",
+                  style: "destructive",
+                  onPress: () => deleteUser(userId),
+                },
+              ]
+            );
+          }}
           style={{
             width: 70,
             backgroundColor: "#EF4444",

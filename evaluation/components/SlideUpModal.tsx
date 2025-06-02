@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from "react";
+import React, { useRef, useEffect, useCallback, useState } from "react";
 import {
   Modal,
   View,
@@ -15,6 +15,11 @@ import usePagination from "@/hooks/usePagination";
 import AssignCard from "./AssignCard";
 import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
+import Search from "@/components/Search";
+import debounce from "lodash.debounce";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import getServerIP from "@/app/requests/NetworkAddress";
 
 const SlideUpModal = ({ visible, onClose }: any) => {
   const screenHeight = Dimensions.get("window").height;
@@ -32,18 +37,45 @@ const SlideUpModal = ({ visible, onClose }: any) => {
 
   const { getLockers } = useGetLockers();
 
-  // 🔧 Pass current location into pagination
-  const { getMoreData, resetPagination, fetchingMoreUsers } = usePagination(
-    lockers,
-    (page: number, limit: number) =>
-      getLockers(page, limit, addEmployeeInfo?.location),
-    setLockers,
-    setLockerDetails,
-    lockerDetails,
-    8
+  const { getMoreData, resetPagination, fetchingMoreUsers, setIsSearching } =
+    usePagination(
+      lockers,
+      (page: number, limit: number) =>
+        getLockers(page, limit, addEmployeeInfo?.location),
+      setLockers,
+      setLockerDetails,
+      lockerDetails,
+      8
+    );
+
+  const [query, setQuery] = useState("");
+  const [filteredLockers, setFilteredLockers] = useState<any[]>([]);
+
+  // Server-side search
+  const debouncedFetch = useCallback(
+    debounce(async (searchTerm: string) => {
+      try {
+        const token = await AsyncStorage.getItem("token");
+        const baseUrl = await getServerIP();
+
+        const res = await axios.get(
+          `${baseUrl}/lockers/search?query=${searchTerm}&location=${addEmployeeInfo?.location}`,
+          {
+            headers: {
+              Authorization: token!,
+            },
+          }
+        );
+
+        setFilteredLockers(res.data);
+        setIsSearching(true);
+      } catch (err) {
+        console.error("Search error:", err);
+      }
+    }, 300),
+    [addEmployeeInfo?.location]
   );
 
-  // 🟡 Reset when modal opens
   useEffect(() => {
     if (visible) {
       Animated.timing(slideAnim, {
@@ -65,7 +97,7 @@ const SlideUpModal = ({ visible, onClose }: any) => {
     }
   }, [visible]);
 
-  // 🟡 Optional: refresh if location changes while modal is open
+  // Refresh if location changes while modal is open
   useEffect(() => {
     if (visible) {
       setLockers([]);
@@ -73,6 +105,15 @@ const SlideUpModal = ({ visible, onClose }: any) => {
       getMoreData();
     }
   }, [addEmployeeInfo?.location]);
+
+  // When query changes, trigger search or reset
+  useEffect(() => {
+    if (query.trim() === "") {
+      setIsSearching(false);
+    } else {
+      debouncedFetch(query);
+    }
+  }, [query]);
 
   const renderItem = useCallback(
     ({ item }: any) => (
@@ -108,14 +149,31 @@ const SlideUpModal = ({ visible, onClose }: any) => {
             </View>
           </View>
 
+          <View className="my-2">
+            <Search
+              total="lockers"
+              query={query}
+              setQuery={setQuery}
+              placeholder="Search Locker Number"
+            />
+          </View>
+
           <View className="flex-1 my-3">
             {!loading && (
               <FlatList
-                data={lockers}
+                data={query.trim() === "" ? lockers : filteredLockers}
                 keyExtractor={(item) => item._id.toString()}
                 renderItem={renderItem}
-                onEndReached={getMoreData}
-                onEndReachedThreshold={0.5}
+                onEndReached={() => {
+                  if (
+                    query.trim() === "" &&
+                    !fetchingMoreUsers &&
+                    lockerDetails.currentPage < lockerDetails.totalPages
+                  ) {
+                    getMoreData();
+                  }
+                }}
+                onEndReachedThreshold={0.1}
                 ListFooterComponent={
                   fetchingMoreUsers ? (
                     <ActivityIndicator size="small" color="#0000ff" />
