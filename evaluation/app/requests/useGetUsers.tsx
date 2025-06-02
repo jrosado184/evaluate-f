@@ -42,7 +42,7 @@ const useGetUsers = () => {
     const data = await getUsers(page, sort);
     if (data) {
       setUserDetails({
-        totalUsers: data.totalEmployees,
+        totalUsers: data.totalUsers,
         totalPages: data.totalPages,
         currentPage: data.currentPage,
       });

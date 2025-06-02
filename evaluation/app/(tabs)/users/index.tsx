@@ -77,7 +77,11 @@ const Users = () => {
           }
         );
 
-        setEmployees(res.data);
+        setEmployees(res.data?.users);
+        setUserDetails({
+          ...userDetails,
+          totalUsers: res?.data?.totalUsers,
+        });
         setIsSearching(true);
       } catch (err) {
         console.error("Search error:", err);
@@ -100,6 +104,7 @@ const Users = () => {
           ...prev,
           currentPage: 1,
           totalPages: data.totalPages,
+          totalUsers: data.totalUsers,
         }));
       }
 
