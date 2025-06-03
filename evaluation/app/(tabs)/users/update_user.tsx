@@ -156,8 +156,8 @@ const UpdateUser = () => {
           title="Location"
           placeholder="Select Locker Location"
           options={[
-            { label: "Fabrication Womens B", value: "Fabrication Womens B" },
-            { label: "Fabrication Mens B", value: "Fabrication Mens B" },
+            { label: "Fabrication Womens", value: "Fabrication Womens" },
+            { label: "Fabrication Mens", value: "Fabrication Mens" },
           ]}
           onSelect={(value: any) => {
             setAddEmployeeInfo((prev: any) => ({
@@ -166,7 +166,7 @@ const UpdateUser = () => {
               locker_number: null,
             }));
           }}
-          selectedValue={addEmployeeInfo?.location}
+          selectedValue={addEmployeeInfo?.locker_info?.location}
         />
 
         {/* Locker Number */}

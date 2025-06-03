@@ -50,15 +50,15 @@ const Lockers = () => {
         const token = await AsyncStorage.getItem("token");
         const baseUrl = await getServerIP();
 
+        // 🔧 FIX: Use the /api/lockers/search endpoint
         const res = await axios.get(
-          `${baseUrl}/employees/search?query=${searchTerm}&type=lockers`,
+          `${baseUrl}/lockers/search?query=${searchTerm}`,
           {
             headers: {
               Authorization: token!,
             },
           }
         );
-
         setLockers(res.data);
         setIsSearching(true);
       } catch (err) {
@@ -148,7 +148,7 @@ const Lockers = () => {
         <LockerCard
           button={"arrow"}
           locker_number={item.locker_number}
-          Assigned_to={item.assigned_to}
+          Assigned_to={item.assigned_employee?.employee_name}
           assigned_by={item.assigned_by}
           last_updated={formatISODate(item.last_updated)}
           vacant={item.vacant}

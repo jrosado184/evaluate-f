@@ -147,8 +147,8 @@ const AddUser = () => {
             title="Location"
             placeholder="Select Locker Location"
             options={[
-              { label: "Fabrication Womens B", value: "Fabrication Womens B" },
-              { label: "Fabrication Mens B", value: "Fabrication Mens B" },
+              { label: "Fabrication Womens ", value: "Fabrication Womens " },
+              { label: "Fabrication Mens ", value: "Fabrication Mens" },
             ]}
             onSelect={(value: any) => {
               setAddEmployeeInfo((prev: any) => ({
