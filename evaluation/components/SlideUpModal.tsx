@@ -7,12 +7,12 @@ import {
   StyleSheet,
   Dimensions,
   FlatList,
+  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/EvilIcons";
 import useEmployeeContext from "@/app/context/EmployeeContext";
-import useGetLockers from "@/app/requests/useGetLockers";
+import useGetUsers from "@/app/requests/useGetUsers";
 import usePagination from "@/hooks/usePagination";
-import AssignCard from "./AssignCard";
 import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 import Search from "@/components/Search";
@@ -20,93 +20,102 @@ import debounce from "lodash.debounce";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
+import AssignEmployeeCard from "./employees/AssignEmployeeCard";
+import LockerCard from "./LockerCard";
 
-const SlideUpModal = ({ visible, onClose }: any) => {
+const SlideUpModal = ({
+  visible,
+  onClose,
+  lockerId,
+  onLockerSelected,
+  mode = "assignEmployee",
+}: {
+  visible: boolean;
+  onClose: () => void;
+  lockerId?: string;
+  onLockerSelected?: (locker: any) => void;
+  onAssignmentComplete?: () => void;
+  mode?: "assignEmployee" | "assignLocker";
+}) => {
   const screenHeight = Dimensions.get("window").height;
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
 
   const {
-    lockers,
     setLoading,
-    setLockers,
     loading,
-    setLockerDetails,
-    lockerDetails,
-    addEmployeeInfo,
+    employees,
+    lockers,
+    setEmployees,
+    setLockers,
+    setUserDetails,
+    userDetails,
   } = useEmployeeContext();
 
-  const { getLockers } = useGetLockers();
-
+  const { getUsers } = useGetUsers();
   const { getMoreData, resetPagination, fetchingMoreUsers, setIsSearching } =
     usePagination(
-      lockers,
-      (page: number, limit: number) =>
-        getLockers(page, limit, addEmployeeInfo?.location),
-      setLockers,
-      setLockerDetails,
-      lockerDetails,
+      mode === "assignEmployee" ? employees : lockers,
+      getUsers,
+      mode === "assignEmployee" ? setEmployees : setLockers,
+      setUserDetails,
+      userDetails,
       8
     );
 
   const [query, setQuery] = useState("");
-  const [filteredLockers, setFilteredLockers] = useState<any[]>([]);
+  const [filteredItems, setFilteredItems] = useState<any[]>([]);
 
-  // Server-side search
   const debouncedFetch = useCallback(
     debounce(async (searchTerm: string) => {
       try {
         const token = await AsyncStorage.getItem("token");
         const baseUrl = await getServerIP();
+        const url =
+          mode === "assignEmployee"
+            ? `${baseUrl}/employees/search?query=${searchTerm}`
+            : `${baseUrl}/lockers/search?query=${searchTerm}`;
 
-        const res = await axios.get(
-          `${baseUrl}/lockers/search?query=${searchTerm}&location=${addEmployeeInfo?.location}`,
-          {
-            headers: {
-              Authorization: token!,
-            },
-          }
-        );
+        const res = await axios.get(url, {
+          headers: { Authorization: token! },
+        });
 
-        setFilteredLockers(res.data);
+        const results = mode === "assignEmployee" ? res.data.users : res.data;
+        setFilteredItems(results || []);
         setIsSearching(true);
       } catch (err) {
         console.error("Search error:", err);
       }
     }, 300),
-    [addEmployeeInfo?.location]
+    [mode]
   );
 
   useEffect(() => {
-    if (visible) {
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
+    if (visible && lockerId) {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
 
       setLoading(true);
-      setLockers([]); // Clear old results
+      if (mode === "assignEmployee") {
+        setEmployees([]);
+      } else {
+        setLockers([]);
+      }
       resetPagination();
       getMoreData().finally(() => setLoading(false));
-    } else {
-      Animated.timing(slideAnim, {
-        toValue: screenHeight,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
     }
-  }, [visible]);
+  }, [visible, mode, lockerId]);
 
-  // Refresh if location changes while modal is open
-  useEffect(() => {
-    if (visible) {
-      setLockers([]);
-      resetPagination();
-      getMoreData();
-    }
-  }, [addEmployeeInfo?.location]);
-
-  // When query changes, trigger search or reset
   useEffect(() => {
     if (query.trim() === "") {
       setIsSearching(false);
@@ -115,23 +124,95 @@ const SlideUpModal = ({ visible, onClose }: any) => {
     }
   }, [query]);
 
+  const handleAssign = async (employeeId: string) => {
+    if (!lockerId) {
+      Alert.alert("Error", "No locker selected.");
+      return;
+    }
+
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const baseUrl = await getServerIP();
+
+      const response = await axios.post(
+        `${baseUrl}/lockers/assign`,
+        { lockerId, employeeId },
+        {
+          headers: {
+            Authorization: token!,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        Alert.alert("Success", "Locker assigned successfully");
+        handleClose();
+      } else {
+        Alert.alert("Notice", "Locker was not assigned. Please try again.");
+      }
+    } catch (error: any) {
+      console.error(
+        "Assignment failed:",
+        error?.response?.data || error.message
+      );
+      Alert.alert(
+        "Error",
+        error?.response?.data?.error || "Failed to assign locker"
+      );
+    }
+  };
+
+  const handleLockerSelection = (locker: any) => {
+    onLockerSelected?.(locker);
+    handleClose();
+  };
+
   const renderItem = useCallback(
-    ({ item }: any) => (
-      <SinglePressTouchable key={item._id} activeOpacity={0.8}>
-        <AssignCard
-          locker_number={item.locker_number}
-          location={item.location}
-          onClose={onClose}
-        />
-      </SinglePressTouchable>
-    ),
-    []
+    ({ item }: any) =>
+      mode === "assignEmployee" ? (
+        <SinglePressTouchable
+          key={item._id}
+          onPress={() => handleAssign(item._id)}
+          activeOpacity={0.8}
+        >
+          <AssignEmployeeCard {...item} assigned={!!item.locker_id} />
+        </SinglePressTouchable>
+      ) : (
+        <SinglePressTouchable
+          key={item._id}
+          onPress={() => handleLockerSelection(item)}
+          activeOpacity={0.8}
+        >
+          <LockerCard {...item} />
+        </SinglePressTouchable>
+      ),
+    [mode, lockerId]
   );
 
+  const handleClose = () => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: screenHeight,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onClose();
+    });
+  };
+
+  if (!visible || !lockerId) return null;
+
   return (
-    <Modal transparent visible={visible} animationType="slide">
-      <View style={styles.overlay}>
-        <SinglePressTouchable style={styles.overlay} onPress={onClose} />
+    <Modal transparent visible={visible} animationType="none">
+      <Animated.View style={[styles.overlay, { opacity: opacityAnim }]}>
+        <SinglePressTouchable style={styles.overlay} onPress={handleClose} />
         <Animated.View
           style={[
             styles.modalContent,
@@ -141,34 +222,46 @@ const SlideUpModal = ({ visible, onClose }: any) => {
           <View className="gap-1 flex-row items-center">
             <View className="flex-row items-center w-full justify-between">
               <View className="flex-row items-center">
-                <SinglePressTouchable onPress={onClose}>
+                <SinglePressTouchable onPress={handleClose}>
                   <Icon name="close" size={32} className="pr-4" />
                 </SinglePressTouchable>
-                <Text className="font-inter-medium">Choose Locker</Text>
+                <Text className="font-inter-medium">
+                  {mode === "assignEmployee"
+                    ? "Select Employee"
+                    : "Select Locker"}
+                </Text>
               </View>
             </View>
           </View>
 
           <View className="my-2">
             <Search
-              total="lockers"
+              total={mode === "assignEmployee" ? "employees" : "lockers"}
               query={query}
               setQuery={setQuery}
-              placeholder="Search Locker Number"
+              placeholder={`Search ${
+                mode === "assignEmployee" ? "Employee" : "Locker"
+              }`}
             />
           </View>
 
           <View className="flex-1 my-3">
             {!loading && (
               <FlatList
-                data={query.trim() === "" ? lockers : filteredLockers}
+                data={
+                  query.trim() === ""
+                    ? mode === "assignEmployee"
+                      ? employees
+                      : lockers
+                    : filteredItems
+                }
                 keyExtractor={(item) => item._id.toString()}
                 renderItem={renderItem}
                 onEndReached={() => {
                   if (
                     query.trim() === "" &&
                     !fetchingMoreUsers &&
-                    lockerDetails.currentPage < lockerDetails.totalPages
+                    userDetails.currentPage < userDetails.totalPages
                   ) {
                     getMoreData();
                   }
@@ -184,7 +277,7 @@ const SlideUpModal = ({ visible, onClose }: any) => {
             )}
           </View>
         </Animated.View>
-      </View>
+      </Animated.View>
     </Modal>
   );
 };
@@ -192,7 +285,7 @@ const SlideUpModal = ({ visible, onClose }: any) => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    backgroundColor: "rgba(0,0,0,0.3)",
     justifyContent: "flex-end",
   },
   modalContent: {

@@ -18,6 +18,7 @@ import axios from "axios";
 import getServerIP from "@/app/requests/NetworkAddress";
 import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
+import SlideUpModal from "@/components/SlideUpModal";
 
 const Lockers = () => {
   const {
@@ -30,6 +31,8 @@ const Lockers = () => {
   } = useEmployeeContext();
 
   const { getLockers } = useGetLockers();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedLockerId, setSelectedLockerId] = useState<string>("");
 
   const { getMoreData, setIsSearching, fetchingMoreUsers, resetPagination } =
     usePagination(
@@ -50,13 +53,10 @@ const Lockers = () => {
         const token = await AsyncStorage.getItem("token");
         const baseUrl = await getServerIP();
 
-        // 🔧 FIX: Use the /api/lockers/search endpoint
         const res = await axios.get(
           `${baseUrl}/lockers/search?query=${searchTerm}`,
           {
-            headers: {
-              Authorization: token!,
-            },
+            headers: { Authorization: token! },
           }
         );
         setLockers(res.data);
@@ -74,7 +74,6 @@ const Lockers = () => {
     if (value.trim() === "") {
       debouncedFetch.cancel();
       resetPagination();
-
       const data = await getLockers(1, 4);
       if (data) {
         setLockers(data.results);
@@ -84,13 +83,8 @@ const Lockers = () => {
           totalPages: data.totalPages,
         }));
       }
-
       setIsSearching(false);
-
-      setTimeout(() => {
-        getMoreData();
-      }, 100);
-
+      setTimeout(() => getMoreData(), 100);
       return;
     }
 
@@ -114,12 +108,6 @@ const Lockers = () => {
     loadInitialLockers();
   }, []);
 
-  useEffect(() => {
-    if (lockers?.length === 4 && query.trim() === "") {
-      getMoreData();
-    }
-  }, [lockers]);
-
   useFocusEffect(
     useCallback(() => {
       setIsSearching(false);
@@ -138,15 +126,40 @@ const Lockers = () => {
     }, [])
   );
 
+  const handleAssignPress = (vacant: boolean, lockerId: string) => {
+    if (vacant) {
+      setSelectedLockerId(lockerId);
+      setModalVisible(true);
+    }
+  };
+
+  const handleAssignmentComplete = async () => {
+    const data = await getLockers(1, 4);
+    if (data) {
+      setLockers(data.results);
+      setLockerDetails({
+        totalPages: data.totalPages,
+        currentPage: 1,
+        totalUsers: data.totalLockers,
+      });
+    }
+  };
+
   const renderLockerCard = useCallback(({ item }: any) => {
     return (
       <SinglePressTouchable
         key={item._id}
-        onPress={() => router.push(`/lockers/${String(item._id)}`)}
         activeOpacity={0.8}
+        onPress={() => {
+          if (!item.vacant && item.assigned_employee?._id) {
+            router.push(`/lockers/${item._id}`);
+          } else {
+            handleAssignPress(item.vacant, item._id);
+          }
+        }}
       >
         <LockerCard
-          button={"arrow"}
+          button="arrow"
           locker_number={item.locker_number}
           Assigned_to={item.assigned_employee?.employee_name}
           assigned_by={item.assigned_by}
@@ -166,7 +179,6 @@ const Lockers = () => {
       </View>
 
       <Fab icon="unlock" route="lockers/add_locker" />
-
       <Search total="lockers" query={query} setQuery={handleSearchChange} />
 
       {lockers?.length === 0 && !loading ? (
@@ -184,14 +196,11 @@ const Lockers = () => {
           renderItem={renderLockerCard}
           onEndReached={getMoreData}
           onEndReachedThreshold={0.5}
-          ListFooterComponent={() => (
-            <>
-              {fetchingMoreUsers && (
-                <ActivityIndicator size="small" color="#0000ff" />
-              )}
-              <View style={{ height: 20 }} />
-            </>
-          )}
+          ListFooterComponent={
+            fetchingMoreUsers ? (
+              <ActivityIndicator size="small" color="#0000ff" />
+            ) : null
+          }
           contentContainerStyle={{ gap: 14 }}
         />
       ) : (
@@ -211,6 +220,16 @@ const Lockers = () => {
           }}
         />
       )}
+
+      <SlideUpModal
+        mode="assignEmployee"
+        visible={modalVisible}
+        lockerId={selectedLockerId}
+        onClose={() => {
+          setModalVisible(false);
+          setSelectedLockerId("");
+        }}
+      />
     </SafeAreaView>
   );
 };
