@@ -47,8 +47,6 @@ const Locker = () => {
     getUser();
   }, []);
 
-  console.log(locker);
-
   return (
     <SafeAreaView className="p-6 bg-neutral-50 h-full">
       <LeftButton />

@@ -23,7 +23,7 @@ import { Swipeable } from "react-native-gesture-handler";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const Users = () => {
-  const { getUsers, fetchAndSetUsers } = useGetUsers();
+  const { getUsers, fetchAndSetUsers } = useGetUsers(4);
   const {
     loading,
     employees,

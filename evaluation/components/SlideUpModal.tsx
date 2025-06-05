@@ -22,12 +22,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import AssignEmployeeCard from "./employees/AssignEmployeeCard";
 import LockerCard from "./LockerCard";
+import SuccessModal from "./SuccessModal";
 
 const SlideUpModal = ({
   visible,
   onClose,
   lockerId,
   onLockerSelected,
+  onAssignmentComplete,
   mode = "assignEmployee",
 }: {
   visible: boolean;
@@ -52,28 +54,37 @@ const SlideUpModal = ({
     userDetails,
   } = useEmployeeContext();
 
-  const { getUsers } = useGetUsers();
-  const { getMoreData, resetPagination, fetchingMoreUsers, setIsSearching } =
-    usePagination(
-      mode === "assignEmployee" ? employees : lockers,
-      getUsers,
-      mode === "assignEmployee" ? setEmployees : setLockers,
-      setUserDetails,
-      userDetails,
-      8
-    );
-
   const [query, setQuery] = useState("");
   const [filteredItems, setFilteredItems] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastTrigger, setToastTrigger] = useState(0);
+
+  const { getUsers } = useGetUsers(8);
+  const {
+    getMoreData,
+    getInitialData,
+    resetPagination,
+    fetchingMoreUsers,
+    setIsSearching,
+  } = usePagination(
+    mode === "assignEmployee" ? employees : lockers,
+    getUsers,
+    mode === "assignEmployee" ? setEmployees : setLockers,
+    setUserDetails,
+    userDetails,
+    8
+  );
 
   const debouncedFetch = useCallback(
     debounce(async (searchTerm: string) => {
       try {
+        setSearchLoading(true);
         const token = await AsyncStorage.getItem("token");
         const baseUrl = await getServerIP();
         const url =
           mode === "assignEmployee"
-            ? `${baseUrl}/employees/search?query=${searchTerm}`
+            ? `${baseUrl}/employees/search?query=${searchTerm}&type=employees`
             : `${baseUrl}/lockers/search?query=${searchTerm}`;
 
         const res = await axios.get(url, {
@@ -85,6 +96,8 @@ const SlideUpModal = ({
         setIsSearching(true);
       } catch (err) {
         console.error("Search error:", err);
+      } finally {
+        setSearchLoading(false);
       }
     }, 300),
     [mode]
@@ -112,7 +125,7 @@ const SlideUpModal = ({
         setLockers([]);
       }
       resetPagination();
-      getMoreData().finally(() => setLoading(false));
+      getInitialData().finally(() => setLoading(false));
     }
   }, [visible, mode, lockerId]);
 
@@ -146,10 +159,10 @@ const SlideUpModal = ({
       );
 
       if (response.status === 200) {
-        Alert.alert("Success", "Locker assigned successfully");
+        onAssignmentComplete?.(); // refresh parent
+        setToastMessage("Locker successfully assigned!");
+        setToastTrigger(Date.now());
         handleClose();
-      } else {
-        Alert.alert("Notice", "Locker was not assigned. Please try again.");
       }
     } catch (error: any) {
       console.error(
@@ -166,6 +179,24 @@ const SlideUpModal = ({
   const handleLockerSelection = (locker: any) => {
     onLockerSelected?.(locker);
     handleClose();
+  };
+
+  const handleClose = () => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: screenHeight,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setQuery(""); // clear query
+      onClose();
+    });
   };
 
   const renderItem = useCallback(
@@ -190,95 +221,86 @@ const SlideUpModal = ({
     [mode, lockerId]
   );
 
-  const handleClose = () => {
-    Animated.parallel([
-      Animated.timing(slideAnim, {
-        toValue: screenHeight,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-      Animated.timing(opacityAnim, {
-        toValue: 0,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      onClose();
-    });
-  };
-
   if (!visible || !lockerId) return null;
 
   return (
-    <Modal transparent visible={visible} animationType="none">
-      <Animated.View style={[styles.overlay, { opacity: opacityAnim }]}>
-        <SinglePressTouchable style={styles.overlay} onPress={handleClose} />
-        <Animated.View
-          style={[
-            styles.modalContent,
-            { transform: [{ translateY: slideAnim }] },
-          ]}
-        >
-          <View className="gap-1 flex-row items-center">
-            <View className="flex-row items-center w-full justify-between">
-              <View className="flex-row items-center">
-                <SinglePressTouchable onPress={handleClose}>
-                  <Icon name="close" size={32} className="pr-4" />
-                </SinglePressTouchable>
-                <Text className="font-inter-medium">
-                  {mode === "assignEmployee"
-                    ? "Select Employee"
-                    : "Select Locker"}
-                </Text>
+    <>
+      <Modal transparent visible={visible} animationType="none">
+        <Animated.View style={[styles.overlay, { opacity: opacityAnim }]}>
+          <SinglePressTouchable style={styles.overlay} onPress={handleClose} />
+          <Animated.View
+            style={[
+              styles.modalContent,
+              { transform: [{ translateY: slideAnim }] },
+            ]}
+          >
+            <View className="gap-1 flex-row items-center">
+              <View className="flex-row items-center w-full justify-between">
+                <View className="flex-row items-center">
+                  <SinglePressTouchable onPress={handleClose}>
+                    <Icon name="close" size={32} className="pr-4" />
+                  </SinglePressTouchable>
+                  <Text className="font-inter-medium">
+                    {mode === "assignEmployee"
+                      ? "Select Employee"
+                      : "Select Locker"}
+                  </Text>
+                </View>
               </View>
             </View>
-          </View>
 
-          <View className="my-2">
-            <Search
-              total={mode === "assignEmployee" ? "employees" : "lockers"}
-              query={query}
-              setQuery={setQuery}
-              placeholder={`Search ${
-                mode === "assignEmployee" ? "Employee" : "Locker"
-              }`}
-            />
-          </View>
-
-          <View className="flex-1 my-3">
-            {!loading && (
-              <FlatList
-                data={
-                  query.trim() === ""
-                    ? mode === "assignEmployee"
-                      ? employees
-                      : lockers
-                    : filteredItems
-                }
-                keyExtractor={(item) => item._id.toString()}
-                renderItem={renderItem}
-                onEndReached={() => {
-                  if (
-                    query.trim() === "" &&
-                    !fetchingMoreUsers &&
-                    userDetails.currentPage < userDetails.totalPages
-                  ) {
-                    getMoreData();
-                  }
-                }}
-                onEndReachedThreshold={0.1}
-                ListFooterComponent={
-                  fetchingMoreUsers ? (
-                    <ActivityIndicator size="small" color="#0000ff" />
-                  ) : null
-                }
-                contentContainerStyle={{ paddingBottom: 8 }}
+            <View className="my-2">
+              <Search
+                noFilter
+                total={mode === "assignEmployee" ? "employees" : "lockers"}
+                query={query}
+                setQuery={setQuery}
               />
-            )}
-          </View>
+            </View>
+
+            <View className="flex-1 my-3 justify-center items-center">
+              {loading || searchLoading ? (
+                <ActivityIndicator size="large" color="#0000ff" />
+              ) : (
+                <FlatList
+                  data={
+                    query.trim() === ""
+                      ? mode === "assignEmployee"
+                        ? employees
+                        : lockers
+                      : filteredItems
+                  }
+                  keyExtractor={(item) => item._id.toString()}
+                  renderItem={renderItem}
+                  onEndReached={() => {
+                    if (
+                      query.trim() === "" &&
+                      !fetchingMoreUsers &&
+                      userDetails.currentPage < userDetails.totalPages
+                    ) {
+                      getMoreData();
+                    }
+                  }}
+                  onEndReachedThreshold={0.1}
+                  ListFooterComponent={
+                    fetchingMoreUsers ? (
+                      <ActivityIndicator size="small" color="#0000ff" />
+                    ) : null
+                  }
+                  contentContainerStyle={{ paddingBottom: 8 }}
+                />
+              )}
+            </View>
+          </Animated.View>
         </Animated.View>
-      </Animated.View>
-    </Modal>
+      </Modal>
+
+      <SuccessModal
+        message={toastMessage}
+        trigger={toastTrigger}
+        clearMessage={() => setToastMessage("")}
+      />
+    </>
   );
 };
 

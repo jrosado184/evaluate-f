@@ -4,9 +4,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "./NetworkAddress";
 import axios from "axios";
 
-const useGetUsers = () => {
+const useGetUsers = (newLimit: any) => {
   const { setUserDetails, setEmployees, setLoading } = useEmployeeContext();
-  const limit = 4;
+  const limit = newLimit || 4;
 
   const getUsers = useCallback(async (page = 1, sort: string) => {
     const token = await AsyncStorage.getItem("token");

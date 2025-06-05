@@ -19,6 +19,7 @@ import getServerIP from "@/app/requests/NetworkAddress";
 import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 import SlideUpModal from "@/components/SlideUpModal";
+import SuccessModal from "@/components/SuccessModal";
 
 const Lockers = () => {
   const {
@@ -33,6 +34,7 @@ const Lockers = () => {
   const { getLockers } = useGetLockers();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedLockerId, setSelectedLockerId] = useState<string>("");
+  const [showToast, setShowToast] = useState(false);
 
   const { getMoreData, setIsSearching, fetchingMoreUsers, resetPagination } =
     usePagination(
@@ -54,12 +56,14 @@ const Lockers = () => {
         const baseUrl = await getServerIP();
 
         const res = await axios.get(
-          `${baseUrl}/lockers/search?query=${searchTerm}`,
+          `${baseUrl}/lockers?page=1&limit=8&search=${encodeURIComponent(
+            searchTerm
+          )}`,
           {
             headers: { Authorization: token! },
           }
         );
-        setLockers(res.data);
+        setLockers(res.data.results);
         setIsSearching(true);
       } catch (err) {
         console.error("Search error:", err);
@@ -130,6 +134,7 @@ const Lockers = () => {
     if (vacant) {
       setSelectedLockerId(lockerId);
       setModalVisible(true);
+      setQuery("");
     }
   };
 
@@ -142,6 +147,7 @@ const Lockers = () => {
         currentPage: 1,
         totalUsers: data.totalLockers,
       });
+      setShowToast(true);
     }
   };
 
@@ -201,7 +207,7 @@ const Lockers = () => {
               <ActivityIndicator size="small" color="#0000ff" />
             ) : null
           }
-          contentContainerStyle={{ gap: 14 }}
+          contentContainerStyle={{ gap: 14, paddingBottom: 85 }}
         />
       ) : (
         <UserCardSkeleton amount={5} width="w-full" height="h-40" />
@@ -223,12 +229,20 @@ const Lockers = () => {
 
       <SlideUpModal
         mode="assignEmployee"
+        onAssignmentComplete={handleAssignmentComplete}
         visible={modalVisible}
         lockerId={selectedLockerId}
         onClose={() => {
           setModalVisible(false);
           setSelectedLockerId("");
+          setQuery("");
         }}
+      />
+
+      <SuccessModal
+        show={showToast}
+        setShow={setShowToast}
+        message="Locker assigned successfully"
       />
     </SafeAreaView>
   );

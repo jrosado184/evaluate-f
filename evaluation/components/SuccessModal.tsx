@@ -4,37 +4,39 @@ import { Alert, AlertText } from "@/components/ui/alert";
 import Icon from "react-native-vector-icons/Octicons";
 
 interface Props {
+  show: boolean;
+  setShow: (value: boolean) => void;
   message: string;
-  trigger?: number;
-  clearMessage?: () => void;
 }
 
-const SuccessModal = ({ message, trigger, clearMessage }: Props) => {
+const SuccessModal = ({ show, setShow, message }: Props) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (!message) return;
+    if (!show) return;
 
+    // Fade in
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 300,
       useNativeDriver: true,
     }).start();
 
+    // Then fade out
     const timeout = setTimeout(() => {
       Animated.timing(fadeAnim, {
         toValue: 0,
         duration: 800,
         useNativeDriver: true,
       }).start(() => {
-        clearMessage && clearMessage();
+        setShow(false);
       });
     }, 3000);
 
     return () => clearTimeout(timeout);
-  }, [trigger]);
+  }, [show]);
 
-  if (!message) return null;
+  if (!show) return null;
 
   return (
     <View

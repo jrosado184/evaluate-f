@@ -25,6 +25,29 @@ const usePagination = (
     }));
   };
 
+  const getInitialData = async () => {
+    setFetchingMoreUsers(true);
+    resetPagination();
+
+    try {
+      const data = await getData(1, limit);
+
+      if (data && data.results) {
+        setData(data.results);
+        setDetails((prev: any) => ({
+          ...prev,
+          currentPage: 1,
+          totalPages: data.totalPages || 1,
+          totalUsers: data.totalUsers || 0,
+        }));
+      }
+    } catch (err) {
+      console.error("Initial data load error:", err);
+    } finally {
+      setFetchingMoreUsers(false);
+    }
+  };
+
   const getMoreData = async () => {
     const currentPage = details?.currentPage || 1;
     const totalPages = details?.totalPages || 1;
@@ -42,7 +65,6 @@ const usePagination = (
     try {
       const data = await getData(nextPage, limit);
 
-      // If no results, set totalPages = currentPage to stop further calls
       if (!data || !data.results || data.results.length === 0) {
         setDetails((prev: any) => ({
           ...prev,
@@ -78,6 +100,7 @@ const usePagination = (
   };
 
   return {
+    getInitialData,
     getMoreData,
     setIsSearching,
     resetPagination,
