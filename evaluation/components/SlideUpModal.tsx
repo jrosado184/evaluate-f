@@ -99,7 +99,11 @@ const SlideUpModal = ({
             : `${baseUrl}/lockers?page=1&limit=8&search=${searchTerm}`;
 
         const res = await axios.get(url, { headers: { Authorization: token } });
-        setFilteredItems(res.data.users || []);
+
+        console.log(res.data);
+
+        // Smart handling for either endpoint
+        setFilteredItems(res.data.users || res.data.results || []);
         setIsSearching(true);
       } catch (err) {
         console.error("Search error:", err);
@@ -239,9 +243,9 @@ const SlideUpModal = ({
     });
   };
 
-  const renderItem = useCallback(
-    ({ item }: any) =>
-      mode === "assignEmployee" ? (
+  const renderItem = ({ item }: any) => {
+    if (mode === "assignEmployee") {
+      return (
         <SinglePressTouchable
           key={item._id}
           onPress={() => handleAssign(item._id)}
@@ -249,7 +253,9 @@ const SlideUpModal = ({
         >
           <AssignEmployeeCard {...item} assigned={!!item.locker_id} />
         </SinglePressTouchable>
-      ) : (
+      );
+    } else {
+      return (
         <SinglePressTouchable
           key={item._id}
           onPress={() => handleLockerSelection(item)}
@@ -257,9 +263,9 @@ const SlideUpModal = ({
         >
           <AssignLockerCard {...item} />
         </SinglePressTouchable>
-      ),
-    [mode, lockerId]
-  );
+      );
+    }
+  };
 
   return (
     <>

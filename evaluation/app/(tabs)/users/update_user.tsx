@@ -16,6 +16,7 @@ import useActionContext from "@/app/context/ActionsContext";
 import updateEmployee from "@/app/requests/updateEmployee";
 import useValidation from "@/app/validation/useValidation";
 import SinglePressTouchable from "@/app/utils/SinglePress";
+import { ScrollView } from "react-native-gesture-handler";
 
 const UpdateUser = () => {
   const { setSelectedValue } = useSelect();
@@ -86,161 +87,163 @@ const UpdateUser = () => {
     }
   };
 
+  console.log(employee);
+
   return (
     <SafeAreaView className="bg-white h-full p-6">
-      <SinglePressTouchable
-        onPress={router.back}
-        className="flex-row h-10 items-center"
-      >
-        <Icon name="chevron-left" size={29} />
-        <Text className="text-[1.3rem]">Edit user</Text>
-      </SinglePressTouchable>
+      <ScrollView>
+        <SinglePressTouchable
+          onPress={router.back}
+          className="flex-row h-10 items-center"
+        >
+          <Icon name="chevron-left" size={29} />
+          <Text className="text-[1.3rem]">Edit user</Text>
+        </SinglePressTouchable>
 
-      <View className="w-full gap-8 my-4">
-        {/* Name */}
-        <View className={errors.employee_name && "h-28"}>
-          <FormField
-            value={addEmployeeInfo.employee_name}
-            title="Name"
-            placeholder="Enter name"
-            rounded="rounded-[0.625rem]"
-            handleChangeText={(value: any) =>
-              handleEmployeeInfo("employee_name", value)
-            }
-          />
-          <Error hidden={!errors.employee_name} title={errors.employee_name} />
-        </View>
+        <View className="w-full gap-8 my-4">
+          {/* Name */}
+          <View className={errors.employee_name && "h-28"}>
+            <FormField
+              value={addEmployeeInfo.employee_name}
+              title="Name"
+              placeholder="Enter name"
+              rounded="rounded-[0.625rem]"
+              handleChangeText={(value: any) =>
+                handleEmployeeInfo("employee_name", value)
+              }
+            />
+            <Error
+              hidden={!errors.employee_name}
+              title={errors.employee_name}
+            />
+          </View>
 
-        {/* ID Number */}
-        <View className={errors.employee_id && "h-28"}>
-          <FormField
-            value={String(addEmployeeInfo?.employee_id || "")}
-            title="ID Number"
-            placeholder="Enter ID number"
-            rounded="rounded-[0.625rem]"
-            handleChangeText={(value: any) =>
-              handleEmployeeInfo(
-                "employee_id",
-                /^\d+$/.test(value) ? parseInt(value, 10) : ""
-              )
-            }
-          />
-          <Error hidden={!errors.employee_id} title={errors.employee_id} />
-        </View>
+          {/* ID Number */}
+          <View className={errors.employee_id && "h-28"}>
+            <FormField
+              value={String(addEmployeeInfo?.employee_id || "")}
+              title="ID Number"
+              placeholder="Enter ID number"
+              rounded="rounded-[0.625rem]"
+              handleChangeText={(value: any) =>
+                handleEmployeeInfo(
+                  "employee_id",
+                  /^\d+$/.test(value) ? parseInt(value, 10) : ""
+                )
+              }
+            />
+            <Error hidden={!errors.employee_id} title={errors.employee_id} />
+          </View>
 
-        {/* Hire Date */}
-        <View className={errors.hire_date && "h-28"}>
-          <FormField
-            value={addEmployeeInfo.hire_date || ""}
-            title="Hire Date"
-            placeholder="MM/DD/YYYY"
-            keyboardType="numeric"
-            rounded="rounded-[0.625rem]"
-            handleChangeText={(value: any) =>
-              handleEmployeeInfo("hire_date", value)
-            }
-          />
-          <Error hidden={!errors.hire_date} title={errors.hire_date} />
-        </View>
+          {/* Hire Date */}
+          <View className={errors.hire_date && "h-28"}>
+            <FormField
+              value={addEmployeeInfo.date_of_hire || ""}
+              title="Hire Date"
+              placeholder="MM/DD/YYYY"
+              keyboardType="numeric"
+              rounded="rounded-[0.625rem]"
+              handleChangeText={(value: any) =>
+                handleEmployeeInfo("hire_date", value)
+              }
+            />
+            <Error hidden={!errors.hire_date} title={errors.hire_date} />
+          </View>
 
-        {/* Position */}
-        <View className={errors.position && "h-28"}>
+          {/* Position */}
+          <View className={errors.position && "h-28"}>
+            <SelectField
+              title="Position"
+              placeholder="Select Position"
+              options={options}
+              onSelect={(value: { position: string; department: string }) => {
+                setAddEmployeeInfo((prev: any) => ({
+                  ...prev,
+                  position: value.position,
+                  department: value.department,
+                }));
+                setErrors((prev: any) => ({
+                  ...prev,
+                  position: "",
+                }));
+              }}
+              selectedValue={addEmployeeInfo?.position}
+              loadData={fetchJobs}
+            />
+            <Error hidden={!errors.position} title={errors.position} />
+          </View>
+
+          {/* Location */}
           <SelectField
-            title="Position"
-            placeholder="Select Position"
-            options={options}
-            onSelect={(value: { position: string; department: string }) => {
+            title="Location"
+            placeholder="Select Locker Location"
+            options={[
+              { label: "Fabrication Mens", value: "Fabrication Mens" },
+              { label: "Fabrication Womens", value: "Fabrication Womens" },
+            ]}
+            onSelect={(value: any) => {
               setAddEmployeeInfo((prev: any) => ({
                 ...prev,
-                position: value.position,
-                department: value.department,
-              }));
-              setErrors((prev: any) => ({
-                ...prev,
-                position: "",
+                location: value,
+                locker_number: null,
               }));
             }}
-            selectedValue={addEmployeeInfo?.position}
-            loadData={fetchJobs}
+            selectedValue={addEmployeeInfo?.locker_info?.location}
           />
-          <Error hidden={!errors.position} title={errors.position} />
+
+          {/* Locker Number */}
+          <View className={errors.existing_employee && "h-28"}>
+            <SelectField
+              title="Locker Number"
+              placeholder="Select Locker"
+              onSelect={(value: any) => {
+                setSelectedValue(parseInt(value));
+                setAddEmployeeInfo((prev: any) => ({
+                  ...prev,
+                  locker_number:
+                    typeof value === "number" ? value : parseInt(value),
+                }));
+              }}
+              selectedValue={addEmployeeInfo?.locker_number}
+              toggleModal={() => setModalVisible(true)}
+            />
+            <Error
+              hidden={!errors.locker_number && !errors.existing_employee}
+              title={errors.locker_number || errors.existing_employee}
+            />
+          </View>
+
+          {/* Save Button */}
+          <View className="w-full items-center">
+            <Button
+              isLoading={loading}
+              handlePress={handleUpdateRequest}
+              title="Save"
+              styles="my-2 w-full rounded-[0.625rem]"
+              inputStyles="w-full"
+            />
+          </View>
         </View>
 
-        {/* Location */}
-        <SelectField
-          title="Location"
-          placeholder="Select Locker Location"
-          options={[
-            { label: "KILL", value: "KILL" },
-            { label: "FAB A", value: "FAB A" },
-            { label: "FAB B", value: "FAB B" },
-            { label: "FAB C", value: "FAB C" },
-            { label: "WOMEN B", value: "WOMEN B" },
-            { label: "FABRICATION MENS", value: "Fabrication Mens" },
-            { label: "FABRICATION WOMENS", value: "Fabrication Womens" },
-          ]}
-          onSelect={(value: any) => {
+        <SlideUpModal
+          mode="assignLocker"
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          onLockerSelected={(locker: any) => {
             setAddEmployeeInfo((prev: any) => ({
               ...prev,
-              location: value,
-              locker_number: null,
+              locker_number: locker.locker_number,
+              location: locker.location,
             }));
+            setErrors((prev: any) => ({
+              ...prev,
+              locker_number: "",
+              existing_employee: "",
+            }));
+            setModalVisible(false);
           }}
-          selectedValue={addEmployeeInfo?.location}
         />
-
-        {/* Locker Number */}
-        <View className={errors.existing_employee && "h-28"}>
-          <SelectField
-            title="Locker Number"
-            placeholder="Select Locker"
-            onSelect={(value: any) => {
-              setSelectedValue(parseInt(value));
-              setAddEmployeeInfo((prev: any) => ({
-                ...prev,
-                locker_number:
-                  typeof value === "number" ? value : parseInt(value),
-              }));
-            }}
-            selectedValue={addEmployeeInfo?.locker_number}
-            toggleModal={() => setModalVisible(true)}
-          />
-          <Error
-            hidden={!errors.locker_number && !errors.existing_employee}
-            title={errors.locker_number || errors.existing_employee}
-          />
-        </View>
-
-        {/* Save Button */}
-        <View className="w-full items-center">
-          <Button
-            isLoading={loading}
-            handlePress={handleUpdateRequest}
-            title="Save"
-            styles="my-8 w-full rounded-[0.625rem]"
-            inputStyles="w-full"
-          />
-        </View>
-      </View>
-
-      <SlideUpModal
-        mode="assignLocker"
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-        onLockerSelected={(locker: any) => {
-          setAddEmployeeInfo((prev: any) => ({
-            ...prev,
-            locker_number: locker.locker_number,
-            location: locker.location,
-          }));
-          setErrors((prev: any) => ({
-            ...prev,
-            locker_number: "",
-            existing_employee: "",
-          }));
-          setModalVisible(false);
-        }}
-      />
+      </ScrollView>
     </SafeAreaView>
   );
 };
