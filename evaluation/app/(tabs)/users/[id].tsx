@@ -64,12 +64,6 @@ const User = () => {
     }, [])
   );
 
-  function randomHex24() {
-    return Array.from({ length: 24 })
-      .map(() => Math.floor(Math.random() * 16).toString(16))
-      .join("");
-  }
-
   /** Navigate into step1 or summary—but only once per tap **/
   const handleEvaluationPress = async (evaluationId: string) => {
     try {

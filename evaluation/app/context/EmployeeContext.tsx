@@ -72,7 +72,7 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
   });
   const [lockerDetails, setLockerDetails] = useState({
     totalPages: null,
-    totalUsers: null,
+    totalLockers: null,
     currentPage: null,
   });
   const [sortingBy, setSortingBy] = useState("Default");

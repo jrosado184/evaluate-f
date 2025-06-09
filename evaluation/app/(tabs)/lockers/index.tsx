@@ -104,7 +104,7 @@ const Lockers = () => {
         setLockerDetails({
           totalPages: data.totalPages,
           currentPage: 1,
-          totalUsers: data.totalLockers,
+          totalLockers: data.totalLockers,
         });
       }
       setLoading(false);
@@ -122,7 +122,7 @@ const Lockers = () => {
           setLockerDetails({
             totalPages: data.totalPages,
             currentPage: 1,
-            totalUsers: data.totalLockers,
+            totalLockers: data.totalLockers,
           });
         }
       };
@@ -145,7 +145,7 @@ const Lockers = () => {
       setLockerDetails({
         totalPages: data.totalPages,
         currentPage: 1,
-        totalUsers: data.totalLockers,
+        totalLockers: data.totalLockers,
       });
       setShowToast(true);
     }

@@ -25,6 +25,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import useAuthContext from "@/app/context/AuthContext";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import SinglePressTouchable from "@/app/utils/SinglePress";
+import formatISODate from "@/app/conversions/ConvertIsoDate";
 
 const PersonalInfoForm = () => {
   const router = useRouter();
@@ -51,10 +52,26 @@ const PersonalInfoForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasInfo, setHasInfo] = useState(false);
 
+  const trainingFor = ["New Hire", "Bid", "Cross Training"];
+
+  if (formData.hireDate) {
+    const [month, day, year] = formData.hireDate.split("-");
+    const hireDate = new Date(Number(year), Number(month) - 1, Number(day));
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    hireDate.setHours(0, 0, 0, 0);
+
+    if (now > hireDate) {
+      trainingFor.shift();
+    }
+  }
+
   const prefilledFields = [
     "teamMemberName",
     "employeeId",
     "lockerNumber",
+    "hireDate",
   ] as const;
 
   useEffect(() => {
@@ -62,6 +79,7 @@ const PersonalInfoForm = () => {
       try {
         const token = await AsyncStorage.getItem("token");
         const baseUrl = await getServerIP();
+
         const res = await axios.get(`${baseUrl}/evaluations/${evaluationId}`, {
           headers: { Authorization: token! },
         });
@@ -69,15 +87,26 @@ const PersonalInfoForm = () => {
         const filled =
           !!info.teamMemberName && !!info.position && !!info.department;
         setHasInfo(filled);
+
+        let fullEmployee = employee;
+        if (!employee || String(employee.employee_id) !== employeeId) {
+          const empRes = await axios.get(`${baseUrl}/employees/${employeeId}`, {
+            headers: { Authorization: token! },
+          });
+          fullEmployee = empRes.data;
+        }
+
         setFormData({
           trainingType: info.trainingType || "",
-          teamMemberName: info.teamMemberName || employee?.employee_name || "",
-          employeeId: info.employeeId || String(employee?.employee_id || ""),
-          hireDate: info.hireDate || "",
+          teamMemberName:
+            info.teamMemberName || fullEmployee?.employee_name || "",
+          employeeId:
+            info.employeeId || String(fullEmployee?.employee_id || ""),
+          hireDate: info.hireDate || fullEmployee?.date_of_hire || "",
           position: info.position || "",
           department: info.department || "",
           lockerNumber:
-            info.lockerNumber || String(employee?.locker_number || ""),
+            info.lockerNumber || String(fullEmployee?.locker_number || ""),
           phoneNumber: info.phoneNumber || "",
           jobStartDate: info.jobStartDate || "",
           projectedTrainingHours: info.projectedTrainingHours || "",
@@ -115,7 +144,7 @@ const PersonalInfoForm = () => {
     return Object.keys(errs).length === 0;
   };
 
-  const handleChange = (key: keyof typeof formData, value: string) => {
+  const handleChange = (key: any, value: string) => {
     let v = value;
     if (/(Date|QualifyingDate)/.test(key)) {
       const d = value.replace(/\D/g, "");
@@ -132,7 +161,7 @@ const PersonalInfoForm = () => {
     if (/(ID|Hours)/.test(key)) {
       v = v.replace(/\D/g, "");
     }
-    setFormData((f) => ({ ...f, [key]: v }));
+    setFormData((f: any) => ({ ...f, [key]: v }));
     if (errors[key]) {
       const e2 = { ...errors };
       delete e2[key];
@@ -249,7 +278,7 @@ const PersonalInfoForm = () => {
                 </PaperButton>
               }
             >
-              {["New Hire", "Bid", "Cross Training"].map((opt) => (
+              {trainingFor.map((opt) => (
                 <Menu.Item
                   key={opt}
                   title={opt}

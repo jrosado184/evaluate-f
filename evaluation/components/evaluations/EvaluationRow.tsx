@@ -88,8 +88,18 @@ const EvaluationRow = ({
             paddingHorizontal: 8,
             paddingVertical: 4,
             borderRadius: 8,
-            backgroundColor: file.status === "complete" ? "#D1FAE5" : "#DBEAFE",
-            color: file.status === "complete" ? "#065F46" : "#1E3A8A",
+            backgroundColor:
+              file.status === "complete"
+                ? "#D1FAE5"
+                : file.status === "in_progress"
+                ? "#FEF9C3"
+                : "#FEE2E2",
+            color:
+              file.status === "complete"
+                ? "#065F46"
+                : file.status === "in_progress"
+                ? "#92400E"
+                : "#991B1B",
           }}
         >
           {file.status.replace("_", " ")}

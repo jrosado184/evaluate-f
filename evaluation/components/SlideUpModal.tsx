@@ -10,18 +10,21 @@ import {
   Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/EvilIcons";
-import useEmployeeContext from "@/app/context/EmployeeContext";
-import usePagination from "@/hooks/usePagination";
 import { ActivityIndicator } from "react-native-paper";
-import SinglePressTouchable from "@/app/utils/SinglePress";
-import Search from "@/components/Search";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import debounce from "lodash.debounce";
 import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
+
+import useEmployeeContext from "@/app/context/EmployeeContext";
+import usePagination from "@/hooks/usePagination";
 import getServerIP from "@/app/requests/NetworkAddress";
+
+import SinglePressTouchable from "@/app/utils/SinglePress";
+import Search from "@/components/Search";
 import AssignEmployeeCard from "./employees/AssignEmployeeCard";
-import SuccessModal from "./SuccessModal";
 import AssignLockerCard from "./employees/AssignLockerCard";
+import SuccessModal from "./SuccessModal";
 
 const SlideUpModal = ({
   visible,
@@ -30,6 +33,7 @@ const SlideUpModal = ({
   onLockerSelected,
   onAssignmentComplete,
   mode = "assignEmployee",
+  source,
 }: any) => {
   const screenHeight = Dimensions.get("window").height;
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
@@ -55,19 +59,14 @@ const SlideUpModal = ({
   const getData = async (page = 1, limit = 8) => {
     const token = await AsyncStorage.getItem("token");
     const baseUrl = await getServerIP();
-
     const url =
       mode === "assignEmployee"
         ? `${baseUrl}/employees?page=${page}&limit=${limit}`
         : `${baseUrl}/lockers?page=${page}&limit=${limit}`;
-
-    const res = await axios.get(url, {
-      headers: { Authorization: token },
-    });
-    console.log(res.data);
+    const res = await axios.get(url, { headers: { Authorization: token } });
 
     return {
-      results: mode === "assignEmployee" ? res.data.results : res.data.results,
+      results: res.data.results,
       totalPages: res.data.totalPages,
       currentPage: res.data.currentPage,
     };
@@ -99,13 +98,8 @@ const SlideUpModal = ({
             ? `${baseUrl}/employees/search?query=${searchTerm}&type=employees&limit=8`
             : `${baseUrl}/lockers?page=1&limit=8&search=${searchTerm}`;
 
-        const res = await axios.get(url, {
-          headers: { Authorization: token },
-        });
-
-        const results =
-          mode === "assignEmployee" ? res.data.results : res.data.results;
-        setFilteredItems(results || []);
+        const res = await axios.get(url, { headers: { Authorization: token } });
+        setFilteredItems(res.data.users || []);
         setIsSearching(true);
       } catch (err) {
         console.error("Search error:", err);
@@ -151,6 +145,39 @@ const SlideUpModal = ({
   }, [query]);
 
   const handleAssign = async (employeeId: any) => {
+    if (source === "dashboard") {
+      try {
+        const token = await AsyncStorage.getItem("token");
+        const baseUrl = await getServerIP();
+
+        // Create new evaluation for employee
+        const response = await axios.post(
+          `${baseUrl}/employees/${employeeId}/evaluations`,
+          {
+            position: "Untitled",
+            createdBy: userDetails?.currentUser?.name || "System",
+          },
+          {
+            headers: {
+              Authorization: token,
+            },
+          }
+        );
+
+        const newEvalId = response.data._id;
+
+        // Route to Step 1
+        router.push(`/users/${employeeId}/evaluations/${newEvalId}/step1`);
+        handleClose();
+        return;
+      } catch (error: any) {
+        console.error("Failed to start evaluation:", error?.response || error);
+        Alert.alert("Error", "Could not start evaluation.");
+        return;
+      }
+    }
+
+    // Locker assignment flow
     if (!lockerId) {
       Alert.alert("Error", "No locker selected.");
       return;
@@ -234,7 +261,6 @@ const SlideUpModal = ({
     [mode, lockerId]
   );
 
-  console.log(lockers);
   return (
     <>
       <Modal transparent visible={visible} animationType="none">

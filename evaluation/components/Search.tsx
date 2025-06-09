@@ -33,7 +33,7 @@ const Search: React.FC<SearchProps> = ({
       >
         <Text className="pl-2 text-neutral-500">{`Total ${total}: ${
           total === "lockers"
-            ? lockerDetails.totalUsers
+            ? lockerDetails.totalLockers
             : userDetails.totalUsers
         }`}</Text>
         <Sort />
