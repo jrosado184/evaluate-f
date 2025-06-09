@@ -88,7 +88,6 @@ const Lockers = () => {
         }));
       }
       setIsSearching(false);
-      setTimeout(() => getMoreData(), 100);
       return;
     }
 
