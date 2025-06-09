@@ -11,7 +11,6 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/EvilIcons";
 import useEmployeeContext from "@/app/context/EmployeeContext";
-import useGetUsers from "@/app/requests/useGetUsers";
 import usePagination from "@/hooks/usePagination";
 import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
@@ -21,8 +20,8 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import AssignEmployeeCard from "./employees/AssignEmployeeCard";
-import LockerCard from "./LockerCard";
 import SuccessModal from "./SuccessModal";
+import AssignLockerCard from "./employees/AssignLockerCard";
 
 const SlideUpModal = ({
   visible,
@@ -31,14 +30,7 @@ const SlideUpModal = ({
   onLockerSelected,
   onAssignmentComplete,
   mode = "assignEmployee",
-}: {
-  visible: boolean;
-  onClose: () => void;
-  lockerId?: string;
-  onLockerSelected?: (locker: any) => void;
-  onAssignmentComplete?: () => void;
-  mode?: "assignEmployee" | "assignLocker";
-}) => {
+}: any) => {
   const screenHeight = Dimensions.get("window").height;
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -55,12 +47,32 @@ const SlideUpModal = ({
   } = useEmployeeContext();
 
   const [query, setQuery] = useState("");
-  const [filteredItems, setFilteredItems] = useState<any[]>([]);
+  const [filteredItems, setFilteredItems] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastTrigger, setToastTrigger] = useState(0);
 
-  const { getUsers } = useGetUsers(8);
+  const getData = async (page = 1, limit = 8) => {
+    const token = await AsyncStorage.getItem("token");
+    const baseUrl = await getServerIP();
+
+    const url =
+      mode === "assignEmployee"
+        ? `${baseUrl}/employees?page=${page}&limit=${limit}`
+        : `${baseUrl}/lockers?page=${page}&limit=${limit}`;
+
+    const res = await axios.get(url, {
+      headers: { Authorization: token },
+    });
+    console.log(res.data);
+
+    return {
+      results: mode === "assignEmployee" ? res.data.results : res.data.results,
+      totalPages: res.data.totalPages,
+      currentPage: res.data.currentPage,
+    };
+  };
+
   const {
     getMoreData,
     getInitialData,
@@ -69,7 +81,7 @@ const SlideUpModal = ({
     setIsSearching,
   } = usePagination(
     mode === "assignEmployee" ? employees : lockers,
-    getUsers,
+    getData,
     mode === "assignEmployee" ? setEmployees : setLockers,
     setUserDetails,
     userDetails,
@@ -77,21 +89,22 @@ const SlideUpModal = ({
   );
 
   const debouncedFetch = useCallback(
-    debounce(async (searchTerm: string) => {
+    debounce(async (searchTerm) => {
       try {
         setSearchLoading(true);
         const token = await AsyncStorage.getItem("token");
         const baseUrl = await getServerIP();
         const url =
           mode === "assignEmployee"
-            ? `${baseUrl}/employees/search?query=${searchTerm}&type=employees`
-            : `${baseUrl}/lockers/search?query=${searchTerm}`;
+            ? `${baseUrl}/employees/search?query=${searchTerm}&type=employees&limit=8`
+            : `${baseUrl}/lockers?page=1&limit=8&search=${searchTerm}`;
 
         const res = await axios.get(url, {
-          headers: { Authorization: token! },
+          headers: { Authorization: token },
         });
 
-        const results = mode === "assignEmployee" ? res.data.users : res.data;
+        const results =
+          mode === "assignEmployee" ? res.data.results : res.data.results;
         setFilteredItems(results || []);
         setIsSearching(true);
       } catch (err) {
@@ -104,7 +117,7 @@ const SlideUpModal = ({
   );
 
   useEffect(() => {
-    if (visible && lockerId) {
+    if (visible) {
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 0,
@@ -127,7 +140,7 @@ const SlideUpModal = ({
       resetPagination();
       getInitialData().finally(() => setLoading(false));
     }
-  }, [visible, mode, lockerId]);
+  }, [visible, mode]);
 
   useEffect(() => {
     if (query.trim() === "") {
@@ -137,7 +150,7 @@ const SlideUpModal = ({
     }
   }, [query]);
 
-  const handleAssign = async (employeeId: string) => {
+  const handleAssign = async (employeeId: any) => {
     if (!lockerId) {
       Alert.alert("Error", "No locker selected.");
       return;
@@ -152,14 +165,14 @@ const SlideUpModal = ({
         { lockerId, employeeId },
         {
           headers: {
-            Authorization: token!,
+            Authorization: token,
             "Content-Type": "application/json",
           },
         }
       );
 
       if (response.status === 200) {
-        onAssignmentComplete?.(); // refresh parent
+        onAssignmentComplete?.();
         setToastMessage("Locker successfully assigned!");
         setToastTrigger(Date.now());
         handleClose();
@@ -194,7 +207,7 @@ const SlideUpModal = ({
         useNativeDriver: true,
       }),
     ]).start(() => {
-      setQuery(""); // clear query
+      setQuery("");
       onClose();
     });
   };
@@ -215,14 +228,13 @@ const SlideUpModal = ({
           onPress={() => handleLockerSelection(item)}
           activeOpacity={0.8}
         >
-          <LockerCard {...item} />
+          <AssignLockerCard {...item} />
         </SinglePressTouchable>
       ),
     [mode, lockerId]
   );
 
-  if (!visible || !lockerId) return null;
-
+  console.log(lockers);
   return (
     <>
       <Modal transparent visible={visible} animationType="none">

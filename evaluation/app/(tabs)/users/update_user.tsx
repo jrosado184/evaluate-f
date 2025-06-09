@@ -98,7 +98,7 @@ const UpdateUser = () => {
 
       <View className="w-full gap-8 my-4">
         {/* Name */}
-        <View className={errors.employee_id && "h-28"}>
+        <View className={errors.employee_name && "h-28"}>
           <FormField
             value={addEmployeeInfo.employee_name}
             title="Name"
@@ -126,6 +126,21 @@ const UpdateUser = () => {
             }
           />
           <Error hidden={!errors.employee_id} title={errors.employee_id} />
+        </View>
+
+        {/* Hire Date */}
+        <View className={errors.hire_date && "h-28"}>
+          <FormField
+            value={addEmployeeInfo.hire_date || ""}
+            title="Hire Date"
+            placeholder="MM/DD/YYYY"
+            keyboardType="numeric"
+            rounded="rounded-[0.625rem]"
+            handleChangeText={(value: any) =>
+              handleEmployeeInfo("hire_date", value)
+            }
+          />
+          <Error hidden={!errors.hire_date} title={errors.hire_date} />
         </View>
 
         {/* Position */}
@@ -156,8 +171,13 @@ const UpdateUser = () => {
           title="Location"
           placeholder="Select Locker Location"
           options={[
-            { label: "Fabrication Womens", value: "Fabrication Womens" },
-            { label: "Fabrication Mens", value: "Fabrication Mens" },
+            { label: "KILL", value: "KILL" },
+            { label: "FAB A", value: "FAB A" },
+            { label: "FAB B", value: "FAB B" },
+            { label: "FAB C", value: "FAB C" },
+            { label: "WOMEN B", value: "WOMEN B" },
+            { label: "FABRICATION MENS", value: "Fabrication Mens" },
+            { label: "FABRICATION WOMENS", value: "Fabrication Womens" },
           ]}
           onSelect={(value: any) => {
             setAddEmployeeInfo((prev: any) => ({
@@ -166,7 +186,7 @@ const UpdateUser = () => {
               locker_number: null,
             }));
           }}
-          selectedValue={addEmployeeInfo?.locker_info?.location}
+          selectedValue={addEmployeeInfo?.location}
         />
 
         {/* Locker Number */}
@@ -204,8 +224,22 @@ const UpdateUser = () => {
       </View>
 
       <SlideUpModal
+        mode="assignLocker"
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
+        onLockerSelected={(locker: any) => {
+          setAddEmployeeInfo((prev: any) => ({
+            ...prev,
+            locker_number: locker.locker_number,
+            location: locker.location,
+          }));
+          setErrors((prev: any) => ({
+            ...prev,
+            locker_number: "",
+            existing_employee: "",
+          }));
+          setModalVisible(false);
+        }}
       />
     </SafeAreaView>
   );

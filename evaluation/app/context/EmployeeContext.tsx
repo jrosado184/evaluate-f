@@ -12,6 +12,7 @@ type Employee = {
   assigned_by: string;
   date_of_hire: string;
   last_updated: string;
+  loction: string;
   createdAt: string;
 };
 
@@ -57,6 +58,7 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
     knife_number: null,
     added_by: "",
     date_of_hire: "",
+    location: "",
     last_updated: formatISODate(Date.now()),
     createdAt: formatISODate(Date.now()),
   });

@@ -39,6 +39,7 @@ const AddUser = () => {
       knife_number: null,
       added_by: "",
       date_of_hire: "",
+      location: "",
     });
   }, []);
 
@@ -123,7 +124,6 @@ const AddUser = () => {
               keyboardType="numeric"
               handleChangeText={(value: string) => {
                 const cleaned = value.replace(/[^0-9]/g, "").slice(0, 8);
-
                 let formatted = "";
                 if (cleaned.length <= 2) {
                   formatted = cleaned;
@@ -135,7 +135,6 @@ const AddUser = () => {
                     4
                   )}/${cleaned.slice(4)}`;
                 }
-
                 handleEmployeeInfo("date_of_hire", formatted);
               }}
             />
@@ -147,8 +146,8 @@ const AddUser = () => {
             title="Location"
             placeholder="Select Locker Location"
             options={[
-              { label: "Fabrication Womens ", value: "Fabrication Womens " },
-              { label: "Fabrication Mens ", value: "Fabrication Mens" },
+              { label: "Fabrication Womens", value: "Fabrication Womens" },
+              { label: "Fabrication Mens", value: "Fabrication Mens" },
             ]}
             onSelect={(value: any) => {
               setAddEmployeeInfo((prev: any) => ({
@@ -178,7 +177,16 @@ const AddUser = () => {
                 }));
               }}
               selectedValue={addEmployeeInfo?.locker_number}
-              toggleModal={() => setModalVisible(true)}
+              toggleModal={() => {
+                if (!addEmployeeInfo?.location) {
+                  setErrors((prev: any) => ({
+                    ...prev,
+                    locker_number: "Please select a location first",
+                  }));
+                  return;
+                }
+                setModalVisible(true);
+              }}
             />
             <Error
               hidden={!errors.locker_number && !errors.existing_employee}
@@ -200,8 +208,21 @@ const AddUser = () => {
       </View>
 
       <SlideUpModal
+        mode="assignLocker"
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
+        onLockerSelected={(locker: any) => {
+          setAddEmployeeInfo((prev: any) => ({
+            ...prev,
+            locker_number: locker.locker_number,
+          }));
+          setErrors((prev: any) => ({
+            ...prev,
+            locker_number: "",
+            existing_employee: "",
+          }));
+          setModalVisible(false);
+        }}
       />
     </SafeAreaView>
   );

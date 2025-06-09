@@ -12,6 +12,8 @@ export default function UsersLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
+        animation: "slide_from_right", // animation style
+        gestureEnabled: true, // allows swipe-back gesture (optional)
       }}
       screenListeners={{
         focus: () => {
