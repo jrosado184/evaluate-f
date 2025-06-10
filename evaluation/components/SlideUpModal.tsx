@@ -100,8 +100,6 @@ const SlideUpModal = ({
 
         const res = await axios.get(url, { headers: { Authorization: token } });
 
-        console.log(res.data);
-
         // Smart handling for either endpoint
         setFilteredItems(res.data.users || res.data.results || []);
         setIsSearching(true);

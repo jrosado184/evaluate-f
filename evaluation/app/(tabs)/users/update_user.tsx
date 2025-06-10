@@ -87,8 +87,6 @@ const UpdateUser = () => {
     }
   };
 
-  console.log(employee);
-
   return (
     <SafeAreaView className="bg-white h-full p-6">
       <ScrollView>
