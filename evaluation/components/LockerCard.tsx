@@ -25,7 +25,6 @@ const LockerCard: React.FC<LockerCardTypes> = ({
   button,
   locker_number,
   Assigned_to,
-  status,
   assigned_by,
   last_updated,
   vacant,
