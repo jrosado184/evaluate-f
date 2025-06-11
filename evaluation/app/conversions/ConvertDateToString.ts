@@ -1,8 +1,9 @@
-export const formatCustomDate = (input) => {
-  if (!input) return "Invalid date";
+export const formatCustomDate = (input: any) => {
+  if (!input || typeof input !== "string") return "Invalid date";
 
-  // Split the input string into components
-  const parts = input.split("-");
+  // Support both MM/DD/YYYY and MM-DD-YYYY
+  const parts = input.includes("/") ? input.split("/") : input.split("-");
+
   if (parts.length !== 3) return "Invalid date";
 
   const [monthStr, dayStr, yearStr] = parts;
@@ -10,7 +11,6 @@ export const formatCustomDate = (input) => {
   const day = parseInt(dayStr, 10);
   const year = parseInt(yearStr, 10);
 
-  // Validate the components
   if (
     isNaN(month) ||
     isNaN(day) ||
@@ -23,18 +23,14 @@ export const formatCustomDate = (input) => {
     return "Invalid date";
   }
 
-  // Create a Date object (Note: months are 0-based in JavaScript)
   const date = new Date(year, month - 1, day);
 
-  // Check if the date is valid
-  if (isNaN(date.getTime())) {
-    return "Invalid date";
-  }
+  if (isNaN(date.getTime())) return "Invalid date";
 
-  // Format the date to "Month Day, Year"
+  // Format to "Aug 20, 2025"
   return new Intl.DateTimeFormat("en-US", {
-    year: "numeric",
-    month: "long",
+    month: "short",
     day: "numeric",
+    year: "numeric",
   }).format(date);
 };

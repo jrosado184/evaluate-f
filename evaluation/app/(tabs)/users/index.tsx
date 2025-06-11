@@ -267,7 +267,7 @@ const Users = () => {
             last_update={formatISODate(item?.last_updated)}
             locker_number={item?.locker_number}
             knife_number={item?.knife_number}
-            status={item?.status}
+            date_of_hire={item?.date_of_hire}
             button="arrow"
           />
         </SinglePressTouchable>

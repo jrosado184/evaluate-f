@@ -1,47 +1,26 @@
 import { View, Text } from "react-native";
 import React, { memo } from "react";
-import RightIcon from "@/constants/icons/RightIcon";
-import WarningIcon from "@/constants/icons/WarningIcon";
 import Entypo from "@expo/vector-icons/Entypo";
-import CheckIcon from "@/constants/icons/CheckIcon";
 import Icon from "react-native-vector-icons/Feather";
-import { router } from "expo-router";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import SinglePressTouchable from "@/app/utils/SinglePress";
+import { router } from "expo-router";
+import { formatCustomDate } from "@/app/conversions/ConvertDateToString";
+import formatISODate from "@/app/conversions/ConvertIsoDate";
 
-/**
- * Props for the UserCard component
- */
 interface UserCardTypes {
-  /** Position of the user in the company */
   position: string | undefined;
-  /** Full name of the user */
   name: string | undefined;
-  /** Department the user belongs to */
   department: string | undefined;
-  /** Unique employee ID */
   employee_id: any;
-  /** Last update timestamp */
+  date_of_hire: any;
   last_update: string;
-  /** Assigned locker number */
   locker_number: string | undefined;
-  /** Status of the user */
   status: string;
   button?: string;
   knife_number: number | any;
 }
 
-/**
- * UserCard component that displays user information.
- *
- * @param {string} position - Position of the user in the company
- * @param {string} name - Full name of the user
- * @param {string} department - Department the user belongs to
- * @param {string} employee_id - Unique employee ID
- * @param {string} last_update - Last update timestamp
- * @param {string} locker_number - Assigned locker number
- * @param {string} status - Current status of the user
- * @param {string} button - Arrow or update button
- */
 const UserCard: React.FC<UserCardTypes> = ({
   position,
   name,
@@ -49,57 +28,61 @@ const UserCard: React.FC<UserCardTypes> = ({
   employee_id,
   last_update,
   locker_number,
-  status,
+  date_of_hire,
   button,
-  knife_number,
 }) => {
   return (
-    <View className="w-full items-center">
-      <View className="border border-gray-400 w-[100%] h-40 rounded-lg">
-        <View className="flex-row justify-between h-full">
-          <View className="justify-around h-full pl-4">
-            <View className="gap-y-1">
-              <Text className="text-[1.4rem] font-inter-medium">{name}</Text>
-              <View className="flex-row items-center">
-                <Text>{position}</Text>
-                <Entypo name="dot-single" size={16} color="black" />
-                <Text>{department}</Text>
-              </View>
-              <Text>ID: {employee_id}</Text>
+    <View className="w-full px-1 mb-2">
+      <View className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+        <View className="flex-row justify-between items-start">
+          {/* LEFT SIDE */}
+          <View className="flex-1 pr-4">
+            <Text className="text-xl font-semibold text-black leading-6 mb-1">
+              {name}
+            </Text>
+            <View className="flex-row items-center mb-1">
+              <Text className="text-base text-neutral-700">{position}</Text>
+              <Entypo name="dot-single" size={18} color="#D1D5DB" />
+              <Text className="text-base text-neutral-700">{department}</Text>
             </View>
-            <Text className="text-[.9rem] text-neutral-700">
-              Last updated: {last_update}
+            <Text className="text-sm text-neutral-500 mb-1">
+              ID: {employee_id}
+            </Text>
+            <Text className="text-sm text-neutral-400 mt-4">
+              Updated: {last_update}
             </Text>
           </View>
-          <View className="flex-row justify-between h-full">
-            <View className="justify-around items-end h-full pr-4">
-              <View className="gap-y-1 items-end my-1">
-                <View className="h-[1.7rem] items-center justify-center pr-1">
-                  {status === "Damaged" ? <WarningIcon /> : <CheckIcon />}
-                </View>
-                <View className="flex-row items-center">
-                  <Text className="font-inter-regular">
-                    Locker:
-                    <Text className="font-inter-semibold">{locker_number}</Text>
-                  </Text>
-                  <Text></Text>
-                </View>
-                <Text></Text>
-              </View>
-              <View>
-                <View className="pb-1">
-                  {button === "arrow" ? (
-                    <RightIcon />
-                  ) : (
-                    <SinglePressTouchable
-                      onPress={() => router.push(`/(tabs)/users/update_user`)}
-                      activeOpacity={0.8}
-                    >
-                      <Icon name="edit-3" size={20} />
-                    </SinglePressTouchable>
-                  )}
-                </View>
-              </View>
+
+          {/* RIGHT SIDE */}
+          <View className="items-end justify-between gap-y-2">
+            <Text className="text-base text-neutral-500">
+              Hired:{" "}
+              <Text className="font-medium">
+                {formatCustomDate(date_of_hire)}
+              </Text>
+            </Text>
+            <Text className="text-base text-neutral-500">
+              Locker:{" "}
+              <Text className="font-semibold text-black">
+                {locker_number || "—"}
+              </Text>
+            </Text>
+
+            <View className="mt-5">
+              {button === "arrow" ? (
+                <MaterialCommunityIcons
+                  name="arrow-right-circle"
+                  size={26}
+                  color="#1a237e" // App blue
+                />
+              ) : (
+                <SinglePressTouchable
+                  onPress={() => router.push(`/(tabs)/users/update_user`)}
+                  activeOpacity={0.8}
+                >
+                  <Icon name="edit-3" size={20} color="#6B7280" />
+                </SinglePressTouchable>
+              )}
             </View>
           </View>
         </View>

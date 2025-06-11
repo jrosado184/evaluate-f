@@ -1,12 +1,12 @@
-// LockerCard.tsx
 import { View, Text } from "react-native";
-import React from "react";
+import React, { memo } from "react";
 import WarningIcon from "@/constants/icons/WarningIcon";
 import CheckIcon from "@/constants/icons/CheckIcon";
 import RightIcon from "@/constants/icons/RightIcon";
 import Gender from "react-native-vector-icons/MaterialIcons";
-import SinglePressTouchable from "@/app/utils/SinglePress";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Icon from "react-native-vector-icons/Feather";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 interface LockerCardTypes {
   button: "arrow" | "edit" | undefined;
@@ -33,87 +33,79 @@ const LockerCard: React.FC<LockerCardTypes> = ({
   onAssignPress,
   onUnassignPress,
 }) => {
+  const genderColor = location?.toLowerCase().includes("mens")
+    ? "#005FCC"
+    : "#E91E63";
+  const genderIcon = location?.toLowerCase().includes("mens")
+    ? "male"
+    : "female";
+
   return (
-    <View className="w-full items-center bg-white">
-      <View className="border border-gray-400 w-[100%] h-40 rounded-lg">
+    <View className="w-full px-1 mb-2">
+      <View className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm h-36">
         <View className="flex-row justify-between h-full">
-          {/* LEFT SECTION */}
-          <View className="justify-around h-full pl-4">
-            <View className="gap-y-1">
-              <Text className="text-[1.4rem] font-inter-medium">
-                Locker: <Text className="font-inter-bold">{locker_number}</Text>
+          {/* LEFT SIDE */}
+          <View className="flex-1 justify-between pr-3">
+            <View>
+              <Text className="text-xl font-semibold text-black mb-1">
+                Locker: {locker_number}
               </Text>
-              <View className="flex-row items-center">
-                <Text className={`w-54 ${vacant && "invisible"}`}>
-                  {`Occupied by: ${Assigned_to}`}
-                </Text>
-              </View>
-              <Text
-                className={`text-neutral-600 text-sm ${vacant && "invisible"}`}
-              >
-                {`Assigned by ${assigned_by}`}
-              </Text>
-            </View>
-            <View className="flex-row items-center gap-x-2">
-              <Text className="text-[1rem] text-neutral-900 font-inter-medium">
-                <Text className="font-inter-medium">Location: </Text>
-                <Text className="font-inter-bold">{location}</Text>
-              </Text>
-              {button === "edit" && !vacant && (
-                <SinglePressTouchable
-                  activeOpacity={0.8}
-                  className="w-9 h-9 justify-center items-center rounded-md"
-                  onPress={onAssignPress}
-                >
-                  <Icon name="edit-3" size={18} color="#333" />
-                </SinglePressTouchable>
+
+              {!vacant && (
+                <>
+                  <Text
+                    className="text-base text-neutral-700"
+                    numberOfLines={1}
+                  >
+                    Occupied by: {Assigned_to}
+                  </Text>
+                  <Text
+                    className="text-sm text-neutral-500 mb-1"
+                    numberOfLines={1}
+                  >
+                    Assigned by: {assigned_by}
+                  </Text>
+                </>
               )}
             </View>
+
+            <Text className="text-sm text-neutral-400">
+              Updated: {last_updated}
+            </Text>
           </View>
 
-          {/* RIGHT SECTION */}
-          <View className="h-full justify-around items-end pr-4 w-32">
-            <View className="gap-y-2 items-end my-2">
-              <View className="flex-row gap-3 items-center">
-                <View
-                  className={`w-20 h-7 rounded-lg items-center justify-center border border-neutral-500 ${
-                    !vacant && "invisible"
-                  }`}
-                >
-                  <Text className="font-inter-medium text-sm">Vacant</Text>
-                </View>
-                <Gender
-                  color={
-                    location?.split(" ")[1] === "Mens" ? "#005FCC" : "#E91E63"
-                  }
-                  name={location?.split(" ")[1] === "Mens" ? "male" : "female"}
-                  size={24}
-                />
-                {status === "Damaged" ? <WarningIcon /> : <CheckIcon />}
-              </View>
+          {/* RIGHT SIDE */}
+          <View className="justify-between items-end h-full">
+            {/* Top: Location + Gender + Status */}
+            <View className="flex-row items-center gap-2">
+              <Text
+                className="text-sm font-medium"
+                style={{ color: genderColor }}
+                numberOfLines={1}
+              >
+                {location}
+              </Text>
             </View>
 
-            {/* ACTIONS */}
-            {button === "arrow" && !vacant ? (
-              <RightIcon />
+            {/* Bottom: Button */}
+            {vacant ? (
+              <SinglePressTouchable
+                activeOpacity={0.8}
+                className="w-24 h-9 border border-gray-500 justify-center items-center rounded-md"
+                onPress={onAssignPress}
+              >
+                <Text className="text-gray-700 text-sm">Assign</Text>
+              </SinglePressTouchable>
+            ) : button === "arrow" ? (
+              <MaterialCommunityIcons
+                name="arrow-right-circle"
+                size={26}
+                color="#1a237e"
+              />
             ) : (
-              <>
-                {vacant && (
-                  <SinglePressTouchable
-                    activeOpacity={0.8}
-                    className="w-24 h-9 border border-gray-500 justify-center items-center rounded-md"
-                    onPress={onAssignPress}
-                  >
-                    <Text className="text-gray-700">Assign</Text>
-                  </SinglePressTouchable>
-                )}
-                {!vacant && (
-                  <SinglePressTouchable
-                    activeOpacity={0.8}
-                    onPress={onUnassignPress}
-                  ></SinglePressTouchable>
-                )}
-              </>
+              <SinglePressTouchable onPress={onAssignPress}>
+                <Icon name="edit-3" size={20} color="#6B7280" />
+              </SinglePressTouchable>
             )}
           </View>
         </View>
@@ -122,4 +114,4 @@ const LockerCard: React.FC<LockerCardTypes> = ({
   );
 };
 
-export default LockerCard;
+export default memo(LockerCard);
