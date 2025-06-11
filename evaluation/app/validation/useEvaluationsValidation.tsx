@@ -25,10 +25,7 @@ const useEvaluationsValidation = (formData: any) => {
 
     // Other fields
     "percentQualified",
-    "reTimeAchieved",
     "yieldAuditDate",
-    "knifeSkillsAuditDate",
-    "knifeScore",
     "comments",
     "trainerSignature",
     "teamMemberSignature",
