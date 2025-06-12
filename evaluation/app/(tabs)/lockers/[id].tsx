@@ -6,7 +6,7 @@ import LockerCard from "@/components/LockerCard";
 import Activity from "@/components/Activity";
 import RNPickerSelect from "react-native-picker-select";
 import VacantCard from "@/components/VacantCard";
-import { useGlobalSearchParams } from "expo-router";
+import { router, useGlobalSearchParams } from "expo-router";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import CardSkeleton from "@/app/skeletons/CardSkeleton";
@@ -14,6 +14,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import axios from "axios";
 import SinglePressTouchable from "@/app/utils/SinglePress";
+import Icon from "react-native-vector-icons/Feather";
 
 const Locker = () => {
   const [status, setStatus] = useState("Functional");
@@ -49,7 +50,25 @@ const Locker = () => {
 
   return (
     <SafeAreaView className="p-6 bg-neutral-50 h-full">
-      <LeftButton />
+      <SinglePressTouchable
+        onPress={() => router.push("/users")}
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          marginBottom: 16,
+        }}
+      >
+        <Icon name="chevron-left" size={28} />
+        <Text
+          style={{
+            marginLeft: 4,
+            fontSize: 20,
+            fontWeight: "600",
+          }}
+        >
+          Back
+        </Text>
+      </SinglePressTouchable>
       <View>
         {loading ? (
           <CardSkeleton amount={1} width="w-full" height="h-40" />
