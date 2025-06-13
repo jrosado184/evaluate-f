@@ -17,7 +17,6 @@ import axios from "axios";
 import getServerIP from "@/app/requests/NetworkAddress";
 import SignatureModal from "@/components/SignatureModal";
 import useAuthContext from "@/app/context/AuthContext";
-import useEvaluationsValidation from "@/app/validation/useEvaluationsValidation";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
@@ -154,7 +153,7 @@ const Step2Form = () => {
     ) {
       v = v.replace(/\D/g, "");
     }
-    setFormData((f) => ({ ...f, [key]: v }));
+    setFormData((f: any) => ({ ...f, [key]: v }));
     if (errors[key]) {
       setErrors((e) => {
         const c = { ...e };
@@ -168,16 +167,7 @@ const Step2Form = () => {
     }
   };
 
-  const { newErrors } = useEvaluationsValidation(formData);
-
   const handleSubmit = async () => {
-    setIsSubmitting(true);
-    if (Object.keys(newErrors).length) {
-      setErrors(newErrors);
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();

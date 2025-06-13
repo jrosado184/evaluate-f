@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Text, View, Animated } from "react-native";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Text, View, Animated, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect } from "expo-router";
@@ -20,6 +20,8 @@ import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 import SlideUpModal from "@/components/SlideUpModal";
 import SuccessModal from "@/components/SuccessModal";
+import { Swipeable } from "react-native-gesture-handler";
+import Icon from "react-native-vector-icons/Feather";
 
 const Lockers = () => {
   const {
@@ -35,6 +37,7 @@ const Lockers = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedLockerId, setSelectedLockerId] = useState<string>("");
   const [showToast, setShowToast] = useState(false);
+  const swipeableRefs = useRef<Map<string, Swipeable>>(new Map());
 
   const { getMoreData, setIsSearching, fetchingMoreUsers, resetPagination } =
     usePagination(
@@ -150,32 +153,121 @@ const Lockers = () => {
     }
   };
 
-  const renderLockerCard = useCallback(({ item }: any) => {
+  const handleDeleteLocker = async (lockerId: string) => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const baseUrl = await getServerIP();
+      await axios.delete(`${baseUrl}/lockers/${lockerId}`, {
+        headers: { Authorization: token! },
+      });
+
+      const updated = lockers.filter((l) => l._id !== lockerId);
+      setLockers(updated);
+    } catch (err) {
+      console.error("Failed to delete locker:", err);
+    }
+  };
+
+  const renderRightActions = (
+    progress: Animated.AnimatedInterpolation<number>,
+    lockerId: string
+  ) => {
+    const translateX = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [80, 8],
+      extrapolate: "clamp",
+    });
+
     return (
-      <SinglePressTouchable
-        key={item._id}
-        activeOpacity={0.8}
-        onPress={() => {
-          if (!item.vacant && item.assigned_employee?._id) {
-            router.push(`/lockers/${item._id}`);
-          } else {
-            handleAssignPress(item.vacant, item._id);
-          }
+      <Animated.View
+        style={{
+          transform: [{ translateX }],
+          flexDirection: "row",
+          height: "95%",
+          marginRight: 5,
+          width: "20%",
         }}
       >
-        <LockerCard
-          button="arrow"
-          locker_number={item.locker_number}
-          Assigned_to={item.assigned_employee?.employee_name}
-          assigned_by={item.assigned_by}
-          last_updated={formatISODate(item.last_updated)}
-          vacant={item.vacant}
-          status={item.status}
-          location={item.location}
-        />
-      </SinglePressTouchable>
+        <SinglePressTouchable
+          onPress={() => {
+            Alert.alert(
+              "Delete Locker",
+              "Are you sure you want to delete this locker?",
+              [
+                {
+                  text: "Cancel",
+                  style: "cancel",
+                  onPress: () => {
+                    const swipeable = swipeableRefs.current.get(lockerId);
+                    if (swipeable) swipeable.close();
+                  },
+                },
+                {
+                  text: "Delete",
+                  style: "destructive",
+                  onPress: () => handleDeleteLocker(lockerId),
+                },
+              ]
+            );
+          }}
+          style={{
+            width: 70,
+            backgroundColor: "#EF4444",
+            justifyContent: "center",
+            alignItems: "center",
+            borderTopRightRadius: 12,
+            borderBottomRightRadius: 12,
+          }}
+        >
+          <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>Delete</Text>
+        </SinglePressTouchable>
+      </Animated.View>
     );
-  }, []);
+  };
+
+  const renderLockerCard = useCallback(
+    ({ item }: any) => {
+      return (
+        <Swipeable
+          ref={(ref) => {
+            if (ref && item._id) swipeableRefs.current.set(item._id, ref);
+          }}
+          renderRightActions={(progress) =>
+            renderRightActions(progress, item._id)
+          }
+          onSwipeableWillOpen={() => {
+            swipeableRefs.current.forEach((ref, id) => {
+              if (id !== item._id) ref?.close?.();
+            });
+          }}
+        >
+          <SinglePressTouchable
+            key={item._id}
+            activeOpacity={0.8}
+            onPress={() => {
+              if (!item.vacant && item.assigned_employee?._id) {
+                router.push(`/lockers/${item._id}`);
+              } else {
+                handleAssignPress(item.vacant, item._id);
+              }
+            }}
+          >
+            <LockerCard
+              button="arrow"
+              locker_number={item.locker_number}
+              Assigned_to={item.assigned_employee?.employee_name}
+              assigned_by={item.assigned_by}
+              last_updated={formatISODate(item.last_updated)}
+              vacant={item.vacant}
+              status={item.status}
+              location={item.location}
+            />
+          </SinglePressTouchable>
+        </Swipeable>
+      );
+    },
+    [lockers]
+  );
 
   return (
     <SafeAreaView className="p-6 h-[104vh] bg-white">

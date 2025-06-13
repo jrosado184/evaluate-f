@@ -193,7 +193,7 @@ const Users = () => {
           {
             transform: [{ translateX }],
             flexDirection: "row",
-            height: "100%",
+            height: "95%",
             marginRight: 5,
             width: "20%",
           },
@@ -267,7 +267,7 @@ const Users = () => {
             last_update={formatISODate(item?.last_updated)}
             locker_number={item?.locker_number}
             knife_number={item?.knife_number}
-            date_of_hire={item?.date_of_hire}
+            date_of_hire={formatISODate(item?.date_of_hire)}
             button="arrow"
           />
         </SinglePressTouchable>

@@ -6,7 +6,6 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 import { router } from "expo-router";
 import { formatCustomDate } from "@/app/conversions/ConvertDateToString";
-import formatISODate from "@/app/conversions/ConvertIsoDate";
 
 interface UserCardTypes {
   position: string | undefined;
@@ -54,26 +53,27 @@ const UserCard: React.FC<UserCardTypes> = ({
           </View>
 
           {/* RIGHT SIDE */}
-          <View className="items-end justify-between gap-y-2">
-            <Text className="text-base text-neutral-500">
-              Hired:{" "}
-              <Text className="font-medium">
-                {formatCustomDate(date_of_hire)}
+          <View className="items-end justify-between h-full min-h-[88]">
+            <View>
+              <Text className="text-base text-neutral-500">
+                Hired: <Text className="font-medium">{date_of_hire}</Text>
               </Text>
-            </Text>
-            <Text className="text-base text-neutral-500">
-              Locker:{" "}
-              <Text className="font-semibold text-black">
-                {locker_number || "—"}
-              </Text>
-            </Text>
+              <View className=" items-end justify-end">
+                <Text className="text-base text-neutral-500 mt-1">
+                  Locker:{" "}
+                  <Text className="font-semibold text-black">
+                    {locker_number || "—"}
+                  </Text>
+                </Text>
+              </View>
+            </View>
 
-            <View className="mt-5">
+            <View className="mt-auto">
               {button === "arrow" ? (
                 <MaterialCommunityIcons
                   name="arrow-right-circle"
                   size={26}
-                  color="#1a237e" // App blue
+                  color="#1a237e"
                 />
               ) : (
                 <SinglePressTouchable

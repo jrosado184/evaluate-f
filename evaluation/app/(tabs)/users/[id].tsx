@@ -211,7 +211,7 @@ const User = () => {
             <UserCard
               name={employee?.employee_name}
               employee_id={employee?.employee_id}
-              date_of_hire={employee?.date_of_hire}
+              date_of_hire={formatISODate(employee?.date_of_hire)}
               locker_number={employee?.locker_number}
               knife_number={employee?.knife_number}
               position={employee?.position}

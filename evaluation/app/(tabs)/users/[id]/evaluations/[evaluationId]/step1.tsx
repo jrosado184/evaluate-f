@@ -54,19 +54,6 @@ const PersonalInfoForm = () => {
 
   const trainingFor = ["New Hire", "Bid", "Cross Training"];
 
-  if (formData.hireDate) {
-    const [month, day, year] = formData.hireDate.split("-");
-    const hireDate = new Date(Number(year), Number(month) - 1, Number(day));
-
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    hireDate.setHours(0, 0, 0, 0);
-
-    if (now > hireDate) {
-      trainingFor.shift();
-    }
-  }
-
   const prefilledFields = [
     "teamMemberName",
     "employeeId",
@@ -102,7 +89,10 @@ const PersonalInfoForm = () => {
             info.teamMemberName || fullEmployee?.employee_name || "",
           employeeId:
             info.employeeId || String(fullEmployee?.employee_id || ""),
-          hireDate: info.hireDate || fullEmployee?.date_of_hire || "",
+          hireDate:
+            info.hireDate ||
+            formatISODate(fullEmployee?.date_of_hire, true) ||
+            "",
           position: info.position || "",
           department: info.department || "",
           lockerNumber:
