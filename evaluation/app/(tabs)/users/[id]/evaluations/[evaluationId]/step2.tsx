@@ -65,31 +65,7 @@ const Step2Form = () => {
 
   const inputRefs = useRef<Array<TextInput | null>>([]);
 
-  const sum = (keys: string[]) =>
-    keys.reduce((acc, k) => acc + (Number(formData[k]) || 0), 0);
-
-  const totalHoursOnJob = sum([
-    "hoursMonday",
-    "hoursTuesday",
-    "hoursWednesday",
-    "hoursThursday",
-    "hoursFriday",
-  ]);
-  const totalHoursOffJob = sum([
-    "hoursOffJobMonday",
-    "hoursOffJobTuesday",
-    "hoursOffJobWednesday",
-    "hoursOffJobThursday",
-    "hoursOffJobFriday",
-  ]);
-  const totalHours = totalHoursOnJob + totalHoursOffJob;
-  const totalHoursWithTrainee = sum([
-    "hoursWithTraineeMonday",
-    "hoursWithTraineeTuesday",
-    "hoursWithTraineeWednesday",
-    "hoursWithTraineeThursday",
-    "hoursWithTraineeFriday",
-  ]);
+  const [prevHoursOnJob, setPrevHoursOnJob] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -99,39 +75,63 @@ const Step2Form = () => {
         const res = await axios.get(`${baseUrl}/evaluations/${evaluationId}`, {
           headers: { Authorization: token! },
         });
-        const evalDoc = res.data;
-        setTraineeName(evalDoc.personalInfo.teamMemberName || "Trainee");
-        setProjectedTrainingHours(
-          evalDoc.personalInfo.projectedTrainingHours || 200
-        );
 
-        const cumulativeTotalHoursOnJob = evalDoc.evaluations
-          .filter((e: any) => e.weekNumber <= currentWeek)
+        const evalDoc = res.data;
+
+        setTraineeName(evalDoc.personalInfo.teamMemberName || "Trainee");
+
+        const projected =
+          Number(evalDoc.personalInfo.projectedTrainingHours) || 200;
+        setProjectedTrainingHours(projected);
+
+        const cumulative = evalDoc.evaluations
+          .filter((e: any) => e.weekNumber < currentWeek)
           .reduce((sum: number, e: any) => sum + (e.totalHoursOnJob || 0), 0);
 
-        const computedExpected = projectedTrainingHours
-          ? (
-              (cumulativeTotalHoursOnJob / projectedTrainingHours) *
-              100
-            ).toFixed(1)
-          : "0";
-
-        setFormData((f: any) => ({
-          ...f,
-          expectedQualified: computedExpected,
-        }));
+        setPrevHoursOnJob(cumulative);
 
         const weekData = evalDoc.evaluations.find(
           (e: any) => e.weekNumber === currentWeek
         );
-        if (weekData) setFormData((f: any) => ({ ...f, ...weekData }));
+        if (weekData) {
+          setFormData((f: any) => ({ ...f, ...weekData }));
+        }
       } catch {
         Alert.alert("Error", "Failed to load evaluation");
       } finally {
         setLoading(false);
       }
     })();
-  }, [evaluationId, currentWeek, projectedTrainingHours]);
+  }, [evaluationId, currentWeek]);
+
+  useEffect(() => {
+    const weekHours = [
+      Number(formData.hoursMonday) || 0,
+      Number(formData.hoursTuesday) || 0,
+      Number(formData.hoursWednesday) || 0,
+      Number(formData.hoursThursday) || 0,
+      Number(formData.hoursFriday) || 0,
+    ];
+
+    const sumCurrentWeek = weekHours.reduce((acc, v) => acc + v, 0);
+    const total = prevHoursOnJob + sumCurrentWeek;
+
+    const pctRaw = projectedTrainingHours
+      ? (total / projectedTrainingHours) * 100
+      : 0;
+
+    const pct = Math.min(pctRaw, 100).toFixed(1) + "%";
+
+    setFormData((f: any) => ({ ...f, expectedQualified: pct }));
+  }, [
+    formData.hoursMonday,
+    formData.hoursTuesday,
+    formData.hoursWednesday,
+    formData.hoursThursday,
+    formData.hoursFriday,
+    prevHoursOnJob,
+    projectedTrainingHours,
+  ]);
 
   const handleChange = (key: string, value: string, index?: number) => {
     let v = value;
@@ -167,11 +167,45 @@ const Step2Form = () => {
     }
   };
 
+  const total = (keys: string[]) =>
+    keys.reduce((s, k) => s + (Number(formData[k]) || 0), 0);
+
   const handleSubmit = async () => {
     try {
+      setIsSubmitting(true);
+
+      // ---------- 1. derive all totals ----------
+      const totalHoursOnJob = total([
+        "hoursMonday",
+        "hoursTuesday",
+        "hoursWednesday",
+        "hoursThursday",
+        "hoursFriday",
+      ]);
+
+      const totalHoursOffJob = total([
+        "hoursOffJobMonday",
+        "hoursOffJobTuesday",
+        "hoursOffJobWednesday",
+        "hoursOffJobThursday",
+        "hoursOffJobFriday",
+      ]);
+
+      const totalHoursWithTrainee = total([
+        "hoursWithTraineeMonday",
+        "hoursWithTraineeTuesday",
+        "hoursWithTraineeWednesday",
+        "hoursWithTraineeThursday",
+        "hoursWithTraineeFriday",
+      ]);
+
+      const totalHours = totalHoursOnJob + totalHoursOffJob;
+
+      // ---------- 2. send API calls ----------
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
 
+      // add/update this week
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
         {
@@ -190,6 +224,7 @@ const Step2Form = () => {
         { headers: { Authorization: token! } }
       );
 
+      // update overall status
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
         {
@@ -199,6 +234,7 @@ const Step2Form = () => {
         { headers: { Authorization: token! } }
       );
 
+      // go back
       router.replace(`/users/${employeeId}/evaluations/${evaluationId}`);
     } catch {
       Alert.alert("Error", "Failed to save evaluation");
@@ -214,6 +250,8 @@ const Step2Form = () => {
       </View>
     );
   }
+
+  console.log(formData.expectedQualified);
 
   const renderFieldGroup = (
     title: string,

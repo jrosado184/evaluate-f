@@ -127,7 +127,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
                     <Text className="text-sm text-gray-700">
                       Expected Qualified:{" "}
                       <Text className="font-semibold text-gray-900">
-                        {evaluation.expectedQualified ?? "-"}%
+                        {evaluation.expectedQualified ?? "-"}
                       </Text>
                     </Text>
                   </View>
@@ -165,7 +165,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
                   </View>
                   <View className="w-1/2 p-1">
                     <Text className="text-sm text-gray-700">
-                      Hand Stretch Completed:{" "}
+                      Stretch Completed:{" "}
                       <Text className="font-semibold text-gray-900">
                         {evaluation.handStretchCompleted ? "Yes" : "No"}
                       </Text>
@@ -242,7 +242,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
       {/* On Track to Qualify Summary */}
       <View className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200 w-[90%] self-center">
         <Text className="text-base font-semibold mb-2">Summary</Text>
-        <View className="flex flex-wrap flex-row">
+        <View className="flex-row flex-wrap">
           {/* Row 1 */}
           <View className="w-1/2 p-1">
             <Text className="text-sm text-gray-700">
@@ -252,6 +252,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
               </Text>
             </Text>
           </View>
+
           <View className="w-1/2 p-1">
             <Text className="text-sm text-gray-700">
               Total Hours Off Job:{" "}
@@ -260,6 +261,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
               </Text>
             </Text>
           </View>
+
           {/* Row 2 */}
           <View className="w-1/2 p-1">
             <Text className="text-sm text-gray-700">
@@ -269,18 +271,15 @@ const EvaluationTimeline = ({ fileData }: any) => {
               </Text>
             </Text>
           </View>
-          <View className="w-1/2 p-1 flex-row items-center gap-3">
-            <Text className="text-sm text-gray-700">On track to qualify?</Text>
-            <View className=" flex-row items-center">
-              <View
-                className={`px-3 py-1 rounded-full ${
-                  onTrack ? "bg-emerald-500" : "bg-gray-400"
-                }`}
-              >
-                <Text className="text-white font-semibold text-sm">
-                  {onTrack ? "Yes" : "No"}
-                </Text>
-              </View>
+
+          <View className="w-1/2 p-1">
+            <View className="flex-row items-center gap-1">
+              <Text className="text-sm text-gray-700">
+                On track to qualify?
+              </Text>
+              <Text className={onTrack ? "text-emerald-600" : "text-red-600"}>
+                {onTrack ? "Yes" : "No"}
+              </Text>
             </View>
           </View>
         </View>

@@ -166,7 +166,7 @@ const EvaluationSummary = () => {
         )}
 
         {/* View PDF */}
-        {evaluation.status === "complete" && (
+        {
           <View className="w-full items-center bg-white mt-4">
             <SinglePressTouchable
               onPress={() =>
@@ -195,7 +195,7 @@ const EvaluationSummary = () => {
               </View>
             </SinglePressTouchable>
           </View>
-        )}
+        }
       </ScrollView>
     </SafeAreaView>
   );
