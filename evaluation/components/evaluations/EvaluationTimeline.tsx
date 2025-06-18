@@ -116,8 +116,8 @@ const EvaluationTimeline = ({ fileData }: any) => {
             {isComplete && (
               <>
                 {/* Key Metrics */}
-                <View className="flex-row flex-wrap">
-                  <View className="w-1/2 p-1">
+                <View className="flex-row flex-wrap gap-y-2">
+                  <View className="w-1/2">
                     <Text className="text-sm text-gray-700">
                       Total Hours on Job:{" "}
                       <Text className="font-semibold text-gray-900">
@@ -125,7 +125,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
                       </Text>
                     </Text>
                   </View>
-                  <View className="w-1/2 p-1">
+                  <View className="w-1/2">
                     <Text className="text-sm text-gray-700">
                       Total Hours Off Job:{" "}
                       <Text className="font-semibold text-gray-900">
@@ -133,7 +133,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
                       </Text>
                     </Text>
                   </View>
-                  <View className="w-1/2 p-1">
+                  <View className="w-1/2">
                     <Text className="text-sm text-gray-700">
                       Total Hours With Trainee:{" "}
                       <Text className="font-semibold text-gray-900">
@@ -141,15 +141,18 @@ const EvaluationTimeline = ({ fileData }: any) => {
                       </Text>
                     </Text>
                   </View>
-                  <View className="w-1/2 p-1">
+                  <View className="w-1/2">
                     <Text className="text-sm text-gray-700">
                       Percent Qualified:{" "}
                       <Text className="font-semibold text-gray-900">
-                        {evaluation.percentQualified ?? "-"}%
+                        {evaluation.percentQualified
+                          ? evaluation.percentQualified
+                          : "-"}
+                        %
                       </Text>
                     </Text>
                   </View>
-                  <View className="w-1/2 p-1">
+                  <View className="w-1/2">
                     <Text className="text-sm text-gray-700">
                       Expected Qualified:{" "}
                       <Text className="font-semibold text-gray-900">
@@ -157,39 +160,45 @@ const EvaluationTimeline = ({ fileData }: any) => {
                       </Text>
                     </Text>
                   </View>
-                  <View className="w-1/2 p-1">
+                  <View className="w-1/2">
                     <Text className="text-sm text-gray-700">
                       RE Time Achieved:{" "}
                       <Text className="font-semibold text-gray-900">
-                        {evaluation.reTimeAchieved ?? "-"}
+                        {evaluation.reTimeAchieved
+                          ? evaluation.reTimeAchieved
+                          : "-"}
                       </Text>
                     </Text>
                   </View>
-                  <View className="w-1/2 p-1">
+                  <View className="w-1/2">
                     <Text className="text-sm text-gray-700">
                       Knife Audit Date:{" "}
                       <Text className="font-semibold text-gray-900">
-                        {evaluation.knifeSkillsAuditDate ?? "-"}
+                        {evaluation.knifeSkillsAuditDate
+                          ? evaluation.knifeSkillsAuditDate
+                          : "-"}
                       </Text>
                     </Text>
                   </View>
-                  <View className="w-1/2 p-1">
+                  <View className="w-1/2">
                     <Text className="text-sm text-gray-700">
                       Yield Audit Date:{" "}
                       <Text className="font-semibold text-gray-900">
-                        {evaluation.yieldAuditDate ?? "-"}
+                        {evaluation.yieldAuditDate
+                          ? evaluation.yieldAuditDate
+                          : "-"}
                       </Text>
                     </Text>
                   </View>
-                  <View className="w-1/2 p-1">
+                  <View className="w-1/2">
                     <Text className="text-sm text-gray-700">
                       Knife Score:{" "}
                       <Text className="font-semibold text-gray-900">
-                        {evaluation.knifeScore ?? "-"}
+                        {evaluation.knifeScore ? evaluation.knifeScore : "-"}
                       </Text>
                     </Text>
                   </View>
-                  <View className="w-1/2 p-1">
+                  <View className="w-1/2">
                     <Text className="text-sm text-gray-700">
                       Stretch Completed:{" "}
                       <Text className="font-semibold text-gray-900">
@@ -197,7 +206,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
                       </Text>
                     </Text>
                   </View>
-                  <View className="w-1/2 p-1">
+                  <View className="w-1/2">
                     <Text className="text-sm text-gray-700">
                       Experiencing Pain:{" "}
                       <Text className="font-semibold text-gray-900">
@@ -211,7 +220,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
                 <Text className="text-sm text-gray-500 mt-2">
                   Comments:{" "}
                   <Text className="font-medium text-gray-700">
-                    {evaluation.comments ?? "None"}
+                    {evaluation.comments ? evaluation.comments : "-"}
                   </Text>
                 </Text>
 
