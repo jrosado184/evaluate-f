@@ -190,7 +190,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
                 </Text>
 
                 {/* Signatures */}
-                <View className="mt-3 flex-row justify-between gap-2">
+                <View className="mt-3 flex-row justify-between gap-4">
                   {evaluation.trainerSignature &&
                     renderSignature("Trainer", evaluation.trainerSignature)}
                   {evaluation.teamMemberSignature &&

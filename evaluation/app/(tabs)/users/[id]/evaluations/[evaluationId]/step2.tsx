@@ -20,6 +20,7 @@ import useAuthContext from "@/app/context/AuthContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
+import { formatLongDate, getMondayOfWeek, parseMDY } from "@/app/helpers/dates";
 
 const Step2Form = () => {
   const router = useRouter();
@@ -62,6 +63,7 @@ const Step2Form = () => {
   const [signatureType, setSignatureType] = useState<null | string>(null);
   const [traineeName, setTraineeName] = useState("Trainee");
   const [projectedTrainingHours, setProjectedTrainingHours] = useState(200);
+  const [jobStartDate, setJobStartDate] = useState("")
 
   const inputRefs = useRef<Array<TextInput | null>>([]);
 
@@ -75,6 +77,7 @@ const Step2Form = () => {
         const res = await axios.get(`${baseUrl}/evaluations/${evaluationId}`, {
           headers: { Authorization: token! },
         });
+        setJobStartDate(res.data.personalInfo.jobStartDate)
 
         const evalDoc = res.data;
 
@@ -250,35 +253,88 @@ const Step2Form = () => {
       </View>
     );
   }
+console.log(jobStartDate)
 
-  console.log(formData.expectedQualified);
+const renderFieldGroup = (
+  title: string,
+  keys: string[],
+  startIndex: number
+) => {
+  const jobStart = parseMDY(jobStartDate);
 
-  const renderFieldGroup = (
-    title: string,
-    keys: string[],
-    startIndex: number
-  ) => (
+  if (!jobStart) {
+    return (
+      <View className="mb-6">
+        <Text className="text-red-600">Invalid Job Start Date</Text>
+      </View>
+    );
+  }
+
+  // Compute Monday of same week (Sunday pushes forward to Monday)
+  const getMonday = (date: Date): Date => {
+    const d = new Date(date);
+    const day = d.getDay(); // 0 = Sunday
+    const diff = day === 0 ? 1 : 1 - day;
+    d.setDate(d.getDate() + diff);
+    return d;
+  };
+
+  const monday = getMonday(jobStart);
+  const firstEnabledIndex = Math.max(jobStart.getDay() - 1, 0); // Monday = 1
+
+  // Format just the date (no weekday)
+  const formatDateOnly = (d: Date): string =>
+    new Intl.DateTimeFormat("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    }).format(d);
+
+  return (
     <View className="mb-6">
       <Text className="text-lg font-semibold text-gray-800 mb-3">{title}</Text>
+
       {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map(
-        (day, i) => {
+        (weekday, i) => {
           const key = keys[i];
+          const currentDate = new Date(monday);
+          currentDate.setDate(monday.getDate() + i);
+
+          const isDisabled = i < firstEnabledIndex;
+
           return (
             <View key={key} className="mb-4">
-              <Text className="text-base text-gray-700 mb-2">{day}</Text>
+              {/* Weekday */}
+              <Text className="text-base text-gray-700">{weekday}</Text>
+
+              {/* Date below (not too light) */}
+              <Text className="text-[.8rem] text-gray-500 mb-2">
+                {formatDateOnly(currentDate)}
+              </Text>
+
               <TextInput
                 ref={(ref) => (inputRefs.current[startIndex + i] = ref)}
                 value={formData[key]}
-                onChangeText={(t) => handleChange(key, t, startIndex + i)}
+                onChangeText={(t) =>
+                  !isDisabled && handleChange(key, t, startIndex + i)
+                }
+                editable={!isDisabled}
                 placeholder="0"
                 keyboardType="numeric"
-                className={`border ${
-                  errors[key] ? "border-red-500" : "border-gray-300"
-                } rounded-md px-4 py-3 text-gray-900`}
+                className={`rounded-md px-4 py-3 ${
+                  isDisabled
+                    ? "bg-gray-100 border-gray-200 text-gray-400"
+                    : errors[key]
+                    ? "border-red-500 border text-gray-900"
+                    : "border border-gray-300 text-gray-900"
+                }`}
                 maxLength={1}
               />
-              {errors[key] && (
-                <Text className="text-sm text-red-500 mt-1">{errors[key]}</Text>
+
+              {errors[key] && !isDisabled && (
+                <Text className="text-sm text-red-500 mt-1">
+                  {errors[key]}
+                </Text>
               )}
             </View>
           );
@@ -286,6 +342,7 @@ const Step2Form = () => {
       )}
     </View>
   );
+};
 
   return (
     <SafeAreaView className="flex-1 bg-white">
