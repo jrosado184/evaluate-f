@@ -63,7 +63,7 @@ const Step2Form = () => {
   const [signatureType, setSignatureType] = useState<null | string>(null);
   const [traineeName, setTraineeName] = useState("Trainee");
   const [projectedTrainingHours, setProjectedTrainingHours] = useState(200);
-  const [jobStartDate, setJobStartDate] = useState("")
+  const [jobStartDate, setJobStartDate] = useState("");
 
   const inputRefs = useRef<Array<TextInput | null>>([]);
 
@@ -77,7 +77,7 @@ const Step2Form = () => {
         const res = await axios.get(`${baseUrl}/evaluations/${evaluationId}`, {
           headers: { Authorization: token! },
         });
-        setJobStartDate(res.data.personalInfo.jobStartDate)
+        setJobStartDate(res.data.personalInfo.jobStartDate);
 
         const evalDoc = res.data;
 
@@ -253,96 +253,109 @@ const Step2Form = () => {
       </View>
     );
   }
-console.log(jobStartDate)
 
-const renderFieldGroup = (
-  title: string,
-  keys: string[],
-  startIndex: number
-) => {
-  const jobStart = parseMDY(jobStartDate);
+  /* --------------------------------------------------------------- *
+   *  renderFieldGroup
+   *  -------------------------------------------------------------- *
+   *  • weekIndex = 0  → first week (starts at jobStartDate’s week)
+   *  • weekIndex = 1  → second week (add 7 days), etc.
+   * --------------------------------------------------------------- */
+  const renderFieldGroup = (
+    title: string,
+    keys: string[],
+    startIndex: number,
+    weekIndex: number // ← NEW PARAM
+  ) => {
+    const jobStart = parseMDY(jobStartDate);
+    if (!jobStart) {
+      return (
+        <View className="mb-6">
+          <Text className="text-red-600">Invalid Job Start Date</Text>
+        </View>
+      );
+    }
 
-  if (!jobStart) {
+    /* Monday of the jobStart week (Sunday rolls forward) */
+    const getMonday = (date: Date): Date => {
+      const d = new Date(date);
+      const day = d.getDay(); // 0 = Sun … 6 = Sat
+      const diff = day === 0 ? 1 : 1 - day;
+      d.setDate(d.getDate() + diff);
+      return d;
+    };
+
+    const baseMonday = getMonday(jobStart);
+
+    /* Monday for this specific week */
+    const mondayOfThisWeek = new Date(baseMonday);
+    mondayOfThisWeek.setDate(baseMonday.getDate() + weekIndex * 7);
+
+    /* Disable logic only needed for the FIRST week */
+    const firstEnabledIndex =
+      weekIndex === 0 ? Math.max(jobStart.getDay() - 1, 0) : -1;
+
+    /* Helper: date → "May 26, 2025" */
+    const formatDateOnly = (d: Date): string =>
+      new Intl.DateTimeFormat("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }).format(d);
+
     return (
       <View className="mb-6">
-        <Text className="text-red-600">Invalid Job Start Date</Text>
+        <Text className="text-lg font-semibold text-gray-800 mb-3">
+          {title}
+        </Text>
+
+        {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map(
+          (weekday, i) => {
+            const key = keys[i];
+
+            /* Exact calendar date for this weekday of this week */
+            const currentDate = new Date(mondayOfThisWeek);
+            currentDate.setDate(mondayOfThisWeek.getDate() + i);
+
+            const isDisabled = i < firstEnabledIndex;
+
+            return (
+              <View key={key} className="mb-4">
+                <Text className="text-base text-gray-700">{weekday}</Text>
+                <Text className="text-[.8rem] text-gray-500 mb-2">
+                  {formatDateOnly(currentDate)}
+                </Text>
+
+                <TextInput
+                  ref={(ref) => (inputRefs.current[startIndex + i] = ref)}
+                  value={formData[key]}
+                  onChangeText={(t) =>
+                    !isDisabled && handleChange(key, t, startIndex + i)
+                  }
+                  editable={!isDisabled}
+                  placeholder="0"
+                  keyboardType="numeric"
+                  className={`rounded-md px-4 py-3 ${
+                    isDisabled
+                      ? "bg-gray-100 border-gray-200 text-gray-400"
+                      : errors[key]
+                      ? "border-red-500 border text-gray-900"
+                      : "border border-gray-300 text-gray-900"
+                  }`}
+                  maxLength={1}
+                />
+
+                {errors[key] && !isDisabled && (
+                  <Text className="text-sm text-red-500 mt-1">
+                    {errors[key]}
+                  </Text>
+                )}
+              </View>
+            );
+          }
+        )}
       </View>
     );
-  }
-
-  // Compute Monday of same week (Sunday pushes forward to Monday)
-  const getMonday = (date: Date): Date => {
-    const d = new Date(date);
-    const day = d.getDay(); // 0 = Sunday
-    const diff = day === 0 ? 1 : 1 - day;
-    d.setDate(d.getDate() + diff);
-    return d;
   };
-
-  const monday = getMonday(jobStart);
-  const firstEnabledIndex = Math.max(jobStart.getDay() - 1, 0); // Monday = 1
-
-  // Format just the date (no weekday)
-  const formatDateOnly = (d: Date): string =>
-    new Intl.DateTimeFormat("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    }).format(d);
-
-  return (
-    <View className="mb-6">
-      <Text className="text-lg font-semibold text-gray-800 mb-3">{title}</Text>
-
-      {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map(
-        (weekday, i) => {
-          const key = keys[i];
-          const currentDate = new Date(monday);
-          currentDate.setDate(monday.getDate() + i);
-
-          const isDisabled = i < firstEnabledIndex;
-
-          return (
-            <View key={key} className="mb-4">
-              {/* Weekday */}
-              <Text className="text-base text-gray-700">{weekday}</Text>
-
-              {/* Date below (not too light) */}
-              <Text className="text-[.8rem] text-gray-500 mb-2">
-                {formatDateOnly(currentDate)}
-              </Text>
-
-              <TextInput
-                ref={(ref) => (inputRefs.current[startIndex + i] = ref)}
-                value={formData[key]}
-                onChangeText={(t) =>
-                  !isDisabled && handleChange(key, t, startIndex + i)
-                }
-                editable={!isDisabled}
-                placeholder="0"
-                keyboardType="numeric"
-                className={`rounded-md px-4 py-3 ${
-                  isDisabled
-                    ? "bg-gray-100 border-gray-200 text-gray-400"
-                    : errors[key]
-                    ? "border-red-500 border text-gray-900"
-                    : "border border-gray-300 text-gray-900"
-                }`}
-                maxLength={1}
-              />
-
-              {errors[key] && !isDisabled && (
-                <Text className="text-sm text-red-500 mt-1">
-                  {errors[key]}
-                </Text>
-              )}
-            </View>
-          );
-        }
-      )}
-    </View>
-  );
-};
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -383,7 +396,8 @@ const renderFieldGroup = (
               "hoursThursday",
               "hoursFriday",
             ],
-            0
+            0,
+            currentWeek - 1
           )}
           {renderFieldGroup(
             "Hours Off Job",
@@ -394,7 +408,8 @@ const renderFieldGroup = (
               "hoursOffJobThursday",
               "hoursOffJobFriday",
             ],
-            5
+            5,
+            currentWeek - 1
           )}
           {renderFieldGroup(
             "Hours with Trainee",
@@ -405,7 +420,8 @@ const renderFieldGroup = (
               "hoursWithTraineeThursday",
               "hoursWithTraineeFriday",
             ],
-            10
+            10,
+            currentWeek - 1
           )}
 
           {[

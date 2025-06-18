@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { View, Text, Image, Modal, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import SinglePressTouchable from "@/app/utils/SinglePress";
@@ -7,7 +7,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  const completedWeeks = new Map(
+  const completedWeeks: any = new Map(
     fileData.evaluations?.map((e: any) => [e.weekNumber, e]) || []
   );
 
@@ -57,13 +57,39 @@ const EvaluationTimeline = ({ fileData }: any) => {
     0
   );
 
-  // Calculate on track to qualify status
-  const expectedQualified = fileData.expectedQualified || 0;
   const projectedTrainingHours =
-    fileData.personalInfo.projectedTrainingHours || 0;
-  const onTrack =
-    projectedTrainingHours > 0 &&
-    totalHoursOnJob / projectedTrainingHours >= expectedQualified / 100;
+    Number(fileData.personalInfo.projectedTrainingHours) || 0;
+
+  /* 2. Memoised onTrack -------------------------------------------------- */
+  const onTrack = useMemo(() => {
+    if (projectedTrainingHours === 0 || completedWeeks.size === 0) {
+      return false;
+    }
+
+    /* latest completed week */
+    const lastWeekNumber = Math.max(...completedWeeks.keys());
+    const currentEval: any = completedWeeks.get(lastWeekNumber) || {};
+
+    /* ---- numbers ------------------------------------------------------ */
+    const totalHoursOnJob = Number(currentEval.totalHoursOnJob) || 0;
+
+    /* percentQualified may look like "25" or "25%" → strip % then parse */
+    const actualPercentCompleted =
+      Number((currentEval.percentQualified ?? "").replace("%", "")) || 0;
+
+    if (totalHoursOnJob === 0 || actualPercentCompleted === 0) {
+      return false;
+    }
+
+    /* ---- expected progress so far ------------------------------------ */
+    const expectedPercentToDate =
+      (totalHoursOnJob / projectedTrainingHours) * 100; // e.g. 40/200 = 20%
+
+    /* on-track when actual ≥ expected */
+    const result = actualPercentCompleted >= expectedPercentToDate;
+
+    return result;
+  }, [projectedTrainingHours, completedWeeks]);
 
   return (
     <View className="mt-2">
@@ -74,12 +100,12 @@ const EvaluationTimeline = ({ fileData }: any) => {
             : projectedTrainingWeeks,
       }).map((_, i) => {
         const week = i + 1;
+
         const evaluation: any = completedWeeks.get(week) || {};
+
         const prevWeekComplete = completedWeeks.has(week - 1) || week === 1;
         const isComplete = completedWeeks.has(week);
-
         const nextWeekExists = completedWeeks.has(week + 1);
-
         return (
           <View
             key={week}
