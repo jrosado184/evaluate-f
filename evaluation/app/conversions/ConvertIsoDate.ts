@@ -20,35 +20,33 @@ export const formatISODate = (
   /* 1. Date instance ---------------------------------------------------- */
   if (input instanceof Date) {
     date = input;
-  }
-
-  /* 2. Number ----------------------------------------------------------- */
-  else if (typeof input === "number") {
+  } else if (typeof input === "number") {
+    /* 2. Number ----------------------------------------------------------- */
     date =
-      input > 1e11                                   // timestamp
+      input > 1e11 // timestamp
         ? new Date(input)
         : yyyymmddToDate(input.toString().padStart(8, "0"));
-  }
-
-  /* 3. String ----------------------------------------------------------- */
-  else if (typeof input === "string") {
+  } else if (typeof input === "string") {
+    /* 3. String ----------------------------------------------------------- */
     const str = input.trim();
 
     if (/^\d{8}$/.test(str)) {
       // "20250616"
       date = yyyymmddToDate(str);
     } else if (/^\d{2}[-/]\d{2}[-/]\d{4}$/.test(str)) {
-      // "09-17-2024" or "09/17/2024"
+      // "05-25-2025" or "05/25/2025"  → local time
       const [mm, dd, yyyy] = str.split(/[-/]/);
-      date = new Date(`${yyyy}-${mm}-${dd}`);        // ISO string
+      date = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+      // "2025-05-25" (ISO date-only)  → local time
+      const [yyyy, mm, dd] = str.split("-");
+      date = new Date(Number(yyyy), Number(mm) - 1, Number(dd));
     } else {
-      // ISO, RFC-2822, etc.
+      // Full ISO with time zone, RFC-2822, etc.
       date = new Date(str);
     }
-  }
-
-  /* 4. Anything else ---------------------------------------------------- */
-  else {
+  } else {
+    /* 4. Anything else ---------------------------------------------------- */
     return "Invalid date";
   }
 

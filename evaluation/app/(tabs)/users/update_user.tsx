@@ -81,6 +81,7 @@ const UpdateUser = () => {
       setActionsMessage("Update failed");
     } finally {
       setLoading(false);
+      router.replace("/(tabs)/users");
     }
   };
 
@@ -139,7 +140,7 @@ const UpdateUser = () => {
               keyboardType="numeric"
               rounded="rounded-[0.625rem]"
               handleChangeText={(value: any) =>
-                handleEmployeeInfo("hire_date", value)
+                handleEmployeeInfo("date_of_hire", value)
               }
             />
             <Error hidden={!errors.hire_date} title={errors.hire_date} />
