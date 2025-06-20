@@ -1,12 +1,8 @@
-import { View, Text } from "react-native";
 import React, { memo } from "react";
-import WarningIcon from "@/constants/icons/WarningIcon";
-import CheckIcon from "@/constants/icons/CheckIcon";
-import RightIcon from "@/constants/icons/RightIcon";
-import Gender from "react-native-vector-icons/MaterialIcons";
+import { View, Text } from "react-native";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Icon from "react-native-vector-icons/Feather";
-import SinglePressTouchable from "@/app/utils/SinglePress";
 
 interface LockerCardTypes {
   button: "arrow" | "edit" | undefined;
@@ -43,7 +39,7 @@ const LockerCard: React.FC<LockerCardTypes> = ({
     <View className="w-full px-1 mb-2">
       <View className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm h-40">
         <View className="flex-row justify-between h-full">
-          {/* LEFT SIDE */}
+          {/* LEFT */}
           <View className="flex-1 justify-between pr-3">
             <View>
               <Text className="text-xl font-semibold text-black mb-1">
@@ -73,9 +69,8 @@ const LockerCard: React.FC<LockerCardTypes> = ({
             </Text>
           </View>
 
-          {/* RIGHT SIDE */}
+          {/* RIGHT */}
           <View className="justify-between items-end h-full">
-            {/* Top: Location + Gender + Status */}
             <View className="flex-row items-center gap-2">
               <Text
                 className="text-sm font-medium"
@@ -86,7 +81,6 @@ const LockerCard: React.FC<LockerCardTypes> = ({
               </Text>
             </View>
 
-            {/* Bottom: Button */}
             {vacant ? (
               <SinglePressTouchable
                 activeOpacity={0.8}
@@ -102,9 +96,11 @@ const LockerCard: React.FC<LockerCardTypes> = ({
                 color="#1a237e"
               />
             ) : (
-              <SinglePressTouchable onPress={onAssignPress}>
-                <Icon name="edit-3" size={20} color="#6B7280" />
-              </SinglePressTouchable>
+              <View className="flex-row items-start gap-4">
+                <SinglePressTouchable className="p-1" onPress={onUnassignPress}>
+                  <Text className="text-red-600 text-sm">Unassign</Text>
+                </SinglePressTouchable>
+              </View>
             )}
           </View>
         </View>

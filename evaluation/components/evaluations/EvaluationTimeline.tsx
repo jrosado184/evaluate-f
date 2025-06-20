@@ -97,6 +97,8 @@ const EvaluationTimeline = ({ fileData }: any) => {
         length:
           fileData.status === "complete"
             ? fileData.evaluations.length
+            : Number(totalHoursOnJob) < Number(projectedTrainingHours)
+            ? fileData.evaluations.length + 1
             : projectedTrainingWeeks,
       }).map((_, i) => {
         const week = i + 1;

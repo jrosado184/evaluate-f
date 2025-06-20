@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Text, View, Animated, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { router, useFocusEffect } from "expo-router";
+import { router, useFocusEffect, useGlobalSearchParams } from "expo-router";
 import Search from "@/components/Search";
 import LockerCard from "@/components/LockerCard";
 import useEmployeeContext from "@/app/context/EmployeeContext";
@@ -38,6 +38,7 @@ const Lockers = () => {
   const [selectedLockerId, setSelectedLockerId] = useState<string>("");
   const [showToast, setShowToast] = useState(false);
   const swipeableRefs = useRef<Map<string, Swipeable>>(new Map());
+  const { toast } = useGlobalSearchParams(); // <-- GET QUERY PARAM
 
   const { getMoreData, setIsSearching, fetchingMoreUsers, resetPagination } =
     usePagination(
@@ -129,8 +130,15 @@ const Lockers = () => {
         }
       };
       reloadLockers();
-    }, [])
+    }, [toast])
   );
+
+  useEffect(() => {
+    if (toast === "unassigned") {
+      setShowToast(true); // open SuccessModal
+      router.replace("/(tabs)/lockers");
+    }
+  }, [toast]);
 
   const handleAssignPress = (vacant: boolean, lockerId: string) => {
     if (vacant) {
@@ -333,7 +341,11 @@ const Lockers = () => {
       <SuccessModal
         show={showToast}
         setShow={setShowToast}
-        message="Locker assigned successfully"
+        message={
+          toast === "unassigned"
+            ? "Locker unassigned successfully"
+            : "Locker assigned successfully"
+        }
       />
     </SafeAreaView>
   );

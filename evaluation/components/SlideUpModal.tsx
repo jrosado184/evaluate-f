@@ -25,6 +25,7 @@ import Search from "@/components/Search";
 import AssignEmployeeCard from "./employees/AssignEmployeeCard";
 import AssignLockerCard from "./employees/AssignLockerCard";
 import SuccessModal from "./SuccessModal";
+import useAuthContext from "@/app/context/AuthContext";
 
 const SlideUpModal = ({
   visible,
@@ -49,6 +50,8 @@ const SlideUpModal = ({
     setUserDetails,
     userDetails,
   } = useEmployeeContext();
+
+  const { currentUser } = useAuthContext();
 
   const [query, setQuery] = useState("");
   const [filteredItems, setFilteredItems] = useState([]);
@@ -191,7 +194,7 @@ const SlideUpModal = ({
 
       const response = await axios.post(
         `${baseUrl}/lockers/assign`,
-        { lockerId, employeeId },
+        { lockerId, employeeId, assigned_by: currentUser?.name },
         {
           headers: {
             Authorization: token,

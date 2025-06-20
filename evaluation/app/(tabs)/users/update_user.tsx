@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
-import { View, Text } from "react-native";
+import React, { useState, useRef } from "react";
+import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import SlideUpModal from "@/components/SlideUpModal";
@@ -16,7 +16,6 @@ import useActionContext from "@/app/context/ActionsContext";
 import updateEmployee from "@/app/requests/updateEmployee";
 import useValidation from "@/app/validation/useValidation";
 import SinglePressTouchable from "@/app/utils/SinglePress";
-import { ScrollView } from "react-native-gesture-handler";
 
 const UpdateUser = () => {
   const { setSelectedValue } = useSelect();
@@ -42,8 +41,6 @@ const UpdateUser = () => {
   } = useEmployeeContext();
 
   const currentEmployeeData = useRef(employee);
-
-  useEffect(() => {}, [addEmployeeInfo]);
 
   const handleUpdateRequest = async () => {
     setErrors(newErrors);
@@ -89,7 +86,7 @@ const UpdateUser = () => {
 
   return (
     <SafeAreaView className="bg-white h-full p-6">
-      <ScrollView>
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         <SinglePressTouchable
           onPress={router.back}
           className="flex-row h-10 items-center"

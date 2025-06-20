@@ -59,8 +59,6 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
     added_by: "",
     date_of_hire: "",
     location: "",
-    last_updated: new Date(),
-    createdAt: new Date(),
   });
   const [locker, setLocker] = useState();
   const [lockers, setLockers] = useState<any>();

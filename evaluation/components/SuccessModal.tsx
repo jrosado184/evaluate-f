@@ -15,22 +15,18 @@ const SuccessModal = ({ show, setShow, message }: Props) => {
   useEffect(() => {
     if (!show) return;
 
-    // Fade in
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 300,
       useNativeDriver: true,
     }).start();
 
-    // Then fade out
     const timeout = setTimeout(() => {
       Animated.timing(fadeAnim, {
         toValue: 0,
         duration: 800,
         useNativeDriver: true,
-      }).start(() => {
-        setShow(false);
-      });
+      }).start(() => setShow(false));
     }, 3000);
 
     return () => clearTimeout(timeout);
@@ -48,12 +44,7 @@ const SuccessModal = ({ show, setShow, message }: Props) => {
         width: "100%",
       }}
     >
-      <Animated.View
-        className="w-full"
-        style={{
-          opacity: fadeAnim,
-        }}
-      >
+      <Animated.View className="w-full" style={{ opacity: fadeAnim }}>
         <Alert
           className="mb-48 w-full bg-[#008000] justify-center items-center"
           action="success"
