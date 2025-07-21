@@ -263,7 +263,7 @@ const Lockers = () => {
             <LockerCard
               button="arrow"
               locker_number={item.locker_number}
-              Assigned_to={item.assigned_employee?.employee_name}
+              assigned_to={item.assigned_employee?.employee_name}
               assigned_by={item.assigned_by}
               last_updated={formatISODate(item.last_updated)}
               vacant={item.vacant}

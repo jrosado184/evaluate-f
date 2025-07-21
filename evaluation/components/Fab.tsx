@@ -21,7 +21,7 @@ const Fab = ({ icon, route }: any) => {
       toValue: isTabBarVisible ? 150 : 82,
       duration: 145,
       easing: Easing.inOut(Easing.ease),
-      useNativeDriver: false, // ❗ Important: must be false because we are animating `bottom`
+      useNativeDriver: false,
     }).start();
   }, [isTabBarVisible]);
 

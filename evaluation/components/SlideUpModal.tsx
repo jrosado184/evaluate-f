@@ -239,7 +239,6 @@ const SlideUpModal = ({
         useNativeDriver: true,
       }),
     ]).start(() => {
-      setQuery("");
       onClose();
     });
   };

@@ -70,8 +70,8 @@ export default function TabsLayout() {
                   <HomeIcon
                     width={32}
                     height={32}
-                    fillColor={focused ? "#323FC1" : "#B4B4B4"}
-                    strokeColor={focused ? "#323FC1" : "#B4B4B4"}
+                    fillColor={focused ? "#1a237e" : "#B4B4B4"}
+                    strokeColor={focused ? "#1a237e" : "#B4B4B4"}
                   />
                 }
                 focused={focused}
@@ -91,8 +91,8 @@ export default function TabsLayout() {
                   <UsersIcon
                     width={32}
                     height={32}
-                    fillColor={focused ? "#323FC1" : "#B4B4B4"}
-                    strokeColor={focused ? "#323FC1" : "#B4B4B4"}
+                    fillColor={focused ? "#1a237e" : "#B4B4B4"}
+                    strokeColor={focused ? "#1a237e" : "#B4B4B4"}
                   />
                 }
                 focused={focused}
@@ -112,8 +112,8 @@ export default function TabsLayout() {
                   <LockIcon
                     width={32}
                     height={32}
-                    fillColor={focused ? "#323FC1" : "#B4B4B4"}
-                    strokeColor={focused ? "#323FC1" : "#B4B4B4"}
+                    fillColor={focused ? "#1a237e" : "#B4B4B4"}
+                    strokeColor={focused ? "#1a237e" : "#B4B4B4"}
                   />
                 }
                 focused={focused}
@@ -133,8 +133,8 @@ export default function TabsLayout() {
                   <ProfileIcon
                     width={32}
                     height={32}
-                    fillColor={focused ? "#323FC1" : "#B4B4B4"}
-                    strokeColor={focused ? "#323FC1" : "#B4B4B4"}
+                    fillColor={focused ? "#1a237e" : "#B4B4B4"}
+                    strokeColor={focused ? "#1a237e" : "#B4B4B4"}
                   />
                 }
                 focused={focused}

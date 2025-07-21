@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ScrollView, View, Text } from "react-native";
+import { ScrollView, View, Text, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import Header from "@/components/Header";
@@ -15,12 +15,15 @@ import axios from "axios";
 import getServerIP from "@/app/requests/NetworkAddress";
 import useEvaluationStats from "@/hooks/useEvaluationsStats";
 
-const StatBlock = ({ label, value, sub, highlightColor }: any) => (
-  <View className="flex-1 bg-white rounded-2xl p-4 border border-gray-200 shadow-sm">
+const StatBlock = ({ label, value, sub, highlightColor, onPress }: any) => (
+  <TouchableOpacity
+    onPress={onPress}
+    className="flex-1 bg-white rounded-2xl p-4 border border-gray-200 shadow-sm"
+  >
     <Text className="text-xs text-neutral-500 mb-1">{label}</Text>
     <Text className="text-2xl font-bold text-black">{value}</Text>
     {sub && <Text className={`text-xs mt-1 ${highlightColor}`}>{sub}</Text>}
-  </View>
+  </TouchableOpacity>
 );
 
 const PerformanceBar = ({ name, percent, color }: any) => (
@@ -104,6 +107,7 @@ export default function ModernDashboard() {
             highlightColor="text-emerald-600"
           />
           <StatBlock
+            onPress={() => router.push("/(tabs)/home/evaluations")}
             label="Evaluations"
             value={`${completedCount} Qualified`}
             sub={`${inProgressCount} In Progress`}

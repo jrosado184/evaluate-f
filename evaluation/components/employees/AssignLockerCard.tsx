@@ -1,27 +1,20 @@
 import React from "react";
 import { View, Text } from "react-native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import WarningIcon from "@/constants/icons/WarningIcon";
-import CheckIcon from "@/constants/icons/CheckIcon";
 
 interface Props {
-  item: any;
   locker_number: number;
   location: string;
   vacant: boolean;
   status?: string;
-  assigned_to?: string;
-  assigned_by?: string;
+  assigned_employee?: any;
 }
 
 const AssignLockerCard: React.FC<Props> = ({
-  item,
   locker_number,
   location,
   vacant,
-  status,
-  assigned_to,
-  assigned_by,
+  assigned_employee,
 }) => {
   const isMens = location?.split(" ")[1] === "Mens";
 
@@ -36,7 +29,7 @@ const AssignLockerCard: React.FC<Props> = ({
           {!vacant && (
             <>
               <Text className="text-sm text-gray-800">
-                Occupied by: {item?.assigned_to || "N/A"}
+                Occupied by: {assigned_employee?.employee_name}
               </Text>
             </>
           )}

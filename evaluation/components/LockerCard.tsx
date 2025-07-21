@@ -8,7 +8,7 @@ interface LockerCardTypes {
   button: "arrow" | "edit" | undefined;
   status?: string;
   locker_number: any;
-  Assigned_to?: string;
+  assigned_to?: string;
   assigned_by?: string;
   last_updated?: string;
   vacant?: boolean;
@@ -20,7 +20,7 @@ interface LockerCardTypes {
 const LockerCard: React.FC<LockerCardTypes> = ({
   button,
   locker_number,
-  Assigned_to,
+  assigned_to,
   assigned_by,
   last_updated,
   vacant,
@@ -52,7 +52,7 @@ const LockerCard: React.FC<LockerCardTypes> = ({
                     className="text-base text-neutral-700"
                     numberOfLines={1}
                   >
-                    Occupied by: {Assigned_to}
+                    Occupied by: {assigned_to}
                   </Text>
                   <Text
                     className="text-sm text-neutral-500 mb-1"

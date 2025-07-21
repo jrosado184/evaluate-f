@@ -1,11 +1,9 @@
-import { View, Text } from "react-native";
 import React, { useEffect, useState } from "react";
 import useJobsContext from "@/app/context/JobsContext";
 import useGetJobs from "@/app/requests/useGetJobs";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import useValidation from "@/app/validation/useValidation";
 import useAuthContext from "@/app/context/AuthContext";
-import useSelect from "./useSelect";
 import addEmployee from "@/app/requests/addEmployee";
 import { router, useNavigation } from "expo-router";
 import useActionContext from "@/app/context/ActionsContext";

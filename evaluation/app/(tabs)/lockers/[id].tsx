@@ -90,7 +90,7 @@ const Locker = () => {
             vacant={locker?.vacant}
             button="edit"
             locker_number={locker?.locker_number}
-            Assigned_to={locker?.assigned_employee?.employee_name}
+            assigned_to={locker?.assigned_employee?.employee_name}
             assigned_by={locker?.assigned_by}
             location={locker?.location}
             last_updated={formatISODate(locker?.last_updated)}

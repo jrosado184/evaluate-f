@@ -1,17 +1,15 @@
 import React, { useRef } from "react";
-import { View, Text, Animated } from "react-native";
+import { View, Text, Animated, Alert } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import Icon from "react-native-vector-icons/Feather";
-import { useRouter } from "expo-router";
+import { useGlobalSearchParams, useRouter } from "expo-router";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import SinglePressTouchable from "@/app/utils/SinglePress";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import getServerIP from "@/app/requests/NetworkAddress";
+import axios from "axios";
 
-const EvaluationRow = ({
-  file,
-  onDelete,
-  onPress,
-  handleSwipeableWillOpen,
-}: any) => {
+const EvaluationRow = ({ file, onDelete, handleSwipeableWillOpen }: any) => {
   const swipeableRef = useRef<Swipeable>(null);
   const router = useRouter();
 
@@ -23,45 +21,78 @@ const EvaluationRow = ({
       outputRange: [80, 8],
       extrapolate: "clamp",
     });
+
     return (
-      <Animated.View
-        style={{
-          transform: [{ translateX }],
-          flexDirection: "row",
-          height: "85%",
-          marginRight: 5,
-          width: "20%",
-        }}
-      >
-        <SinglePressTouchable
-          onPress={() => onDelete(file._id)}
+      onDelete && (
+        <Animated.View
           style={{
-            width: 70,
-            backgroundColor: "#EF4444",
-            justifyContent: "center",
-            alignItems: "center",
-            borderTopRightRadius: 8,
-            borderBottomRightRadius: 8,
+            transform: [{ translateX }],
+            flexDirection: "row",
+            height: "85%",
+            marginRight: 5,
+            width: "20%",
           }}
         >
-          <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>Delete</Text>
-        </SinglePressTouchable>
-      </Animated.View>
+          <SinglePressTouchable
+            onPress={() => onDelete(file._id)}
+            style={{
+              width: 70,
+              backgroundColor: "#EF4444",
+              justifyContent: "center",
+              alignItems: "center",
+              borderTopRightRadius: 8,
+              borderBottomRightRadius: 8,
+            }}
+          >
+            <Text style={{ color: "#FFFFFF", fontWeight: "600" }}>Delete</Text>
+          </SinglePressTouchable>
+        </Animated.View>
+      )
     );
+  };
+
+  const handleEvaluationPress = async (evaluationId: string) => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const baseUrl = await getServerIP();
+      const { data: evalDoc } = await axios.get(
+        `${baseUrl}/evaluations/${evaluationId}`,
+        { headers: { Authorization: token! } }
+      );
+
+      const info = evalDoc.personalInfo || {};
+      const hasInfo =
+        !!info.teamMemberName && !!info.position && !!info.department;
+
+      if (!hasInfo || evalDoc.status === "uploaded") {
+        router.replace(
+          `/users/${file?.employeeId}/evaluations/${evaluationId}/step1`
+        );
+      } else {
+        router.replace(
+          `/users/${file?.employeeId}}/evaluations/${evaluationId}`
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Could not load evaluation details.");
+    }
   };
 
   return (
     <Swipeable
       ref={swipeableRef}
-      friction={0.8}
-      overshootRight
-      rightThreshold={10}
-      onSwipeableWillOpen={() => handleSwipeableWillOpen(swipeableRef.current)}
+      friction={handleSwipeableWillOpen && 0.8}
+      overshootRight={handleSwipeableWillOpen ? true : false}
+      rightThreshold={handleSwipeableWillOpen && 10}
+      onSwipeableWillOpen={() =>
+        handleSwipeableWillOpen && handleSwipeableWillOpen(swipeableRef.current)
+      }
       renderRightActions={renderRightActions}
       containerStyle={{ width: "100%" }}
     >
       <SinglePressTouchable
-        onPress={() => onPress(file._id)}
+        onPress={() => handleEvaluationPress(file._id)}
         activeOpacity={0.8}
         style={{
           flexDirection: "row",

@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   Alert,
-  Animated,
   TouchableWithoutFeedback,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -21,7 +20,6 @@ import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import EvaluationRow from "@/components/evaluations/EvaluationRow";
 import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchableTouchable from "@/app/utils/SinglePress";
-import { useShowTabBarOnFocus } from "@/hooks/useShowTabBarOnFocus";
 
 const User = () => {
   const { id } = useGlobalSearchParams(); // employeeId
@@ -63,31 +61,6 @@ const User = () => {
       fetchEmployee();
     }, [])
   );
-
-  /** Navigate into step1 or summary—but only once per tap **/
-  const handleEvaluationPress = async (evaluationId: string) => {
-    try {
-      const token = await AsyncStorage.getItem("token");
-      const baseUrl = await getServerIP();
-      const { data: evalDoc } = await axios.get(
-        `${baseUrl}/evaluations/${evaluationId}`,
-        { headers: { Authorization: token! } }
-      );
-
-      const info = evalDoc.personalInfo || {};
-      const hasInfo =
-        !!info.teamMemberName && !!info.position && !!info.department;
-
-      if (!hasInfo || evalDoc.status === "uploaded") {
-        router.push(`/users/${id}/evaluations/${evaluationId}/step1`);
-      } else {
-        router.push(`/users/${id}/evaluations/${evaluationId}`);
-      }
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Could not load evaluation details.");
-    }
-  };
 
   /** Always go to step1 when creating **/
   const handleStartEvaluation = async () => {
@@ -265,10 +238,10 @@ const User = () => {
             ) : (
               evaluationFiles.map((file) => (
                 <EvaluationRow
+                  id={id}
                   key={file._id}
                   file={file}
                   onDelete={handleDeleteEvaluation}
-                  onPress={handleEvaluationPress}
                   handleSwipeableWillOpen={(ref: Swipeable | null) =>
                     handleSwipeableWillOpen(ref)
                   }

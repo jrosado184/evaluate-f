@@ -65,7 +65,7 @@ const EvaluationSummary = () => {
     setTimeout(() => setSubmitting(false), 300);
   };
 
-  const handleClose = () => router.replace(`/(tabs)/users/${userId}`);
+  const handleClose = () => router.back();
 
   if (loading) {
     return (
