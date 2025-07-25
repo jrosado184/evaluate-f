@@ -4,12 +4,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import SinglePressTouchableTouchable from "@/app/utils/SinglePress";
 import Icon from "react-native-vector-icons/Feather";
 import { router } from "expo-router";
-import EvaluationRow from "@/components/evaluations/EvaluationRow";
+import EvaluationRow from "@/app/(tabs)/evaluations/EvaluationRow";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import axios from "axios";
 
-const evaluations = () => {
+const Evaluations = () => {
   const [status, setStatus] = useState("in_progress");
   const [evaluations, setEvaluations] = useState<any>([]);
 
@@ -32,26 +32,7 @@ const evaluations = () => {
   }, [status]);
 
   return (
-    <SafeAreaView className="p-6 bg-neutral-50 h-full">
-      <SinglePressTouchableTouchable
-        onPress={() => router.back()}
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          marginBottom: 16,
-        }}
-      >
-        <Icon name="chevron-left" size={28} />
-        <Text
-          style={{
-            marginLeft: 4,
-            fontSize: 20,
-            fontWeight: "600",
-          }}
-        >
-          Back
-        </Text>
-      </SinglePressTouchableTouchable>
+    <SafeAreaView className="p-6 bg-white h-full">
       <View className="flex-row border border-neutral-400 h-8 rounded-lg my-4">
         <TouchableOpacity
           activeOpacity={0.8}
@@ -95,4 +76,4 @@ const evaluations = () => {
   );
 };
 
-export default evaluations;
+export default Evaluations;

@@ -1,21 +1,29 @@
 import React, { useState, useCallback } from "react";
 import { View, Text, ScrollView, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useFocusEffect, router } from "expo-router";
+import {
+  useLocalSearchParams,
+  useFocusEffect,
+  router,
+  useGlobalSearchParams,
+} from "expo-router";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
-import EvaluationTimeline from "@/components/evaluations/EvaluationTimeline";
+import EvaluationTimeline from "@/app/(tabs)/evaluations/EvaluationTimeline";
 import EvaluationButton from "@/components/buttons/EvaluationButton";
 import Icon from "react-native-vector-icons/Feather";
 import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const EvaluationSummary = () => {
-  const { id: userId, evaluationId } = useLocalSearchParams();
+  const { id: userId, evaluationId }: { id: any; evaluationId: any } =
+    useLocalSearchParams();
   const [evaluation, setEvaluation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  const { from } = useGlobalSearchParams();
 
   const fetchEvaluation = async () => {
     try {
@@ -64,8 +72,16 @@ const EvaluationSummary = () => {
 
     setTimeout(() => setSubmitting(false), 300);
   };
-
-  const handleClose = () => router.back();
+  const handleClose = () => {
+    if (from && typeof from === "string") {
+      router.replace(`/(tabs)/users`);
+      setTimeout(() => {
+        router.replace(`/(tabs)/users/${from}`);
+      }, 10);
+    } else {
+      router.back();
+    }
+  };
 
   if (loading) {
     return (

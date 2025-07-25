@@ -17,12 +17,12 @@ import UserCard from "@/components/UserCard";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import useAuthContext from "@/app/context/AuthContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
-import EvaluationRow from "@/components/evaluations/EvaluationRow";
+import EvaluationRow from "@/app/(tabs)/evaluations/EvaluationRow";
 import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchableTouchable from "@/app/utils/SinglePress";
 
 const User = () => {
-  const { id } = useGlobalSearchParams(); // employeeId
+  const { id } = useGlobalSearchParams();
   const { employee, setEmployee, setAddEmployeeInfo } = useEmployeeContext();
   const { currentUser } = useAuthContext();
 
@@ -238,7 +238,7 @@ const User = () => {
             ) : (
               evaluationFiles.map((file) => (
                 <EvaluationRow
-                  id={id}
+                  from={id?.toString()}
                   key={file._id}
                   file={file}
                   onDelete={handleDeleteEvaluation}

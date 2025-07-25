@@ -10,7 +10,7 @@ import { Tabs } from "expo-router";
 import HomeIcon from "@/constants/icons/HomeIcon";
 import UsersIcon from "@/constants/icons/UsersIcon";
 import LockIcon from "@/constants/icons/LockIcon";
-import ProfileIcon from "@/constants/icons/ProfileIcon";
+import EvaluationsIcon from "@/constants/icons/EvaluationIcon";
 import { TabIcon } from "@/components/navigation/TabBarIcon";
 
 export const unstable_settings = {
@@ -122,15 +122,15 @@ export default function TabsLayout() {
           }}
         />
         <Tabs.Screen
-          name="profile"
+          name="evaluations"
           options={{
-            title: "Profile",
+            title: "Evaluations",
             tabBarIcon: ({ color, focused }) => (
               <TabIcon
                 color={color}
-                icon_name="Profile"
+                icon_name="Evaluations"
                 icon={
-                  <ProfileIcon
+                  <EvaluationsIcon
                     width={32}
                     height={32}
                     fillColor={focused ? "#1a237e" : "#B4B4B4"}

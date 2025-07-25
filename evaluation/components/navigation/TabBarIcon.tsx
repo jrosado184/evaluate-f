@@ -14,7 +14,7 @@ export const TabIcon: React.FC<TabIconTypes> = ({
   focused,
 }: TabIconTypes) => {
   return (
-    <View className="items-center w-14 justify-center gap-1">
+    <View className="items-center w-40 justify-center gap-1">
       {React.cloneElement(icon)}
       <Text
         className={`${

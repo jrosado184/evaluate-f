@@ -209,7 +209,6 @@ const Users = () => {
                   text: "Cancel",
                   style: "cancel",
                   onPress: () => {
-                    // Close the currently open swipeable
                     const swipeable = swipeableRefs.current.get(userId);
                     if (swipeable) {
                       swipeable.close?.();

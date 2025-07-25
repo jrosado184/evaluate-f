@@ -9,7 +9,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import axios from "axios";
 
-const EvaluationRow = ({ file, onDelete, handleSwipeableWillOpen }: any) => {
+const EvaluationRow = ({
+  file,
+  onDelete,
+  handleSwipeableWillOpen,
+  from,
+}: any) => {
   const swipeableRef = useRef<Swipeable>(null);
   const router = useRouter();
 
@@ -65,13 +70,14 @@ const EvaluationRow = ({ file, onDelete, handleSwipeableWillOpen }: any) => {
         !!info.teamMemberName && !!info.position && !!info.department;
 
       if (!hasInfo || evalDoc.status === "uploaded") {
-        router.replace(
-          `/users/${file?.employeeId}/evaluations/${evaluationId}/step1`
-        );
+        router.push(`/(tabs)/evaluations/${evaluationId}/step1`);
       } else {
-        router.replace(
-          `/users/${file?.employeeId}}/evaluations/${evaluationId}`
-        );
+        router.push({
+          pathname: `/(tabs)/evaluations/${evaluationId}`,
+          params: {
+            from: from,
+          },
+        });
       }
     } catch (err) {
       console.error(err);

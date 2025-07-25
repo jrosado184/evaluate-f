@@ -107,7 +107,7 @@ export default function ModernDashboard() {
             highlightColor="text-emerald-600"
           />
           <StatBlock
-            onPress={() => router.push("/(tabs)/home/evaluations")}
+            onPress={() => router.push("/(tabs)/evaluations")}
             label="Evaluations"
             value={`${completedCount} Qualified`}
             sub={`${inProgressCount} In Progress`}

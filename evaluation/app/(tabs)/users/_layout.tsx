@@ -10,11 +10,10 @@ export default function UsersLayout() {
 
   return (
     <Stack
-      screenOptions={{
+      screenOptions={({ route }) => ({
+        animation: "ios_from_left",
         headerShown: false,
-        animation: "slide_from_right",
-        gestureEnabled: true,
-      }}
+      })}
       screenListeners={{
         focus: () => {
           setIsTabBarVisible(true);
