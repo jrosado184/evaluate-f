@@ -14,12 +14,10 @@ import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const PDFPreview = () => {
-  const { employee } = useEmployeeContext();
-  const { evaluationId } = useLocalSearchParams();
+  const { evaluationId, employeeId } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const { setIsTabBarVisible } = useTabBar();
   const [localPdfUri, setLocalPdfUri] = useState<string | null>(null);
-  const employeeId = employee?._id;
 
   useEffect(() => {
     setIsTabBarVisible(false);

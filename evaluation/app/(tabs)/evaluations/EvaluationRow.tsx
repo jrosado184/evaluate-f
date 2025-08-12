@@ -76,6 +76,7 @@ const EvaluationRow = ({
           pathname: `/(tabs)/evaluations/${evaluationId}`,
           params: {
             from: from,
+            employeeId: file?.employeeId,
           },
         });
       }

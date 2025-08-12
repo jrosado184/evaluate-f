@@ -17,13 +17,13 @@ import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 
 const EvaluationSummary = () => {
-  const { id: userId, evaluationId }: { id: any; evaluationId: any } =
+  const { evaluationId }: { id: any; evaluationId: any } =
     useLocalSearchParams();
   const [evaluation, setEvaluation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  const { from } = useGlobalSearchParams();
+  const { from, employeeId } = useGlobalSearchParams();
 
   const fetchEvaluation = async () => {
     try {
@@ -56,12 +56,12 @@ const EvaluationSummary = () => {
     let nextRoute: any = "";
 
     if (evaluation.status === "uploaded") {
-      nextRoute = `/users/${userId}/evaluations/${evaluationId}/step1`;
+      nextRoute = `/evaluations/${evaluationId}/step1`;
     } else if (evaluation.status === "in_progress") {
       nextRoute =
         weeksDone >= 3
-          ? `/users/${userId}/evaluations/${evaluationId}/qualify`
-          : `/users/${userId}/evaluations/${evaluationId}/step2`;
+          ? `/evaluations/${evaluationId}/qualify`
+          : `/evaluations/${evaluationId}/step2`;
     }
 
     if (nextRoute) {
@@ -126,9 +126,7 @@ const EvaluationSummary = () => {
               </Text>
               <SinglePressTouchable
                 onPress={() =>
-                  router.push(
-                    `/users/${userId}/evaluations/${evaluationId}/step1?from=details`
-                  )
+                  router.push(`/evaluations/${evaluationId}/step1?from=details`)
                 }
                 className="px-3 py-1 border border-gray-300 rounded-md"
               >
@@ -187,8 +185,8 @@ const EvaluationSummary = () => {
             <SinglePressTouchable
               onPress={() =>
                 router.push({
-                  pathname: `/users/${userId}/evaluations/${evaluationId}/${pdfpreview}`,
-                  params: { filename: pdfpreview },
+                  pathname: `/evaluations/${evaluationId}/${pdfpreview}`,
+                  params: { filename: pdfpreview, employeeId },
                 })
               }
               activeOpacity={0.85}

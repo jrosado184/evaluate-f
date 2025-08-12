@@ -15,15 +15,11 @@ const EvaluationTimeline = ({ fileData }: any) => {
     fileData.personalInfo.projectedTrainingHours / 40;
 
   const handleEdit = (weekNumber: number) => {
-    router.push(
-      `/users/${fileData?.employeeId}/evaluations/${fileData?._id}/step2?week=${weekNumber}`
-    );
+    router.push(`/evaluations/${fileData?._id}/step2?week=${weekNumber}`);
   };
 
   const handleStart = (weekNumber: number) => {
-    router.push(
-      `/users/${fileData?.employeeId}/evaluations/${fileData?._id}/step2?week=${weekNumber}`
-    );
+    router.push(`/evaluations/${fileData?._id}/step2?week=${weekNumber}`);
   };
 
   const renderSignature = (label: string, uri: string) => (
@@ -97,7 +93,9 @@ const EvaluationTimeline = ({ fileData }: any) => {
         length:
           fileData.status === "complete"
             ? fileData.evaluations.length
-            : Number(totalHoursOnJob) < Number(projectedTrainingHours)
+            : Number(totalHoursOnJob) -
+                fileData?.evaluations[0].totalHoursOnJob <
+              Number(projectedTrainingHours)
             ? fileData.evaluations.length + 1
             : projectedTrainingWeeks,
       }).map((_, i) => {

@@ -79,7 +79,12 @@ const User = () => {
       );
 
       const newEvalId = res.data._id;
-      router.push(`/users/${id}/evaluations/${newEvalId}/step1`);
+      router.push({
+        pathname: `/evaluations/${newEvalId}/step1`,
+        params: {
+          id: id,
+        },
+      });
     } catch (err) {
       console.error("Failed to start evaluation:", err);
       Alert.alert("Error", "Could not start evaluation.");

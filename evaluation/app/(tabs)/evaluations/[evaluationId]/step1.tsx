@@ -22,15 +22,15 @@ import getServerIP from "@/app/requests/NetworkAddress";
 import FormField from "@/components/FormField";
 import Button from "@/components/Button";
 import { SafeAreaView } from "react-native-safe-area-context";
-import useAuthContext from "@/app/context/AuthContext";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 import formatISODate from "@/app/conversions/ConvertIsoDate";
+import { dateValidation } from "@/app/validation/dateValidation";
 
 const PersonalInfoForm = () => {
   const router = useRouter();
   const { id: employeeId, evaluationId, from } = useLocalSearchParams();
-  const { currentUser } = useAuthContext();
+
   const { employee } = useEmployeeContext();
 
   const [formData, setFormData] = useState<any>({
@@ -116,24 +116,38 @@ const PersonalInfoForm = () => {
       "trainingType",
       "teamMemberName",
       "employeeId",
-      "hireDate",
       "position",
       "department",
       "lockerNumber",
-      "jobStartDate",
       "projectedTrainingHours",
+      "hireDate",
+      "jobStartDate",
       "projectedQualifyingDate",
     ] as const;
+
+    const requiredDates: any = [
+      "jobStartDate",
+      "projectedQualifyingDate",
+    ] as const;
+
     const errs: Record<string, string> = {};
+
     for (const key of required) {
-      if (!formData[key].trim()) {
+      const value = formData[key]?.trim?.() ?? "";
+
+      if (!value) {
         errs[key] = "Required";
+        continue;
+      }
+
+      if (requiredDates.includes(key) && !dateValidation(value)) {
+        errs[key] = "Invalid date (MM/DD/YYYY)";
       }
     }
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
-
   const handleChange = (key: any, value: string) => {
     let v = value;
     if (/(Date|QualifyingDate)/.test(key)) {
@@ -186,11 +200,9 @@ const PersonalInfoForm = () => {
           { action: "update_status", data: { status: "in_progress" } },
           { headers: { Authorization: token! } }
         );
-        router.replace(
-          `/users/${employeeId}/evaluations/${evaluationId}/step2`
-        );
+        router.replace(`/evaluations/${evaluationId}/step2`);
       } else {
-        router.replace(`/users/${employeeId}/evaluations/${evaluationId}`);
+        router.replace(`/evaluations/${evaluationId}`);
       }
     } catch (err) {
       console.error(err);
@@ -224,9 +236,7 @@ const PersonalInfoForm = () => {
             <SinglePressTouchable
               onPress={() => {
                 if (hasInfo) {
-                  router.replace(
-                    `/users/${employeeId}/evaluations/${evaluationId}`
-                  );
+                  router.replace(`/evaluations/${evaluationId}`);
                 } else {
                   router.replace(`/users/${employeeId}`);
                 }

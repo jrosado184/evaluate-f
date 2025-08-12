@@ -238,7 +238,7 @@ const Step2Form = () => {
       );
 
       // go back
-      router.replace(`/users/${employeeId}/evaluations/${evaluationId}`);
+      router.replace(`/evaluations/${evaluationId}`);
     } catch {
       Alert.alert("Error", "Failed to save evaluation");
     } finally {
@@ -264,43 +264,51 @@ const Step2Form = () => {
     title: string,
     keys: string[],
     startIndex: number,
-    weekIndex: number // ← NEW PARAM
+    weekIndex: number | string
   ) => {
-    const jobStart = parseMDY(jobStartDate);
-    if (!jobStart) {
-      return (
-        <View className="mb-6">
-          <Text className="text-red-600">Invalid Job Start Date</Text>
-        </View>
-      );
-    }
+    const weekIdxNum =
+      typeof weekIndex === "string" ? Number(weekIndex) : weekIndex;
 
-    /* Monday of the jobStart week (Sunday rolls forward) */
+    const safeWeekIdx = Number.isFinite(weekIdxNum) ? weekIdxNum : 0;
+
+    const jobStart = parseMDY(jobStartDate); // Date | null
+
+    const stripTime = (d: Date) =>
+      new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
     const getMonday = (date: Date): Date => {
-      const d = new Date(date);
-      const day = d.getDay(); // 0 = Sun … 6 = Sat
+      const d = stripTime(new Date(date));
+      const day = d.getDay(); // 0..6
       const diff = day === 0 ? 1 : 1 - day;
       d.setDate(d.getDate() + diff);
       return d;
     };
 
-    const baseMonday = getMonday(jobStart);
+    const baseMonday =
+      jobStart instanceof Date && !isNaN(jobStart.getTime())
+        ? getMonday(jobStart)
+        : null;
 
-    /* Monday for this specific week */
-    const mondayOfThisWeek = new Date(baseMonday);
-    mondayOfThisWeek.setDate(baseMonday.getDate() + weekIndex * 7);
+    const mondayOfThisWeek = baseMonday
+      ? new Date(
+          baseMonday.getFullYear(),
+          baseMonday.getMonth(),
+          baseMonday.getDate() + safeWeekIdx * 7
+        )
+      : null;
 
-    /* Disable logic only needed for the FIRST week */
-    const firstEnabledIndex =
-      weekIndex === 0 ? Math.max(jobStart.getDay() - 1, 0) : -1;
-
-    /* Helper: date → "May 26, 2025" */
     const formatDateOnly = (d: Date): string =>
       new Intl.DateTimeFormat("en-US", {
         month: "long",
         day: "numeric",
         year: "numeric",
       }).format(d);
+
+    const isFirstWeek = safeWeekIdx === 0;
+    const jobStartOnly =
+      jobStart instanceof Date && !isNaN(jobStart.getTime())
+        ? stripTime(jobStart)
+        : null;
 
     return (
       <View className="mb-6">
@@ -312,11 +320,18 @@ const Step2Form = () => {
           (weekday, i) => {
             const key = keys[i];
 
-            /* Exact calendar date for this weekday of this week */
-            const currentDate = new Date(mondayOfThisWeek);
-            currentDate.setDate(mondayOfThisWeek.getDate() + i);
+            const baseForDay = mondayOfThisWeek ?? stripTime(new Date());
+            const currentDate = new Date(
+              baseForDay.getFullYear(),
+              baseForDay.getMonth(),
+              baseForDay.getDate() + i
+            );
 
-            const isDisabled = i < firstEnabledIndex;
+            let isDisabled = false;
+            if (isFirstWeek && jobStartOnly) {
+              isDisabled =
+                stripTime(currentDate).getTime() < jobStartOnly.getTime();
+            }
 
             return (
               <View key={key} className="mb-4">
@@ -371,11 +386,7 @@ const Step2Form = () => {
         >
           <View className="flex-row items-center mb-6">
             <SinglePressTouchable
-              onPress={() =>
-                router.replace(
-                  `/users/${employeeId}/evaluations/${evaluationId}`
-                )
-              }
+              onPress={() => router.replace(`/evaluations/${evaluationId}`)}
               className="mr-3"
             >
               <Icon name="chevron-left" size={28} color="#1a237e" />
