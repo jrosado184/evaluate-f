@@ -172,7 +172,12 @@ const SlideUpModal = ({
         const newEvalId = response.data._id;
 
         // Route to Step 1
-        router.push(`/users/${employeeId}/evaluations/${newEvalId}/step1`);
+        router.push({
+          pathname: `/evaluations/${newEvalId}/step1`,
+          params: {
+            id: employeeId,
+          },
+        });
         handleClose();
         return;
       } catch (error: any) {

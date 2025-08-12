@@ -119,10 +119,7 @@ const User = () => {
     );
   };
 
-  /** Only one row open at once **/
-  /** Only one row open at once **/
   const handleSwipeableWillOpen = (ref: Swipeable | null) => {
-    // If there’s an open swipeable and it’s not the same as the newly opened one
     if (openSwipeableRef.current && openSwipeableRef.current !== ref) {
       openSwipeableRef.current.close?.();
     }
@@ -132,7 +129,6 @@ const User = () => {
   };
 
   const handleTapOutside = () => {
-    // Close and clear reference if a swipeable is open
     if (openSwipeableRef.current) {
       openSwipeableRef.current.close?.();
       openSwipeableRef.current = null;
@@ -166,7 +162,7 @@ const User = () => {
           <View style={{ padding: 24 }}>
             {/* Back */}
             <SinglePressTouchableTouchable
-              onPress={() => router.push("/users")}
+              onPress={() => router.replace("/users")}
               style={{
                 flexDirection: "row",
                 alignItems: "center",

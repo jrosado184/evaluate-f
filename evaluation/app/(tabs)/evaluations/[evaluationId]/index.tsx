@@ -74,10 +74,10 @@ const EvaluationSummary = () => {
   };
   const handleClose = () => {
     if (from && typeof from === "string") {
-      router.replace(`/(tabs)/users`);
+      // router.replace(`/(tabs)/users`);
       setTimeout(() => {
         router.replace(`/(tabs)/users/${from}`);
-      }, 10);
+      }, 5);
     } else {
       router.back();
     }
@@ -126,7 +126,13 @@ const EvaluationSummary = () => {
               </Text>
               <SinglePressTouchable
                 onPress={() =>
-                  router.push(`/evaluations/${evaluationId}/step1?from=details`)
+                  router.replace({
+                    pathname: `/evaluations/${evaluationId}/step1`,
+                    params: {
+                      from: "details",
+                      id: employeeId,
+                    },
+                  })
                 }
                 className="px-3 py-1 border border-gray-300 rounded-md"
               >

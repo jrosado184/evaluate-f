@@ -1,4 +1,3 @@
-// app/(tabs)/users/[id]/evaluations/[evaluationId]/step1.tsx
 import React, { useEffect, useState } from "react";
 import {
   View,
