@@ -70,21 +70,21 @@ const EvaluationTimeline = ({ fileData }: any) => {
     const totalHoursOnJob = Number(currentEval.totalHoursOnJob) || 0;
 
     /* percentQualified may look like "25" or "25%" → strip % then parse */
-    const actualPercentCompleted =
-      Number((currentEval.percentQualified ?? "").replace("%", "")) || 0;
+    // const actualPercentCompleted =
+    //   Number((currentEval.percentQualified ?? "").replace("%", "")) || 0;
 
-    if (totalHoursOnJob === 0 || actualPercentCompleted === 0) {
-      return false;
-    }
+    // if (totalHoursOnJob === 0 || actualPercentCompleted === 0) {
+    //   return false;
+    // }
 
     /* ---- expected progress so far ------------------------------------ */
     const expectedPercentToDate =
       (totalHoursOnJob / projectedTrainingHours) * 100; // e.g. 40/200 = 20%
 
     /* on-track when actual ≥ expected */
-    const result = actualPercentCompleted >= expectedPercentToDate;
+    // const result = actualPercentCompleted >= expectedPercentToDate;
 
-    return result;
+    // return result;
   }, [projectedTrainingHours, completedWeeks]);
 
   return (

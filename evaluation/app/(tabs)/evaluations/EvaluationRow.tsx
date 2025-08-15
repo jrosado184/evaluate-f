@@ -14,6 +14,7 @@ const EvaluationRow = ({
   onDelete,
   handleSwipeableWillOpen,
   from,
+  includeName,
 }: any) => {
   const swipeableRef = useRef<Swipeable>(null);
   const router = useRouter();
@@ -116,8 +117,23 @@ const EvaluationRow = ({
           <Text style={{ fontSize: 16, fontWeight: "600" }}>
             {file.position}
           </Text>
-          <Text style={{ color: "#9CA3AF", marginTop: 4 }}>
-            Created: {formatISODate(file.uploadedAt)}
+          {includeName && (
+            <Text
+              className="font-semibold"
+              style={{ fontSize: 12, fontWeight: "500", color: "#6b6b6bff" }}
+            >
+              {file.personalInfo?.teamMemberName}
+            </Text>
+          )}
+          <Text
+            style={{
+              color: "#9CA3AF",
+              marginTop: 4,
+              fontSize: 12,
+              fontWeight: "500",
+            }}
+          >
+            created: {formatISODate(file.uploadedAt)}
           </Text>
         </View>
         <Text

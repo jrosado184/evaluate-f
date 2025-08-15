@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -20,36 +20,106 @@ import useAuthContext from "@/app/context/AuthContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
-import { formatLongDate, getMondayOfWeek, parseMDY } from "@/app/helpers/dates";
+import { parseMDY } from "@/app/helpers/dates";
 
-const Step2Form = () => {
+/* ---------------- helpers (kept tiny) ---------------- */
+const NUMERIC = new Set([
+  "knifeScore",
+  "percentQualified",
+  "expectedQualified",
+  "reTimeAchieved",
+  "hoursMonday",
+  "hoursTuesday",
+  "hoursWednesday",
+  "hoursThursday",
+  "hoursFriday",
+  "hoursOffJobMonday",
+  "hoursOffJobTuesday",
+  "hoursOffJobWednesday",
+  "hoursOffJobThursday",
+  "hoursOffJobFriday",
+  "hoursWithTraineeMonday",
+  "hoursWithTraineeTuesday",
+  "hoursWithTraineeWednesday",
+  "hoursWithTraineeThursday",
+  "hoursWithTraineeFriday",
+]);
+const DATE_KEYS = new Set(["yieldAuditDate", "knifeSkillsAuditDate"]);
+
+const fmtDateLong = (d: Date) =>
+  new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(d);
+const stripTime = (d: Date) =>
+  new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const getMonday = (date: Date) => {
+  const d = stripTime(new Date(date));
+  const day = d.getDay();
+  d.setDate(d.getDate() + (day === 0 ? 1 : 1 - day));
+  return d;
+};
+const fmtMMDDYYYY = (s: string) =>
+  s
+    .replace(/\D/g, "")
+    .slice(0, 8)
+    .replace(/(\d{2})(\d{0,2})(\d{0,4})/, (_, a, b, c) =>
+      [a, b, c].filter(Boolean).join("/")
+    );
+const intOnly = (s: string) => s.replace(/\D/g, "");
+const knifeSanitize = (s: string) => {
+  const c = s.replace(/[^0-9.]/g, "");
+  const p = c.split(".");
+  return (p.length > 1 ? `${p[0]}.${p.slice(1).join("")}` : c).slice(0, 3);
+};
+const toNum = (s: string) => (s === "" ? null : Number.isNaN(+s) ? null : +s);
+
+/* ---------------- small presentational bits ---------------- */
+const Labeled = ({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) => (
+  <View className="mb-5">
+    <Text className="text-base font-medium text-gray-700 mb-2">{label}</Text>
+    {children}
+  </View>
+);
+
+/* =============================== screen =============================== */
+export default function Step2Form() {
   const router = useRouter();
   const { id: employeeId, evaluationId, week } = useLocalSearchParams();
   const { currentUser } = useAuthContext();
   const currentWeek = parseInt((week as string) || "1", 10);
 
-  const [formData, setFormData] = useState<any>({
-    hoursMonday: "",
-    hoursTuesday: "",
-    hoursWednesday: "",
-    hoursThursday: "",
-    hoursFriday: "",
-    hoursOffJobMonday: "",
-    hoursOffJobTuesday: "",
-    hoursOffJobWednesday: "",
-    hoursOffJobThursday: "",
-    hoursOffJobFriday: "",
-    hoursWithTraineeMonday: "",
-    hoursWithTraineeTuesday: "",
-    hoursWithTraineeWednesday: "",
-    hoursWithTraineeThursday: "",
-    hoursWithTraineeFriday: "",
-    percentQualified: "",
-    expectedQualified: "",
-    reTimeAchieved: "",
+  const [formData, setFormData] = useState<Record<string, any>>({
+    // numeric → null
+    hoursMonday: null,
+    hoursTuesday: null,
+    hoursWednesday: null,
+    hoursThursday: null,
+    hoursFriday: null,
+    hoursOffJobMonday: null,
+    hoursOffJobTuesday: null,
+    hoursOffJobWednesday: null,
+    hoursOffJobThursday: null,
+    hoursOffJobFriday: null,
+    hoursWithTraineeMonday: null,
+    hoursWithTraineeTuesday: null,
+    hoursWithTraineeWednesday: null,
+    hoursWithTraineeThursday: null,
+    hoursWithTraineeFriday: null,
+    percentQualified: null,
+    expectedQualified: null,
+    reTimeAchieved: null,
+    knifeScore: null,
+    // dates/text/bools
     yieldAuditDate: "",
     knifeSkillsAuditDate: "",
-    knifeScore: "",
     handStretchCompleted: false,
     hasPain: false,
     comments: "",
@@ -60,44 +130,47 @@ const Step2Form = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [signatureType, setSignatureType] = useState<null | string>(null);
+  const [signatureType, setSignatureType] = useState<string | null>(null);
   const [traineeName, setTraineeName] = useState("Trainee");
-  const [projectedTrainingHours, setProjectedTrainingHours] = useState(200);
+  const [projectedTrainingHours, setProjectedTrainingHours] =
+    useState<number>(200);
   const [jobStartDate, setJobStartDate] = useState("");
-
+  const [prevHoursOnJob, setPrevHoursOnJob] = useState(0);
   const inputRefs = useRef<Array<TextInput | null>>([]);
 
-  const [prevHoursOnJob, setPrevHoursOnJob] = useState(0);
-
+  /* load evaluation */
   useEffect(() => {
     (async () => {
       try {
         const token = await AsyncStorage.getItem("token");
         const baseUrl = await getServerIP();
-        const res = await axios.get(`${baseUrl}/evaluations/${evaluationId}`, {
-          headers: { Authorization: token! },
-        });
-        setJobStartDate(res.data.personalInfo.jobStartDate);
+        const { data } = await axios.get(
+          `${baseUrl}/evaluations/${evaluationId}`,
+          { headers: { Authorization: token! } }
+        );
 
-        const evalDoc = res.data;
+        setJobStartDate(data.personalInfo.jobStartDate);
+        setTraineeName(data.personalInfo.teamMemberName || "Trainee");
+        setProjectedTrainingHours(
+          Number(data.personalInfo.projectedTrainingHours) || 200
+        );
 
-        setTraineeName(evalDoc.personalInfo.teamMemberName || "Trainee");
-
-        const projected =
-          Number(evalDoc.personalInfo.projectedTrainingHours) || 200;
-        setProjectedTrainingHours(projected);
-
-        const cumulative = evalDoc.evaluations
+        const cumulative = data.evaluations
           .filter((e: any) => e.weekNumber < currentWeek)
           .reduce((sum: number, e: any) => sum + (e.totalHoursOnJob || 0), 0);
-
         setPrevHoursOnJob(cumulative);
 
-        const weekData = evalDoc.evaluations.find(
+        const weekData = data.evaluations.find(
           (e: any) => e.weekNumber === currentWeek
         );
         if (weekData) {
-          setFormData((f: any) => ({ ...f, ...weekData }));
+          const next: Record<string, any> = {};
+          Object.entries(weekData).forEach(([k, v]) => {
+            if (NUMERIC.has(k)) next[k] = v == null ? null : Number(v);
+            else if (DATE_KEYS.has(k)) next[k] = typeof v === "string" ? v : "";
+            else next[k] = v;
+          });
+          setFormData((f) => ({ ...f, ...next }));
         }
       } catch {
         Alert.alert("Error", "Failed to load evaluation");
@@ -107,25 +180,20 @@ const Step2Form = () => {
     })();
   }, [evaluationId, currentWeek]);
 
-  useEffect(() => {
-    const weekHours = [
-      Number(formData.hoursMonday) || 0,
-      Number(formData.hoursTuesday) || 0,
-      Number(formData.hoursWednesday) || 0,
-      Number(formData.hoursThursday) || 0,
-      Number(formData.hoursFriday) || 0,
-    ];
-
-    const sumCurrentWeek = weekHours.reduce((acc, v) => acc + v, 0);
-    const total = prevHoursOnJob + sumCurrentWeek;
-
-    const pctRaw = projectedTrainingHours
-      ? (total / projectedTrainingHours) * 100
-      : 0;
-
-    const pct = Math.min(pctRaw, 100).toFixed(1) + "%";
-
-    setFormData((f: any) => ({ ...f, expectedQualified: pct }));
+  /* derive expectedQualified (store number; display as "%") */
+  const expectedQualified = useMemo(() => {
+    const weekSum = [
+      "hoursMonday",
+      "hoursTuesday",
+      "hoursWednesday",
+      "hoursThursday",
+      "hoursFriday",
+    ].reduce((s, k) => s + (formData[k] ?? 0), 0);
+    const total = prevHoursOnJob + weekSum;
+    return Math.min(
+      projectedTrainingHours ? (total / projectedTrainingHours) * 100 : 0,
+      100
+    );
   }, [
     formData.hoursMonday,
     formData.hoursTuesday,
@@ -136,79 +204,65 @@ const Step2Form = () => {
     projectedTrainingHours,
   ]);
 
-  const handleChange = (key: string, value: string, index?: number) => {
-    let v = value;
-    if (["yieldAuditDate", "knifeSkillsAuditDate"].includes(key)) {
-      v = v
-        .replace(/\D/g, "")
-        .slice(0, 8)
-        .replace(/(\d{2})(\d{0,2})(\d{0,4})/, (_, a, b, c) =>
-          [a, b, c].filter(Boolean).join("/")
-        );
+  /* single input handler */
+  const handleChange = (key: string, raw: string, index?: number) => {
+    let next: string | number | null = raw;
+    let len = raw.length;
+
+    if (DATE_KEYS.has(key)) next = fmtMMDDYYYY(raw);
+    else if (key === "knifeScore") {
+      const s = knifeSanitize(raw);
+      next = toNum(s);
+      len = s.length;
+    } else if (NUMERIC.has(key)) {
+      const s = intOnly(raw);
+      next = toNum(s);
+      len = s.length;
     }
-    if (key === "knifeScore") {
-      v = v.replace(/[^0-9.]/g, "").slice(0, 3);
-    }
-    if (
-      key.startsWith("hours") ||
-      key === "percentQualified" ||
-      key === "reTimeAchieved"
-    ) {
-      v = v.replace(/\D/g, "");
-    }
-    setFormData((f: any) => ({ ...f, [key]: v }));
-    if (errors[key]) {
+
+    setFormData((f) => ({ ...f, [key]: next }));
+    if (errors[key])
       setErrors((e) => {
         const c = { ...e };
         delete c[key];
         return c;
       });
-    }
-
-    if (index !== undefined && v.length === 1 && inputRefs.current[index + 1]) {
+    if (typeof index === "number" && len === 1)
       inputRefs.current[index + 1]?.focus();
-    }
   };
 
-  const total = (keys: string[]) =>
-    keys.reduce((s, k) => s + (Number(formData[k]) || 0), 0);
+  const sum = (keys: string[]) =>
+    keys.reduce((s, k) => s + Number(formData[k] ?? 0), 0);
 
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
-
-      // ---------- 1. derive all totals ----------
-      const totalHoursOnJob = total([
+      const totalHoursOnJob = sum([
         "hoursMonday",
         "hoursTuesday",
         "hoursWednesday",
         "hoursThursday",
         "hoursFriday",
       ]);
-
-      const totalHoursOffJob = total([
+      const totalHoursOffJob = sum([
         "hoursOffJobMonday",
         "hoursOffJobTuesday",
         "hoursOffJobWednesday",
         "hoursOffJobThursday",
         "hoursOffJobFriday",
       ]);
-
-      const totalHoursWithTrainee = total([
+      const totalHoursWithTrainee = sum([
         "hoursWithTraineeMonday",
         "hoursWithTraineeTuesday",
         "hoursWithTraineeWednesday",
         "hoursWithTraineeThursday",
         "hoursWithTraineeFriday",
       ]);
-
       const totalHours = totalHoursOnJob + totalHoursOffJob;
 
-      // ---------- 2. send API calls ----------
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
 
-      // add/update this week
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
         {
@@ -216,6 +270,7 @@ const Step2Form = () => {
           data: {
             weekData: {
               ...formData,
+              expectedQualified, // numeric
               weekNumber: currentWeek,
               totalHours,
               totalHoursOnJob,
@@ -227,7 +282,6 @@ const Step2Form = () => {
         { headers: { Authorization: token! } }
       );
 
-      // update overall status
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
         {
@@ -237,7 +291,6 @@ const Step2Form = () => {
         { headers: { Authorization: token! } }
       );
 
-      // go back
       router.replace(`/evaluations/${evaluationId}`);
     } catch {
       Alert.alert("Error", "Failed to save evaluation");
@@ -254,115 +307,76 @@ const Step2Form = () => {
     );
   }
 
-  /* --------------------------------------------------------------- *
-   *  renderFieldGroup
-   *  -------------------------------------------------------------- *
-   *  • weekIndex = 0  → first week (starts at jobStartDate’s week)
-   *  • weekIndex = 1  → second week (add 7 days), etc.
-   * --------------------------------------------------------------- */
-  const renderFieldGroup = (
-    title: string,
-    keys: string[],
-    startIndex: number,
-    weekIndex: number | string
-  ) => {
-    const weekIdxNum =
-      typeof weekIndex === "string" ? Number(weekIndex) : weekIndex;
-
-    const safeWeekIdx = Number.isFinite(weekIdxNum) ? weekIdxNum : 0;
-
-    const jobStart = parseMDY(jobStartDate); // Date | null
-
-    const stripTime = (d: Date) =>
-      new Date(d.getFullYear(), d.getMonth(), d.getDate());
-
-    const getMonday = (date: Date): Date => {
-      const d = stripTime(new Date(date));
-      const day = d.getDay(); // 0..6
-      const diff = day === 0 ? 1 : 1 - day;
-      d.setDate(d.getDate() + diff);
-      return d;
-    };
-
-    const baseMonday =
-      jobStart instanceof Date && !isNaN(jobStart.getTime())
-        ? getMonday(jobStart)
-        : null;
-
-    const mondayOfThisWeek = baseMonday
+  /* compact field group */
+  const FieldGroup = ({
+    title,
+    keys,
+    startIndex,
+    weekIndex,
+  }: {
+    title: string;
+    keys: string[];
+    startIndex: number;
+    weekIndex: number;
+  }) => {
+    const js = parseMDY(jobStartDate);
+    const baseMon = js ? getMonday(js) : null;
+    const mon = baseMon
       ? new Date(
-          baseMonday.getFullYear(),
-          baseMonday.getMonth(),
-          baseMonday.getDate() + safeWeekIdx * 7
+          baseMon.getFullYear(),
+          baseMon.getMonth(),
+          baseMon.getDate() + weekIndex * 7
         )
       : null;
-
-    const formatDateOnly = (d: Date): string =>
-      new Intl.DateTimeFormat("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      }).format(d);
-
-    const isFirstWeek = safeWeekIdx === 0;
-    const jobStartOnly =
-      jobStart instanceof Date && !isNaN(jobStart.getTime())
-        ? stripTime(jobStart)
-        : null;
+    const isFirstWeek = weekIndex === 0;
+    const jsOnly = js ? stripTime(js) : null;
 
     return (
       <View className="mb-6">
         <Text className="text-lg font-semibold text-gray-800 mb-3">
           {title}
         </Text>
-
         {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map(
           (weekday, i) => {
-            const key = keys[i];
-
-            const baseForDay = mondayOfThisWeek ?? stripTime(new Date());
-            const currentDate = new Date(
-              baseForDay.getFullYear(),
-              baseForDay.getMonth(),
-              baseForDay.getDate() + i
+            const k = keys[i];
+            const base = mon ?? stripTime(new Date());
+            const d = new Date(
+              base.getFullYear(),
+              base.getMonth(),
+              base.getDate() + i
             );
-
-            let isDisabled = false;
-            if (isFirstWeek && jobStartOnly) {
-              isDisabled =
-                stripTime(currentDate).getTime() < jobStartOnly.getTime();
-            }
+            const isDisabled =
+              isFirstWeek &&
+              jsOnly &&
+              stripTime(d).getTime() < jsOnly.getTime();
+            const val = formData[k] == null ? "" : String(formData[k]);
 
             return (
-              <View key={key} className="mb-4">
+              <View key={k} className="mb-4">
                 <Text className="text-base text-gray-700">{weekday}</Text>
                 <Text className="text-[.8rem] text-gray-500 mb-2">
-                  {formatDateOnly(currentDate)}
+                  {fmtDateLong(d)}
                 </Text>
-
                 <TextInput
-                  ref={(ref) => (inputRefs.current[startIndex + i] = ref)}
-                  value={formData[key]}
+                  ref={(r) => (inputRefs.current[startIndex + i] = r)}
+                  value={val}
                   onChangeText={(t) =>
-                    !isDisabled && handleChange(key, t, startIndex + i)
+                    !isDisabled && handleChange(k, t, startIndex + i)
                   }
                   editable={!isDisabled}
                   placeholder="0"
-                  keyboardType="numeric"
+                  keyboardType="number-pad"
                   className={`rounded-md px-4 py-3 ${
                     isDisabled
                       ? "bg-gray-100 border-gray-200 text-gray-400"
-                      : errors[key]
+                      : errors[k]
                       ? "border-red-500 border text-gray-900"
                       : "border border-gray-300 text-gray-900"
                   }`}
                   maxLength={1}
                 />
-
-                {errors[key] && !isDisabled && (
-                  <Text className="text-sm text-red-500 mt-1">
-                    {errors[key]}
-                  </Text>
+                {errors[k] && !isDisabled && (
+                  <Text className="text-sm text-red-500 mt-1">{errors[k]}</Text>
                 )}
               </View>
             );
@@ -371,6 +385,42 @@ const Step2Form = () => {
       </View>
     );
   };
+
+  const simpleFields = [
+    {
+      label: "Percent Qualified (%)",
+      key: "percentQualified",
+      keyboardType: "number-pad" as const,
+    },
+    {
+      label: "Expected Qualified (%)",
+      key: "expectedQualified",
+      keyboardType: "number-pad" as const,
+      editable: false,
+      format: () => `${expectedQualified.toFixed(1)}%`,
+    },
+    {
+      label: "RE Time (s)",
+      key: "reTimeAchieved",
+      keyboardType: "number-pad" as const,
+    },
+    {
+      label: "Yield Audit Date",
+      key: "yieldAuditDate",
+      keyboardType: "number-pad" as const,
+    },
+    {
+      label: "Knife Audit Date",
+      key: "knifeSkillsAuditDate",
+      keyboardType: "number-pad" as const,
+    },
+    {
+      label: "Knife Score (%)",
+      key: "knifeScore",
+      keyboardType: "decimal-pad" as const,
+    },
+    { label: "Comments", key: "comments", multiline: true },
+  ];
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -398,105 +448,73 @@ const Step2Form = () => {
             </Text>
           </View>
 
-          {renderFieldGroup(
-            "Hours On Job",
-            [
+          <FieldGroup
+            title="Hours On Job"
+            keys={[
               "hoursMonday",
               "hoursTuesday",
               "hoursWednesday",
               "hoursThursday",
               "hoursFriday",
-            ],
-            0,
-            currentWeek - 1
-          )}
-          {renderFieldGroup(
-            "Hours Off Job",
-            [
+            ]}
+            startIndex={0}
+            weekIndex={currentWeek - 1}
+          />
+          <FieldGroup
+            title="Hours Off Job"
+            keys={[
               "hoursOffJobMonday",
               "hoursOffJobTuesday",
               "hoursOffJobWednesday",
               "hoursOffJobThursday",
               "hoursOffJobFriday",
-            ],
-            5,
-            currentWeek - 1
-          )}
-          {renderFieldGroup(
-            "Hours with Trainee",
-            [
+            ]}
+            startIndex={5}
+            weekIndex={currentWeek - 1}
+          />
+          <FieldGroup
+            title="Hours with Trainee"
+            keys={[
               "hoursWithTraineeMonday",
               "hoursWithTraineeTuesday",
               "hoursWithTraineeWednesday",
               "hoursWithTraineeThursday",
               "hoursWithTraineeFriday",
-            ],
-            10,
-            currentWeek - 1
-          )}
+            ]}
+            startIndex={10}
+            weekIndex={currentWeek - 1}
+          />
 
-          {[
-            {
-              label: "Percent Qualified (%)",
-              key: "percentQualified",
-              keyboardType: "numeric",
-            },
-            {
-              label: "Expected Qualified (%)",
-              key: "expectedQualified",
-              editable: false,
-              keyboardType: "numeric",
-            },
-            {
-              label: "RE Time (s)",
-              key: "reTimeAchieved",
-              keyboardType: "numeric",
-            },
-            {
-              label: "Yield Audit Date",
-              key: "yieldAuditDate",
-              keyboardType: "numeric",
-            },
-            {
-              label: "Knife Audit Date",
-              key: "knifeSkillsAuditDate",
-              keyboardType: "numeric",
-            },
-            {
-              label: "Knife Score (%)",
-              key: "knifeScore",
-              keyboardType: "decimal-pad",
-            },
-            { label: "Comments", key: "comments", multiline: true },
-          ].map((f) => (
-            <View key={f.key} className="mb-5">
-              <Text className="text-base font-medium text-gray-700 mb-2">
-                {f.label}
-              </Text>
-              <TextInput
-                value={formData[f.key]}
-                onChangeText={(t) => handleChange(f.key, t)}
-                placeholder={f.label}
-                editable={f.editable !== false}
-                multiline={!!f.multiline}
-                keyboardType={f.keyboardType || "default"}
-                className={`border ${
-                  errors[f.key] ? "border-red-500" : "border-gray-300"
-                } rounded-md px-4 py-3 text-gray-900 ${
-                  f.editable === false ? "bg-gray-100 text-gray-400" : ""
-                }`}
-                style={{ textAlignVertical: f.multiline ? "top" : "center" }}
-                numberOfLines={f.multiline ? 4 : 1}
-              />
-              {errors[f.key] && (
-                <Text className="text-sm text-red-500 mt-1">
-                  {errors[f.key]}
-                </Text>
-              )}
-            </View>
-          ))}
+          {simpleFields.map((f) => {
+            const raw = formData[f.key];
+            const val = f.format ? f.format() : raw == null ? "" : String(raw);
+            return (
+              <Labeled key={f.key} label={f.label}>
+                <TextInput
+                  value={val}
+                  onChangeText={(t) => handleChange(f.key, t)}
+                  placeholder={f.label}
+                  editable={f.editable !== false}
+                  multiline={!!f.multiline}
+                  keyboardType={f.keyboardType || "default"}
+                  className={`border ${
+                    errors[f.key] ? "border-red-500" : "border-gray-300"
+                  } rounded-md px-4 py-3 text-gray-900 ${
+                    f.editable === false ? "bg-gray-100 text-gray-400" : ""
+                  }`}
+                  style={{ textAlignVertical: f.multiline ? "top" : "center" }}
+                  numberOfLines={f.multiline ? 4 : 1}
+                />
+                {errors[f.key] && (
+                  <Text className="text-sm text-red-500 mt-1">
+                    {errors[f.key]}
+                  </Text>
+                )}
+              </Labeled>
+            );
+          })}
 
-          {["hasPain", "handStretchCompleted"].map((k) => (
+          {(["hasPain", "handStretchCompleted"] as const).map((k) => (
             <View key={k} className="mb-6">
               <Text className="text-base font-medium text-gray-700 mb-2">
                 {k === "hasPain"
@@ -504,7 +522,7 @@ const Step2Form = () => {
                   : "Hand Stretch Exercises Completed"}
               </Text>
               <SinglePressTouchable
-                onPress={() => setFormData((f: any) => ({ ...f, [k]: !f[k] }))}
+                onPress={() => setFormData((f) => ({ ...f, [k]: !f[k] }))}
                 className={`py-3 rounded-md items-center ${
                   k === "hasPain"
                     ? formData.hasPain
@@ -524,13 +542,10 @@ const Step2Form = () => {
 
           {[
             { key: "trainerSignature", label: currentUser.name },
-            { key: "teamMemberSignature", label: traineeName },
+            { key: "teamMemberSignature", label: "Trainee" },
             { key: "supervisorSignature", label: "Supervisor" },
           ].map((s) => (
-            <View key={s.key} className="mb-6">
-              <Text className="text-base font-medium text-gray-700 mb-2">
-                {s.label}
-              </Text>
+            <Labeled key={s.key} label={s.label}>
               <SinglePressTouchable
                 onPress={() => setSignatureType(s.key)}
                 className={`rounded-md px-4 py-3 justify-center items-center ${
@@ -554,7 +569,7 @@ const Step2Form = () => {
                   {errors[s.key]}
                 </Text>
               )}
-            </View>
+            </Labeled>
           ))}
 
           <SinglePressTouchable
@@ -564,7 +579,7 @@ const Step2Form = () => {
             disabled={isSubmitting}
           >
             {isSubmitting ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
+              <ActivityIndicator color="#FFF" size="small" />
             ) : (
               <Text className="text-white text-lg font-semibold">
                 Save & Continue
@@ -576,14 +591,12 @@ const Step2Form = () => {
 
       <SignatureModal
         visible={!!signatureType}
-        onOK={(base64: string) => {
-          setFormData((f: any) => ({ ...f, [signatureType!]: base64 }));
+        onOK={(b64: string) => {
+          setFormData((f) => ({ ...f, [signatureType!]: b64 }));
           setSignatureType(null);
         }}
         onCancel={() => setSignatureType(null)}
       />
     </SafeAreaView>
   );
-};
-
-export default Step2Form;
+}

@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import SinglePressTouchableTouchable from "@/app/utils/SinglePress";
@@ -65,13 +65,13 @@ const Evaluations = () => {
           </Text>
         </TouchableOpacity>
       </View>
-      <View className="my-4">
+      <ScrollView className="my-4">
         {evaluations
           .filter((eva: any) => eva.status === status)
           .map((file: any) => (
-            <EvaluationRow key={file._id} file={file} />
+            <EvaluationRow key={file._id} file={file} includeName />
           ))}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };

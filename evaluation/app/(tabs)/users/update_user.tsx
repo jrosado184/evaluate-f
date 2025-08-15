@@ -139,9 +139,21 @@ const UpdateUser = () => {
               placeholder="MM/DD/YYYY"
               keyboardType="numeric"
               rounded="rounded-[0.625rem]"
-              handleChangeText={(value: any) =>
-                handleEmployeeInfo("date_of_hire", value)
-              }
+              handleChangeText={(value: any) => {
+                const cleaned = value.replace(/[^0-9]/g, "").slice(0, 8);
+                let formatted = "";
+                if (cleaned.length <= 2) {
+                  formatted = cleaned;
+                } else if (cleaned.length <= 4) {
+                  formatted = `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
+                } else {
+                  formatted = `${cleaned.slice(0, 2)}/${cleaned.slice(
+                    2,
+                    4
+                  )}/${cleaned.slice(4)}`;
+                }
+                handleEmployeeInfo("date_of_hire", formatted);
+              }}
             />
             <Error hidden={!errors.hire_date} title={errors.hire_date} />
           </View>

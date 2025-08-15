@@ -154,7 +154,7 @@ const User = () => {
   return (
     <TouchableWithoutFeedback onPress={handleTapOutside}>
       <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
-        <ScrollView
+        <View
           contentContainerStyle={{ paddingBottom: 80 }}
           onScrollBeginDrag={handleTapOutside}
           scrollEventThrottle={16}
@@ -237,20 +237,22 @@ const User = () => {
                 </Text>
               </View>
             ) : (
-              evaluationFiles.map((file) => (
-                <EvaluationRow
-                  from={id?.toString()}
-                  key={file._id}
-                  file={file}
-                  onDelete={handleDeleteEvaluation}
-                  handleSwipeableWillOpen={(ref: Swipeable | null) =>
-                    handleSwipeableWillOpen(ref)
-                  }
-                />
-              ))
+              <View>
+                {evaluationFiles.map((file) => (
+                  <EvaluationRow
+                    from={id?.toString()}
+                    key={file._id}
+                    file={file}
+                    onDelete={handleDeleteEvaluation}
+                    handleSwipeableWillOpen={(ref: Swipeable | null) =>
+                      handleSwipeableWillOpen(ref)
+                    }
+                  />
+                ))}
+              </View>
             )}
           </View>
-        </ScrollView>
+        </View>
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
