@@ -1,9 +1,6 @@
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import React, { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import SinglePressTouchableTouchable from "@/app/utils/SinglePress";
-import Icon from "react-native-vector-icons/Feather";
-import { router } from "expo-router";
 import EvaluationRow from "@/app/(tabs)/evaluations/EvaluationRow";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";

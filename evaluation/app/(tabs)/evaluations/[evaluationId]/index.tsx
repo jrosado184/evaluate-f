@@ -23,7 +23,7 @@ const EvaluationSummary = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  const { from, employeeId } = useGlobalSearchParams();
+  const { from } = useGlobalSearchParams();
 
   const fetchEvaluation = async () => {
     try {
@@ -40,6 +40,8 @@ const EvaluationSummary = () => {
       setLoading(false);
     }
   };
+
+  const employeeId = evaluation?.employeeId;
 
   useFocusEffect(
     useCallback(() => {

@@ -291,7 +291,12 @@ export default function Step2Form() {
         { headers: { Authorization: token! } }
       );
 
-      router.replace(`/evaluations/${evaluationId}`);
+      router.replace({
+        pathname: `/evaluations/${evaluationId}`,
+        params: {
+          employeeId,
+        },
+      });
     } catch {
       Alert.alert("Error", "Failed to save evaluation");
     } finally {
