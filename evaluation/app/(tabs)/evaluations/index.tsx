@@ -29,7 +29,7 @@ const Evaluations = () => {
   }, [status]);
 
   return (
-    <SafeAreaView className="p-6 bg-white h-full">
+    <SafeAreaView className="p-6 bg-white h-full pb-14">
       <View className="flex-row border border-neutral-400 h-8 rounded-lg my-4">
         <TouchableOpacity
           activeOpacity={0.8}

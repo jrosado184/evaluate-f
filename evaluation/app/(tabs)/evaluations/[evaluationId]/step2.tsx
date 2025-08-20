@@ -180,20 +180,36 @@ export default function Step2Form() {
     })();
   }, [evaluationId, currentWeek]);
 
-  /* derive expectedQualified (store number; display as "%") */
+  // helpers
+  const toNum = (v: any) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const clamp = (n: number, lo = 0, hi = 100) => Math.min(hi, Math.max(lo, n));
+  const roundToQuarter = (n: number) => Math.round(n * 4) / 4;
+
+  // expectedQualified with quarter rounding (stores as number)
   const expectedQualified = useMemo(() => {
+    // make weekSum numeric-safe
     const weekSum = [
       "hoursMonday",
       "hoursTuesday",
       "hoursWednesday",
       "hoursThursday",
       "hoursFriday",
-    ].reduce((s, k) => s + (formData[k] ?? 0), 0);
-    const total = prevHoursOnJob + weekSum;
-    return Math.min(
-      projectedTrainingHours ? (total / projectedTrainingHours) * 100 : 0,
-      100
-    );
+    ].reduce((s, k) => s + toNum(formData[k]), 0);
+
+    const total = toNum(prevHoursOnJob) + weekSum;
+
+    const rawPct =
+      toNum(projectedTrainingHours) > 0
+        ? (total / toNum(projectedTrainingHours)) * 100
+        : 0;
+
+    const clamped = clamp(rawPct, 0, 100);
+    const quarter = roundToQuarter(clamped);
+
+    return Number(quarter.toFixed(2));
   }, [
     formData.hoursMonday,
     formData.hoursTuesday,
