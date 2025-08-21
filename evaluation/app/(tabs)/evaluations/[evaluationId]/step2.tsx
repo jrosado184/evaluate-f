@@ -92,7 +92,12 @@ const Labeled = ({
 /* =============================== screen =============================== */
 export default function Step2Form() {
   const router = useRouter();
-  const { id: employeeId, evaluationId, week } = useLocalSearchParams();
+  const {
+    id: employeeId,
+    evaluationId,
+    week,
+    from,
+  }: any = useLocalSearchParams();
   const { currentUser } = useAuthContext();
   const currentWeek = parseInt((week as string) || "1", 10);
 
@@ -103,16 +108,19 @@ export default function Step2Form() {
     hoursWednesday: null,
     hoursThursday: null,
     hoursFriday: null,
+    hoursSaturday: null,
     hoursOffJobMonday: null,
     hoursOffJobTuesday: null,
     hoursOffJobWednesday: null,
     hoursOffJobThursday: null,
     hoursOffJobFriday: null,
+    hoursOffSaturday: null,
     hoursWithTraineeMonday: null,
     hoursWithTraineeTuesday: null,
     hoursWithTraineeWednesday: null,
     hoursWithTraineeThursday: null,
     hoursWithTraineeFriday: null,
+    hoursWithTraineeSaturday: null,
     percentQualified: null,
     expectedQualified: null,
     reTimeAchieved: null,
@@ -197,6 +205,7 @@ export default function Step2Form() {
       "hoursWednesday",
       "hoursThursday",
       "hoursFriday",
+      "hoursSaturday",
     ].reduce((s, k) => s + toNum(formData[k]), 0);
 
     const total = toNum(prevHoursOnJob) + weekSum;
@@ -216,6 +225,7 @@ export default function Step2Form() {
     formData.hoursWednesday,
     formData.hoursThursday,
     formData.hoursFriday,
+    formData.hoursSaturday,
     prevHoursOnJob,
     projectedTrainingHours,
   ]);
@@ -259,6 +269,7 @@ export default function Step2Form() {
         "hoursWednesday",
         "hoursThursday",
         "hoursFriday",
+        "hoursSaturday",
       ]);
       const totalHoursOffJob = sum([
         "hoursOffJobMonday",
@@ -266,6 +277,7 @@ export default function Step2Form() {
         "hoursOffJobWednesday",
         "hoursOffJobThursday",
         "hoursOffJobFriday",
+        "hoursOffJobSaturday",
       ]);
       const totalHoursWithTrainee = sum([
         "hoursWithTraineeMonday",
@@ -273,6 +285,7 @@ export default function Step2Form() {
         "hoursWithTraineeWednesday",
         "hoursWithTraineeThursday",
         "hoursWithTraineeFriday",
+        "hoursWithTraineeSaturday",
       ]);
       const totalHours = totalHoursOnJob + totalHoursOffJob;
 
@@ -357,52 +370,55 @@ export default function Step2Form() {
         <Text className="text-lg font-semibold text-gray-800 mb-3">
           {title}
         </Text>
-        {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map(
-          (weekday, i) => {
-            const k = keys[i];
-            const base = mon ?? stripTime(new Date());
-            const d = new Date(
-              base.getFullYear(),
-              base.getMonth(),
-              base.getDate() + i
-            );
-            const isDisabled =
-              isFirstWeek &&
-              jsOnly &&
-              stripTime(d).getTime() < jsOnly.getTime();
-            const val = formData[k] == null ? "" : String(formData[k]);
+        {[
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+        ].map((weekday, i) => {
+          const k = keys[i];
+          const base = mon ?? stripTime(new Date());
+          const d = new Date(
+            base.getFullYear(),
+            base.getMonth(),
+            base.getDate() + i
+          );
+          const isDisabled =
+            isFirstWeek && jsOnly && stripTime(d).getTime() < jsOnly.getTime();
+          const val = formData[k] == null ? "" : String(formData[k]);
 
-            return (
-              <View key={k} className="mb-4">
-                <Text className="text-base text-gray-700">{weekday}</Text>
-                <Text className="text-[.8rem] text-gray-500 mb-2">
-                  {fmtDateLong(d)}
-                </Text>
-                <TextInput
-                  ref={(r) => (inputRefs.current[startIndex + i] = r)}
-                  value={val}
-                  onChangeText={(t) =>
-                    !isDisabled && handleChange(k, t, startIndex + i)
-                  }
-                  editable={!isDisabled}
-                  placeholder="0"
-                  keyboardType="number-pad"
-                  className={`rounded-md px-4 py-3 ${
-                    isDisabled
-                      ? "bg-gray-100 border-gray-200 text-gray-400"
-                      : errors[k]
-                      ? "border-red-500 border text-gray-900"
-                      : "border border-gray-300 text-gray-900"
-                  }`}
-                  maxLength={1}
-                />
-                {errors[k] && !isDisabled && (
-                  <Text className="text-sm text-red-500 mt-1">{errors[k]}</Text>
-                )}
-              </View>
-            );
-          }
-        )}
+          return (
+            <View key={k} className="mb-4">
+              <Text className="text-base text-gray-700">{weekday}</Text>
+              <Text className="text-[.8rem] text-gray-500 mb-2">
+                {fmtDateLong(d)}
+              </Text>
+              <TextInput
+                ref={(r) => (inputRefs.current[startIndex + i] = r)}
+                value={val}
+                onChangeText={(t) =>
+                  !isDisabled && handleChange(k, t, startIndex + i)
+                }
+                editable={!isDisabled}
+                placeholder="0"
+                keyboardType="number-pad"
+                className={`rounded-md px-4 py-3 ${
+                  isDisabled
+                    ? "bg-gray-100 border-gray-200 text-gray-400"
+                    : errors[k]
+                    ? "border-red-500 border text-gray-900"
+                    : "border border-gray-300 text-gray-900"
+                }`}
+                maxLength={1}
+              />
+              {errors[k] && !isDisabled && (
+                <Text className="text-sm text-red-500 mt-1">{errors[k]}</Text>
+              )}
+            </View>
+          );
+        })}
       </View>
     );
   };
@@ -457,7 +473,15 @@ export default function Step2Form() {
         >
           <View className="flex-row items-center mb-6">
             <SinglePressTouchable
-              onPress={() => router.replace(`/evaluations/${evaluationId}`)}
+              onPress={() =>
+                router.replace({
+                  pathname: `/evaluations/[evaluationId]`,
+                  params: {
+                    evaluationId: evaluationId,
+                    from: from,
+                  },
+                })
+              }
               className="mr-3"
             >
               <Icon name="chevron-left" size={28} color="#1a237e" />
@@ -477,6 +501,7 @@ export default function Step2Form() {
               "hoursWednesday",
               "hoursThursday",
               "hoursFriday",
+              "hoursSaturday",
             ]}
             startIndex={0}
             weekIndex={currentWeek - 1}
@@ -489,8 +514,9 @@ export default function Step2Form() {
               "hoursOffJobWednesday",
               "hoursOffJobThursday",
               "hoursOffJobFriday",
+              "hoursOffJobSaturday",
             ]}
-            startIndex={5}
+            startIndex={6}
             weekIndex={currentWeek - 1}
           />
           <FieldGroup
@@ -501,8 +527,9 @@ export default function Step2Form() {
               "hoursWithTraineeWednesday",
               "hoursWithTraineeThursday",
               "hoursWithTraineeFriday",
+              "hoursWithTraineeSaturday",
             ]}
-            startIndex={10}
+            startIndex={12}
             weekIndex={currentWeek - 1}
           />
 

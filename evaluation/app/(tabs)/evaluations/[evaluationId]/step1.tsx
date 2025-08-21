@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,12 @@ import {
   StatusBar,
   Alert,
 } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import {
+  useRouter,
+  useLocalSearchParams,
+  useFocusEffect,
+  useSegments,
+} from "expo-router";
 import Icon from "react-native-vector-icons/Feather";
 import {
   ActivityIndicator,
@@ -28,7 +33,7 @@ import { dateValidation } from "@/app/validation/dateValidation";
 
 const PersonalInfoForm = () => {
   const router = useRouter();
-  const { id: employeeId, evaluationId, from } = useLocalSearchParams();
+  const { id: employeeId, evaluationId, from }: any = useLocalSearchParams();
 
   const { employee } = useEmployeeContext();
 
@@ -50,6 +55,7 @@ const PersonalInfoForm = () => {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasInfo, setHasInfo] = useState(false);
+  const [hasDeletedEvaluation, setHasDeletedEvaluation] = useState(false);
 
   const trainingFor = ["New Hire", "Bid", "Cross Training"];
 
@@ -60,55 +66,63 @@ const PersonalInfoForm = () => {
     "hireDate",
   ] as const;
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const token = await AsyncStorage.getItem("token");
-        const baseUrl = await getServerIP();
-
-        const res = await axios.get(`${baseUrl}/evaluations/${evaluationId}`, {
+  const fetchEvaluation = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const baseUrl = await getServerIP();
+      const res: any =
+        !hasDeletedEvaluation &&
+        (await axios.get(`${baseUrl}/evaluations/${evaluationId}`, {
+          headers: { Authorization: token! },
+        }));
+      const info = res?.data?.personalInfo || {};
+      const filled =
+        !!info.teamMemberName && !!info.position && !!info.department;
+      setHasInfo(filled);
+      let fullEmployee = employee;
+      if (!employee || String(employee.employee_id) !== employeeId) {
+        const empRes = await axios.get(`${baseUrl}/employees/${employeeId}`, {
           headers: { Authorization: token! },
         });
-        const info = res.data.personalInfo || {};
-        const filled =
-          !!info.teamMemberName && !!info.position && !!info.department;
-        setHasInfo(filled);
-
-        let fullEmployee = employee;
-        if (!employee || String(employee.employee_id) !== employeeId) {
-          const empRes = await axios.get(`${baseUrl}/employees/${employeeId}`, {
-            headers: { Authorization: token! },
-          });
-          fullEmployee = empRes.data;
-        }
-
-        setFormData({
-          trainingType: info.trainingType || "",
-          teamMemberName:
-            info.teamMemberName || fullEmployee?.employee_name || "",
-          employeeId:
-            info.employeeId || String(fullEmployee?.employee_id || ""),
-          hireDate:
-            info.hireDate ||
-            formatISODate(fullEmployee?.date_of_hire, true) ||
-            "",
-          position: info.position || "",
-          department: info.department || "",
-          lockerNumber:
-            info.lockerNumber || String(fullEmployee?.locker_number || ""),
-          phoneNumber: info.phoneNumber || "",
-          jobStartDate: info.jobStartDate || "",
-          projectedTrainingHours: info.projectedTrainingHours || "",
-          projectedQualifyingDate: info.projectedQualifyingDate || "",
-        });
-      } catch (err) {
-        console.error(err);
-        Alert.alert("Error", "Could not load saved information.");
-      } finally {
-        setLoading(false);
+        fullEmployee = empRes.data;
       }
-    })();
-  }, [evaluationId, employee]);
+      setFormData({
+        trainingType: info.trainingType || "",
+        teamMemberName:
+          info.teamMemberName || fullEmployee?.employee_name || "",
+        employeeId: info.employeeId || String(fullEmployee?.employee_id || ""),
+        hireDate:
+          info.hireDate ||
+          formatISODate(fullEmployee?.date_of_hire, true) ||
+          "",
+        position: info.position || "",
+        department: info.department || "",
+        lockerNumber:
+          info.lockerNumber || String(fullEmployee?.locker_number || ""),
+        phoneNumber: info.phoneNumber || "",
+        jobStartDate: info.jobStartDate || "",
+        projectedTrainingHours: info.projectedTrainingHours || "",
+        projectedQualifyingDate: info.projectedQualifyingDate || "",
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const segments: any = useSegments();
+  const path = segments.join("/");
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      if (path !== "(tabs)/users/[id]") {
+        fetchEvaluation();
+      } else {
+        return;
+      }
+    }, [evaluationId, employee])
+  );
 
   const validateForm = () => {
     const required = [
@@ -177,6 +191,22 @@ const PersonalInfoForm = () => {
     setMenuVisible(false);
   };
 
+  const handleDeleteEvaluation = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const baseUrl = await getServerIP();
+      await axios
+        .delete(`${baseUrl}/evaluations/${evaluationId}`, {
+          headers: { Authorization: token! },
+        })
+        .then(() => {
+          setHasDeletedEvaluation(true);
+        });
+    } catch {
+      Alert.alert("Error", "Failed to delete evaluation.");
+    }
+  };
+
   const handleSubmit = async () => {
     if (!validateForm()) return;
     setIsSubmitting(true);
@@ -199,9 +229,21 @@ const PersonalInfoForm = () => {
           { action: "update_status", data: { status: "in_progress" } },
           { headers: { Authorization: token! } }
         );
-        router.replace(`/evaluations/${evaluationId}/step2`);
+        router.push({
+          pathname: `/evaluations/[evaluationId]/step2`,
+          params: {
+            evaluationId: evaluationId,
+            from: employee?._id,
+          },
+        });
       } else {
-        router.replace(`/evaluations/${evaluationId}`);
+        router.push({
+          pathname: `/evaluations/[evaluationId]`,
+          params: {
+            from: employee?._id,
+            evaluationId: evaluationId,
+          },
+        });
       }
     } catch (err) {
       console.error(err);
@@ -234,9 +276,17 @@ const PersonalInfoForm = () => {
           <View className="flex-row items-center mb-6">
             <SinglePressTouchable
               onPress={() => {
-                if (hasInfo) {
-                  router.replace(`/evaluations/${evaluationId}`);
+                if (from) {
+                  router.replace({
+                    pathname: `/evaluations/[evaluationId]`,
+                    params: {
+                      evaluationId: evaluationId,
+                      from: from,
+                    },
+                  });
                 } else {
+                  handleDeleteEvaluation();
+                  setHasDeletedEvaluation(true);
                   router.replace(`/users/${employeeId}`);
                 }
               }}

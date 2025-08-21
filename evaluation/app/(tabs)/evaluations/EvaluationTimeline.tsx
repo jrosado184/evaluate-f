@@ -70,8 +70,14 @@ const EvaluationTimeline = ({ fileData }: any) => {
     const totalHoursOnJob = Number(currentEval.totalHoursOnJob) || 0;
 
     /* percentQualified may look like "25" or "25%" → strip % then parse */
+    const rawPercent = currentEval?.percentQualified;
+
     const actualPercentCompleted =
-      Number((currentEval.percentQualified ?? "").replace("%", "")) || 0;
+      Number(
+        typeof rawPercent === "string"
+          ? rawPercent.replace("%", "")
+          : rawPercent ?? 0
+      ) || 0;
 
     if (totalHoursOnJob === 0 || actualPercentCompleted === 0) {
       return false;

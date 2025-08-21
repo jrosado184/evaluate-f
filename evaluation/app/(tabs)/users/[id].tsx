@@ -46,7 +46,9 @@ const User = () => {
         `${baseUrl}/employees/${id}/evaluations`,
         { headers: { Authorization: token! } }
       );
-      setEvaluationFiles(evalRes.data);
+      if (evalRes.status === 200 && evalRes.data) {
+        setEvaluationFiles(evalRes.data);
+      }
     } catch (err) {
       console.error(err);
       Alert.alert("Error", "Could not load employee or evaluations.");
@@ -68,7 +70,6 @@ const User = () => {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
 
-      // create on backend
       const res = await axios.post(
         `${baseUrl}/employees/${id}/evaluations`,
         {
@@ -105,11 +106,10 @@ const User = () => {
             try {
               const token = await AsyncStorage.getItem("token");
               const baseUrl = await getServerIP();
-              await axios.delete(
-                `${baseUrl}/employees/${id}/evaluations/${evaluationId}`,
-                { headers: { Authorization: token! } }
-              );
-              fetchEmployee();
+              await axios.delete(`${baseUrl}/evaluations/${evaluationId}`, {
+                headers: { Authorization: token! },
+              });
+              fetchEmployee(); //FIX THIS CAUSING ISSUES
             } catch {
               Alert.alert("Error", "Failed to delete evaluation.");
             }

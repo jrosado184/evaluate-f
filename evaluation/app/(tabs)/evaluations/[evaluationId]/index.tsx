@@ -6,6 +6,7 @@ import {
   useFocusEffect,
   router,
   useGlobalSearchParams,
+  useSegments,
 } from "expo-router";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -32,7 +33,7 @@ const EvaluationSummary = () => {
       const res = await axios.get(`${baseUrl}/evaluations/${evaluationId}`, {
         headers: { Authorization: token! },
       });
-      setEvaluation(res.data);
+      setEvaluation(res?.data);
     } catch (err: any) {
       console.error("Failed to fetch evaluation:", err);
       Alert.alert("Error", "Could not load evaluation information.");
@@ -41,13 +42,20 @@ const EvaluationSummary = () => {
     }
   };
 
+  const segments: any = useSegments();
+  const path = segments.join("/");
+
   const employeeId = evaluation?.employeeId;
 
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
-      fetchEvaluation();
-    }, [])
+      if (path !== "(tabs)/users/[id]") {
+        fetchEvaluation();
+      } else {
+        return;
+      }
+    }, [path])
   );
 
   const handleContinue = () => {
@@ -76,7 +84,6 @@ const EvaluationSummary = () => {
   };
   const handleClose = () => {
     if (from && typeof from === "string") {
-      // router.replace(`/(tabs)/users`);
       setTimeout(() => {
         router.replace(`/(tabs)/users/${from}`);
       }, 5);
