@@ -51,7 +51,6 @@ const EvaluationSummary = () => {
   useFocusEffect(
     useCallback(() => {
       if (path !== "(tabs)/users/[id]") {
-        console.log("loaded eba");
         fetchEvaluation();
       } else {
         return;

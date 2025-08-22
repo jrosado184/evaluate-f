@@ -235,26 +235,40 @@ export default function Step2Form() {
     let next: string | number | null = raw;
     let len = raw.length;
 
-    if (DATE_KEYS.has(key)) next = fmtMMDDYYYY(raw);
-    else if (key === "knifeScore") {
+    if (DATE_KEYS.has(key)) {
+      next = fmtMMDDYYYY(raw);
+    } else if (key === "knifeScore") {
       const s = knifeSanitize(raw);
-      next = toNum(s);
+      next = s === "" ? "" : toNum(s);
       len = s.length;
     } else if (NUMERIC.has(key)) {
       const s = intOnly(raw);
-      next = toNum(s);
+      next = s === "" ? "" : toNum(s);
       len = s.length;
     }
 
-    setFormData((f) => ({ ...f, [key]: next }));
-    if (errors[key])
+    setFormData((prev) => {
+      const prevLen = prev[key] == null ? 0 : String(prev[key]).length;
+
+      // write new value
+      const updated = { ...prev, [key]: next };
+
+      // if user just *entered* the first digit, advance focus
+      if (typeof index === "number" && prevLen === 0 && len === 1) {
+        requestAnimationFrame(() => {
+          inputRefs.current[index + 1]?.focus();
+        });
+      }
+      return updated;
+    });
+
+    if (errors[key]) {
       setErrors((e) => {
         const c = { ...e };
         delete c[key];
         return c;
       });
-    if (typeof index === "number" && len === 1)
-      inputRefs.current[index + 1]?.focus();
+    }
   };
 
   const sum = (keys: string[]) =>
@@ -404,6 +418,11 @@ export default function Step2Form() {
                 editable={!isDisabled}
                 placeholder="0"
                 keyboardType="number-pad"
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() =>
+                  inputRefs.current[startIndex + i + 1]?.focus()
+                }
                 className={`rounded-md px-4 py-3 ${
                   isDisabled
                     ? "bg-gray-100 border-gray-200 text-gray-400"
