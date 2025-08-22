@@ -14,6 +14,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import getServerIP from "@/app/requests/NetworkAddress";
 import useEvaluationStats from "@/hooks/useEvaluationsStats";
+import compression from "compression";
 
 const StatBlock = ({ label, value, sub, highlightColor, onPress }: any) => (
   <TouchableOpacity

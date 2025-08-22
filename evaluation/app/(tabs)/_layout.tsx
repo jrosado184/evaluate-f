@@ -6,7 +6,7 @@ import React, {
   useRef,
 } from "react";
 import { Animated, Easing } from "react-native";
-import { Tabs } from "expo-router";
+import { router, Tabs, usePathname } from "expo-router";
 import HomeIcon from "@/constants/icons/HomeIcon";
 import UsersIcon from "@/constants/icons/UsersIcon";
 import LockIcon from "@/constants/icons/LockIcon";
@@ -28,6 +28,7 @@ export const useTabBar = () => useContext(TabBarContext);
 export default function TabsLayout() {
   const [isTabBarVisible, setIsTabBarVisible] = useState(true);
   const tabBarTranslate = useRef(new Animated.Value(0)).current;
+  const pathname = usePathname();
 
   useEffect(() => {
     Animated.timing(tabBarTranslate, {
@@ -123,6 +124,14 @@ export default function TabsLayout() {
         />
         <Tabs.Screen
           name="evaluations"
+          listeners={{
+            tabPress: (e) => {
+              e.preventDefault();
+              if (pathname !== "/evaluations") {
+                router.replace("/(tabs)/evaluations");
+              }
+            },
+          }}
           options={{
             title: "Evaluations",
             tabBarIcon: ({ color, focused }) => (

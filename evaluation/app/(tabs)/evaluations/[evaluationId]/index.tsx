@@ -34,6 +34,7 @@ const EvaluationSummary = () => {
         headers: { Authorization: token! },
       });
       setEvaluation(res?.data);
+      setLoading(false);
     } catch (err: any) {
       console.error("Failed to fetch evaluation:", err);
       Alert.alert("Error", "Could not load evaluation information.");
@@ -49,8 +50,8 @@ const EvaluationSummary = () => {
 
   useFocusEffect(
     useCallback(() => {
-      setLoading(true);
       if (path !== "(tabs)/users/[id]") {
+        console.log("loaded eba");
         fetchEvaluation();
       } else {
         return;

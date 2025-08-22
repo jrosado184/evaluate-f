@@ -86,6 +86,7 @@
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@babel/plugin-transform-template-literals": "^7.27.1",
+    "@types/compression": "^1.8.1",
     "@types/jest": "^29.5.12",
     "@types/lodash.debounce": "^4.0.9",
     "@types/lodash.throttle": "^4.1.9",
