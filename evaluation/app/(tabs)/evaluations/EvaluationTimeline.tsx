@@ -15,7 +15,13 @@ const EvaluationTimeline = ({ fileData }: any) => {
     fileData.personalInfo.projectedTrainingHours / 40;
 
   const handleEdit = (weekNumber: number) => {
-    router.push(`/evaluations/${fileData?._id}/step2?week=${weekNumber}`);
+    router.push({
+      pathname: `/evaluations/[id]/step2`,
+      params: {
+        id: fileData?._id,
+        week: String(weekNumber), // <-- use "week", not weekNumber
+      },
+    });
   };
 
   const handleStart = (weekNumber: number) => {

@@ -82,6 +82,7 @@ const EvaluationSummary = () => {
 
     setTimeout(() => setSubmitting(false), 300);
   };
+
   const handleClose = () => {
     if (from && typeof from === "string") {
       setTimeout(() => {

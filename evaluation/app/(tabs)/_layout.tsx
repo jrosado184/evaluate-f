@@ -82,6 +82,14 @@ export default function TabsLayout() {
         />
         <Tabs.Screen
           name="users"
+          listeners={{
+            tabPress: (e) => {
+              e.preventDefault();
+              if (pathname !== "/users") {
+                router.replace("/(tabs)/users");
+              }
+            },
+          }}
           options={{
             title: "Users",
             tabBarIcon: ({ color, focused }) => (
@@ -103,6 +111,14 @@ export default function TabsLayout() {
         />
         <Tabs.Screen
           name="lockers"
+          listeners={{
+            tabPress: (e) => {
+              e.preventDefault();
+              if (pathname !== "/lockers") {
+                router.replace("/(tabs)/lockers");
+              }
+            },
+          }}
           options={{
             title: "Lockers",
             tabBarIcon: ({ color, focused }) => (
