@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -34,15 +34,17 @@ import { dateValidation } from "@/app/validation/dateValidation";
 const PersonalInfoForm = () => {
   const router = useRouter();
   const { id: employeeId, evaluationId, from }: any = useLocalSearchParams();
-
   const { employee } = useEmployeeContext();
 
+  // trainingPosition is the user-typed Job Title (root evaluation.position)
+  const [trainingPosition, setTrainingPosition] = useState<string>("");
+
+  // personalInfo fields (no position here — server fills it from employees collection)
   const [formData, setFormData] = useState<any>({
     trainingType: "",
     teamMemberName: "",
     employeeId: "",
     hireDate: "",
-    position: "",
     department: "",
     lockerNumber: "",
     phoneNumber: "",
@@ -50,6 +52,7 @@ const PersonalInfoForm = () => {
     projectedTrainingHours: "",
     projectedQualifyingDate: "",
   });
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [menuVisible, setMenuVisible] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -75,10 +78,12 @@ const PersonalInfoForm = () => {
         (await axios.get(`${baseUrl}/evaluations/${evaluationId}`, {
           headers: { Authorization: token! },
         }));
+
       const info = res?.data?.personalInfo || {};
       const filled =
         !!info.teamMemberName && !!info.position && !!info.department;
       setHasInfo(filled);
+
       let fullEmployee = employee;
       if (!employee || String(employee.employee_id) !== employeeId) {
         const empRes = await axios.get(`${baseUrl}/employees/${employeeId}`, {
@@ -86,6 +91,10 @@ const PersonalInfoForm = () => {
         });
         fullEmployee = empRes.data;
       }
+
+      // Prefill trainingPosition from ROOT evaluation.position
+      setTrainingPosition((res?.data?.position as string) || "");
+
       setFormData({
         trainingType: info.trainingType || "",
         teamMemberName:
@@ -95,7 +104,6 @@ const PersonalInfoForm = () => {
           info.hireDate ||
           formatISODate(fullEmployee?.date_of_hire, true) ||
           "",
-        position: info.position || "",
         department: info.department || "",
         lockerNumber:
           info.lockerNumber || String(fullEmployee?.locker_number || ""),
@@ -118,8 +126,6 @@ const PersonalInfoForm = () => {
       setLoading(true);
       if (path !== "(tabs)/users/[id]") {
         fetchEvaluation();
-      } else {
-        return;
       }
     }, [evaluationId, employee])
   );
@@ -129,7 +135,6 @@ const PersonalInfoForm = () => {
       "trainingType",
       "teamMemberName",
       "employeeId",
-      "position",
       "department",
       "lockerNumber",
       "projectedTrainingHours",
@@ -145,14 +150,17 @@ const PersonalInfoForm = () => {
 
     const errs: Record<string, string> = {};
 
+    // trainingPosition is required
+    if (!trainingPosition.trim()) {
+      errs.trainingPosition = "Required";
+    }
+
     for (const key of required) {
       const value = formData[key]?.trim?.() ?? "";
-
       if (!value) {
         errs[key] = "Required";
         continue;
       }
-
       if (requiredDates.includes(key) && !dateValidation(value)) {
         errs[key] = "Invalid date (MM/DD/YYYY)";
       }
@@ -161,7 +169,17 @@ const PersonalInfoForm = () => {
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
+
   const handleChange = (key: any, value: string) => {
+    console.log(key);
+    if (key === "trainingPosition") {
+      setTrainingPosition(value);
+      if (errors.trainingPosition) {
+        const e2 = { ...errors };
+        delete e2.trainingPosition;
+        setErrors(e2);
+      }
+    }
     let v = value;
     if (/(Date|QualifyingDate)/.test(key)) {
       const d = value.replace(/\D/g, "");
@@ -179,6 +197,7 @@ const PersonalInfoForm = () => {
       v = v.replace(/\D/g, "");
     }
     setFormData((f: any) => ({ ...f, [key]: v }));
+
     if (errors[key]) {
       const e2 = { ...errors };
       delete e2[key];
@@ -195,13 +214,10 @@ const PersonalInfoForm = () => {
     try {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
-      await axios
-        .delete(`${baseUrl}/evaluations/${evaluationId}`, {
-          headers: { Authorization: token! },
-        })
-        .then(() => {
-          setHasDeletedEvaluation(true);
-        });
+      await axios.delete(`${baseUrl}/evaluations/${evaluationId}`, {
+        headers: { Authorization: token! },
+      });
+      setHasDeletedEvaluation(true);
     } catch {
       Alert.alert("Error", "Failed to delete evaluation.");
     }
@@ -218,7 +234,10 @@ const PersonalInfoForm = () => {
         `${baseUrl}/evaluations/${evaluationId}`,
         {
           action: "update_personal_info",
-          data: { personalInfo: formData },
+          data: {
+            trainingPosition: trainingPosition.trim(),
+            personalInfo: { ...formData },
+          },
         },
         { headers: { Authorization: token! } }
       );
@@ -231,18 +250,12 @@ const PersonalInfoForm = () => {
         );
         router.push({
           pathname: `/evaluations/[evaluationId]/step2`,
-          params: {
-            evaluationId: evaluationId,
-            from: employee?._id,
-          },
+          params: { evaluationId, from: employee?._id },
         });
       } else {
         router.push({
           pathname: `/evaluations/[evaluationId]`,
-          params: {
-            from: employee?._id,
-            evaluationId: evaluationId,
-          },
+          params: { from: employee?._id, evaluationId },
         });
       }
     } catch (err) {
@@ -279,10 +292,7 @@ const PersonalInfoForm = () => {
                 if (from) {
                   router.replace({
                     pathname: `/evaluations/[evaluationId]`,
-                    params: {
-                      evaluationId: evaluationId,
-                      from: from,
-                    },
+                    params: { evaluationId, from },
                   });
                 } else {
                   handleDeleteEvaluation();
@@ -342,11 +352,24 @@ const PersonalInfoForm = () => {
             )}
           </View>
 
+          {/* Job Title (trainingPosition) */}
+          {/* <View className="mb-5">
+            <FormField
+              title="Job Title"
+              value={trainingPosition}
+              placeholder="Job Title"
+              handleChangeText={(t: string) => {}}
+              error={errors.trainingPosition}
+              // This field IS editable (user types target role)
+              editable={true}
+            />
+          </View> */}
+
           {[
             { key: "teamMemberName", label: "Team Member Name" },
             { key: "employeeId", label: "Employee ID" },
             { key: "hireDate", label: "Hire Date (MM/DD/YYYY)" },
-            { key: "position", label: "Job Title" },
+            { key: "trainingPosition", label: "Job Title" },
             { key: "department", label: "Department" },
             { key: "lockerNumber", label: "Locker #" },
             { key: "phoneNumber", label: "Phone Number" },

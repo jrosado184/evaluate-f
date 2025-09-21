@@ -25,7 +25,6 @@ import useResetOnTabFocus from "@/hooks/useResetOnTabFocus";
 
 const Users = () => {
   const { getUsers, fetchAndSetUsers } = useGetUsers(4);
-  const resetTab = useResetOnTabFocus("users");
 
   const {
     loading,

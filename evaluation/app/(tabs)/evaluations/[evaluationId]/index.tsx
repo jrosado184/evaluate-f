@@ -34,7 +34,6 @@ const EvaluationSummary = () => {
         headers: { Authorization: token! },
       });
       setEvaluation(res?.data);
-      setLoading(false);
     } catch (err: any) {
       console.error("Failed to fetch evaluation:", err);
       Alert.alert("Error", "Could not load evaluation information.");
@@ -55,6 +54,7 @@ const EvaluationSummary = () => {
       } else {
         return;
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [path])
   );
 
@@ -113,6 +113,24 @@ const EvaluationSummary = () => {
   const canQualify = weeksDone >= 3;
   const pdfpreview = evaluation?.fileUrl?.split("/")[2];
 
+  // Build rows in the exact order you want to display them
+  const info = evaluation.personalInfo || {};
+  const rows: Array<{ label: string; value: any }> = [
+    { label: "Training TYpw", value: info.trainingType },
+    { label: "Team Member Name", value: info.teamMemberName },
+    { label: "Employee Id", value: info.employeeId },
+    { label: "Hire Date", value: info.hireDate },
+    { label: "Current Position", value: info.position },
+    { label: "Department", value: info.department },
+    { label: "Locker Number", value: info.lockerNumber },
+    { label: "Phone Number", value: info.phoneNumber || "-" },
+    { label: "Job Start Date", value: info.jobStartDate },
+    { label: "Projected Training Hours", value: info.projectedTrainingHours },
+    { label: "Projected Qualifying Date", value: info.projectedQualifyingDate },
+    // ↓ The two positions appear here, in order, without changing the rest of the layout
+    { label: "Training Position", value: evaluation?.position },
+  ];
+
   return (
     <SafeAreaView className="flex-1 bg-white mb-14">
       {/* Header */}
@@ -128,41 +146,33 @@ const EvaluationSummary = () => {
         keyboardShouldPersistTaps="handled"
       >
         {/* Personal Information */}
-        {evaluation.personalInfo && (
-          <View className="px-4 mb-6 pl-7 pt-6">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-lg font-bold text-gray-900">
-                Personal Information
-              </Text>
-              <SinglePressTouchable
-                onPress={() =>
-                  router.replace({
-                    pathname: `/evaluations/${evaluationId}/step1`,
-                    params: {
-                      from: "details",
-                      id: employeeId,
-                    },
-                  })
-                }
-                className="px-3 py-1 border border-gray-300 rounded-md"
-              >
-                <Text className="text-sm text-[#1a237e] font-medium">Edit</Text>
-              </SinglePressTouchable>
-            </View>
-            {Object.entries(evaluation.personalInfo).map(
-              ([key, value]: [string, any]) => (
-                <View key={key} className="mb-3">
-                  <Text className="text-base text-gray-700 capitalize">
-                    {key.replace(/([A-Z])/g, " $1")}:
-                  </Text>
-                  <Text className="text-lg text-gray-900 font-semibold">
-                    {value || "-"}
-                  </Text>
-                </View>
-              )
-            )}
+        <View className="px-4 mb-6 pl-7 pt-6">
+          <View className="flex-row justify-between items-center mb-4">
+            <Text className="text-lg font-bold text-gray-900">
+              Personal Information
+            </Text>
+            <SinglePressTouchable
+              onPress={() =>
+                router.replace({
+                  pathname: `/evaluations/${evaluationId}/step1`,
+                  params: { from: "details", id: employeeId },
+                })
+              }
+              className="px-3 py-1 border border-gray-300 rounded-md"
+            >
+              <Text className="text-sm text-[#1a237e] font-medium">Edit</Text>
+            </SinglePressTouchable>
           </View>
-        )}
+
+          {rows.map((r) => (
+            <View key={r.label} className="mb-3">
+              <Text className="text-base text-gray-700">{r.label}:</Text>
+              <Text className="text-lg text-gray-900 font-semibold">
+                {String(r.value ?? "-")}
+              </Text>
+            </View>
+          ))}
+        </View>
 
         {/* Timeline or Placeholder */}
         {weeksDone > 0 ? (
