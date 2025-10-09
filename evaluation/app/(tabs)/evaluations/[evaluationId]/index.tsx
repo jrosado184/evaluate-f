@@ -120,15 +120,15 @@ const EvaluationSummary = () => {
     { label: "Team Member Name", value: info.teamMemberName },
     { label: "Employee Id", value: info.employeeId },
     { label: "Hire Date", value: info.hireDate },
-    { label: "Current Position", value: info.position },
+    { label: "Training Position", value: evaluation?.position },
     { label: "Department", value: info.department },
     { label: "Locker Number", value: info.lockerNumber },
     { label: "Phone Number", value: info.phoneNumber || "-" },
     { label: "Job Start Date", value: info.jobStartDate },
     { label: "Projected Training Hours", value: info.projectedTrainingHours },
+    { label: "Current Position", value: info.position },
     { label: "Projected Qualifying Date", value: info.projectedQualifyingDate },
     // ↓ The two positions appear here, in order, without changing the rest of the layout
-    { label: "Training Position", value: evaluation?.position },
   ];
 
   return (

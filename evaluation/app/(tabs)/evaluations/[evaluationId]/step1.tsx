@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useCallback, useState } from "react";
 import {
   View,
@@ -30,22 +31,27 @@ import useEmployeeContext from "@/app/context/EmployeeContext";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 import formatISODate from "@/app/conversions/ConvertIsoDate";
 import { dateValidation } from "@/app/validation/dateValidation";
+import SelectInput from "@/components/SelectField";
 
 const PersonalInfoForm = () => {
   const router = useRouter();
   const { id: employeeId, evaluationId, from }: any = useLocalSearchParams();
   const { employee } = useEmployeeContext();
 
-  // trainingPosition is the user-typed Job Title (root evaluation.position)
-  const [trainingPosition, setTrainingPosition] = useState<string>("");
-
-  // personalInfo fields (no position here — server fills it from employees collection)
   const [formData, setFormData] = useState<any>({
     trainingType: "",
     teamMemberName: "",
     employeeId: "",
     hireDate: "",
-    department: "",
+    // job (manual)
+    trainingPosition: "", // label shown
+    task_code: "", // selected task_code
+    task_snapshot: null, // full task record (for snapshot)
+    // department (manual)
+    department: "", // label shown
+    dept_code: "", // selected dept_code
+    dept_snapshot: null, // full department record (for snapshot)
+    // other fields
     lockerNumber: "",
     phoneNumber: "",
     jobStartDate: "",
@@ -57,11 +63,11 @@ const PersonalInfoForm = () => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasInfo, setHasInfo] = useState(false);
   const [hasDeletedEvaluation, setHasDeletedEvaluation] = useState(false);
 
-  const trainingFor = ["New Hire", "Bid", "Cross Training"];
+  const trainingFor = ["New Hire", "Bid", "Cross Training"] as const;
 
+  // non-editable prefilled fields
   const prefilledFields = [
     "teamMemberName",
     "employeeId",
@@ -69,10 +75,42 @@ const PersonalInfoForm = () => {
     "hireDate",
   ] as const;
 
-  const fetchEvaluation = async () => {
+  // ---- Loaders for SelectInput (jobs + departments) ----
+  const loadJobOptions = useCallback(async () => {
+    const token = await AsyncStorage.getItem("token");
+    const baseUrl = await getServerIP();
+    const resp = await axios.get(`${baseUrl}/tasks/options`, {
+      headers: { Authorization: token! },
+    });
+    return resp.data?.results ?? [];
+  }, []);
+
+  const loadDepartmentOptions = useCallback(async () => {
+    const token = await AsyncStorage.getItem("token");
+    const baseUrl = await getServerIP();
+    const resp = await axios.get(`${baseUrl}/departments/options`, {
+      headers: { Authorization: token! },
+    });
+
+    return (
+      resp.data?.results?.map((d: any) => ({
+        ...d,
+        label:
+          d?.children?.custom_name ||
+          d?.children?.local_name ||
+          d?.children?.department_name ||
+          d?.children?.sap_description ||
+          d.label, // fallback
+      })) ?? []
+    );
+  }, []);
+
+  // ---- Fetch existing evaluation to prefill (if any) ----
+  const fetchEvaluation = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
+
       const res: any =
         !hasDeletedEvaluation &&
         (await axios.get(`${baseUrl}/evaluations/${evaluationId}`, {
@@ -80,10 +118,6 @@ const PersonalInfoForm = () => {
         }));
 
       const info = res?.data?.personalInfo || {};
-      const filled =
-        !!info.teamMemberName && !!info.position && !!info.department;
-      setHasInfo(filled);
-
       let fullEmployee = employee;
       if (!employee || String(employee.employee_id) !== employeeId) {
         const empRes = await axios.get(`${baseUrl}/employees/${employeeId}`, {
@@ -92,10 +126,8 @@ const PersonalInfoForm = () => {
         fullEmployee = empRes.data;
       }
 
-      // Prefill trainingPosition from ROOT evaluation.position
-      setTrainingPosition((res?.data?.position as string) || "");
-
-      setFormData({
+      setFormData((f: any) => ({
+        ...f,
         trainingType: info.trainingType || "",
         teamMemberName:
           info.teamMemberName || fullEmployee?.employee_name || "",
@@ -104,21 +136,28 @@ const PersonalInfoForm = () => {
           info.hireDate ||
           formatISODate(fullEmployee?.date_of_hire, true) ||
           "",
-        department: info.department || "",
         lockerNumber:
           info.lockerNumber || String(fullEmployee?.locker_number || ""),
         phoneNumber: info.phoneNumber || "",
         jobStartDate: info.jobStartDate || "",
         projectedTrainingHours: info.projectedTrainingHours || "",
         projectedQualifyingDate: info.projectedQualifyingDate || "",
-      });
+        // restore previously saved selections if present
+        trainingPosition: info.trainingPosition || "",
+        task_code: info.task_code || "",
+        task_snapshot: info.task_snapshot || null,
+        department: info.department || "",
+        dept_code: info.dept_code || "",
+        dept_snapshot: info.dept_snapshot || null,
+      }));
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [employee, employeeId, evaluationId, hasDeletedEvaluation]);
 
+  // ---- screen focus ----
   const segments: any = useSegments();
   const path = segments.join("/");
   useFocusEffect(
@@ -127,15 +166,17 @@ const PersonalInfoForm = () => {
       if (path !== "(tabs)/users/[id]") {
         fetchEvaluation();
       }
-    }, [evaluationId, employee])
+    }, [fetchEvaluation, path])
   );
 
+  // ---- validation ----
   const validateForm = () => {
     const required = [
       "trainingType",
       "teamMemberName",
       "employeeId",
-      "department",
+      "trainingPosition", // must pick a job
+      "department", // must pick a department
       "lockerNumber",
       "projectedTrainingHours",
       "hireDate",
@@ -149,14 +190,8 @@ const PersonalInfoForm = () => {
     ] as const;
 
     const errs: Record<string, string> = {};
-
-    // trainingPosition is required
-    if (!trainingPosition.trim()) {
-      errs.trainingPosition = "Required";
-    }
-
     for (const key of required) {
-      const value = formData[key]?.trim?.() ?? "";
+      const value = (formData[key] ?? "").toString().trim();
       if (!value) {
         errs[key] = "Required";
         continue;
@@ -165,22 +200,14 @@ const PersonalInfoForm = () => {
         errs[key] = "Invalid date (MM/DD/YYYY)";
       }
     }
-
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
+  // ---- generic input handler ----
   const handleChange = (key: any, value: string) => {
-    console.log(key);
-    if (key === "trainingPosition") {
-      setTrainingPosition(value);
-      if (errors.trainingPosition) {
-        const e2 = { ...errors };
-        delete e2.trainingPosition;
-        setErrors(e2);
-      }
-    }
     let v = value;
+
     if (/(Date|QualifyingDate)/.test(key)) {
       const d = value.replace(/\D/g, "");
       if (d.length <= 2) v = d;
@@ -193,9 +220,8 @@ const PersonalInfoForm = () => {
       else if (d.length <= 6) v = `${d.slice(0, 3)}-${d.slice(3)}`;
       else v = `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
     }
-    if (/(ID|Hours)/.test(key)) {
-      v = v.replace(/\D/g, "");
-    }
+    if (/(ID|Hours)/.test(key)) v = v.replace(/\D/g, "");
+
     setFormData((f: any) => ({ ...f, [key]: v }));
 
     if (errors[key]) {
@@ -205,11 +231,50 @@ const PersonalInfoForm = () => {
     }
   };
 
+  // ---- training type picker ----
   const handleTrainingTypeSelect = (t: string) => {
     handleChange("trainingType", t);
     setMenuVisible(false);
   };
 
+  // ---- job select ----
+  const handleJobSelect = (opt: any) => {
+    const meta =
+      opt?.children && !Array.isArray(opt.children) ? opt.children : null;
+    setFormData((f: any) => ({
+      ...f,
+      trainingPosition: opt?.label || "",
+      task_code: meta?.task_code || "",
+      task_snapshot: meta || null,
+      department: "",
+      dept_code: "",
+      dept_snapshot: null,
+    }));
+    setErrors((e) => {
+      const next = { ...e };
+      delete next.trainingPosition;
+      return next;
+    });
+  };
+
+  // ---- department select ----
+  const handleDeptSelect = (opt: any) => {
+    const meta =
+      opt?.children && !Array.isArray(opt.children) ? opt.children : null;
+    setFormData((f: any) => ({
+      ...f,
+      department: opt?.label || "",
+      dept_code: meta?.dept_code || "",
+      dept_snapshot: meta || null,
+    }));
+    setErrors((e) => {
+      const next = { ...e };
+      delete next.department;
+      return next;
+    });
+  };
+
+  // ---- delete evaluation ----
   const handleDeleteEvaluation = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
@@ -223,6 +288,7 @@ const PersonalInfoForm = () => {
     }
   };
 
+  // ---- submit ----
   const handleSubmit = async () => {
     if (!validateForm()) return;
     setIsSubmitting(true);
@@ -230,13 +296,54 @@ const PersonalInfoForm = () => {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
 
+      const {
+        trainingType,
+        teamMemberName,
+        employeeId: empId,
+        hireDate,
+        lockerNumber,
+        phoneNumber,
+        jobStartDate,
+        projectedTrainingHours,
+        projectedQualifyingDate,
+        trainingPosition,
+        department,
+        task_code,
+        task_snapshot,
+        dept_code,
+        dept_snapshot,
+      } = formData;
+
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
         {
           action: "update_personal_info",
           data: {
+            // human-readable mirrors
             trainingPosition: trainingPosition.trim(),
-            personalInfo: { ...formData },
+            department: department.trim(),
+            // coded mirrors (DB-friendly)
+            task_code: task_code || null,
+            dept_code: dept_code || null,
+            // full snapshots to freeze current definitions
+            task_snapshot: task_snapshot || null,
+            dept_snapshot: dept_snapshot || null,
+            // nested personalInfo
+            personalInfo: {
+              trainingType,
+              teamMemberName,
+              employeeId: empId,
+              hireDate,
+              lockerNumber,
+              phoneNumber,
+              jobStartDate,
+              projectedTrainingHours,
+              projectedQualifyingDate,
+              task_code: task_code || null,
+              task_snapshot: task_snapshot || null,
+              dept_code: dept_code || null,
+              dept_snapshot: dept_snapshot || null,
+            },
           },
         },
         { headers: { Authorization: token! } }
@@ -296,7 +403,6 @@ const PersonalInfoForm = () => {
                   });
                 } else {
                   handleDeleteEvaluation();
-                  setHasDeletedEvaluation(true);
                   router.replace(`/users/${employeeId}`);
                 }
               }}
@@ -309,6 +415,7 @@ const PersonalInfoForm = () => {
             </Text>
           </View>
 
+          {/* Training Type */}
           <View className="mb-5">
             <Text className="text-base font-medium text-gray-700 mb-2">
               Training Type
@@ -337,7 +444,7 @@ const PersonalInfoForm = () => {
                 </PaperButton>
               }
             >
-              {trainingFor.map((opt) => (
+              {(["New Hire", "Bid", "Cross Training"] as const).map((opt) => (
                 <Menu.Item
                   key={opt}
                   title={opt}
@@ -352,26 +459,64 @@ const PersonalInfoForm = () => {
             )}
           </View>
 
-          {/* Job Title (trainingPosition) */}
-          {/* <View className="mb-5">
-            <FormField
-              title="Job Title"
-              value={trainingPosition}
-              placeholder="Job Title"
-              handleChangeText={(t: string) => {}}
-              error={errors.trainingPosition}
-              // This field IS editable (user types target role)
-              editable={true}
-            />
-          </View> */}
-
+          {/* Prefilled/disabled */}
           {[
             { key: "teamMemberName", label: "Team Member Name" },
             { key: "employeeId", label: "Employee ID" },
             { key: "hireDate", label: "Hire Date (MM/DD/YYYY)" },
-            { key: "trainingPosition", label: "Job Title" },
-            { key: "department", label: "Department" },
-            { key: "lockerNumber", label: "Locker #" },
+            { key: "lockerNumber", label: "Locker Number" },
+          ].map(({ key, label }) => (
+            <View key={key} className="mb-5">
+              <FormField
+                title={label}
+                value={formData[key as keyof typeof formData]}
+                placeholder={label}
+                handleChangeText={() => {}}
+                error={errors[key]}
+                keyboardType={/Date|ID/.test(key) ? "numeric" : "default"}
+                editable={false}
+              />
+            </View>
+          ))}
+
+          {/* Job Title -> SelectInput */}
+          <SelectInput
+            title="Job Title"
+            placeholder="Select Job Title"
+            selectedValue={formData.trainingPosition}
+            onSelect={handleJobSelect}
+            loadData={loadJobOptions}
+            borderColor={
+              errors.trainingPosition ? "border-red-500" : "border-gray-300"
+            }
+            containerStyles="mb-5"
+          />
+          {errors.trainingPosition && (
+            <Text className="text-red-500 text-sm -mt-4 mb-4">
+              {errors.trainingPosition}
+            </Text>
+          )}
+
+          {/* Department -> SelectInput (manual selection) */}
+          <SelectInput
+            title="Department"
+            placeholder="Select Department"
+            selectedValue={formData.department}
+            onSelect={handleDeptSelect}
+            loadData={loadDepartmentOptions}
+            borderColor={
+              errors.department ? "border-red-500" : "border-gray-300"
+            }
+            containerStyles="mb-5"
+          />
+          {errors.department && (
+            <Text className="text-red-500 text-sm -mt-4 mb-4">
+              {errors.department}
+            </Text>
+          )}
+
+          {/* Editable fields */}
+          {[
             { key: "phoneNumber", label: "Phone Number" },
             { key: "jobStartDate", label: "Job Start Date (MM/DD/YYYY)" },
             {
@@ -393,7 +538,6 @@ const PersonalInfoForm = () => {
                 keyboardType={
                   /Date|Hours|ID|Number|Phone/.test(key) ? "numeric" : "default"
                 }
-                editable={!prefilledFields.includes(key as any)}
               />
             </View>
           ))}
