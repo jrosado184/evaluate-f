@@ -21,6 +21,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 import { parseMDY } from "@/app/helpers/dates";
+import * as FileSystem from "expo-file-system";
 
 /* ---------------- helpers (kept tiny) ---------------- */
 const NUMERIC = new Set([
@@ -73,7 +74,99 @@ const knifeSanitize = (s: string) => {
   const p = c.split(".");
   return (p.length > 1 ? `${p[0]}.${p.slice(1).join("")}` : c).slice(0, 3);
 };
-const toNum = (s: string) => (s === "" ? null : Number.isNaN(+s) ? null : +s);
+const toNumSafe = (s: string) =>
+  s === "" ? null : Number.isNaN(+s) ? null : +s;
+
+/** Convert a base64 data URL to a temp file RN can upload via multipart */
+async function dataUrlToTempFile(dataUrl: string, opts?: { name?: string }) {
+  const match = dataUrl.match(/^data:(.+?);base64,(.*)$/);
+  if (!match) throw new Error("Invalid data URL");
+  const mime = match[1] || "image/png";
+  const base64 = match[2];
+
+  const ext =
+    mime === "image/png"
+      ? "png"
+      : mime === "image/jpeg"
+      ? "jpg"
+      : mime === "image/webp"
+      ? "webp"
+      : "bin";
+
+  const name = opts?.name || `signature_${Date.now()}.${ext}`;
+  const fileUri = `${FileSystem.cacheDirectory}${name}`;
+
+  await FileSystem.writeAsStringAsync(fileUri, base64, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+
+  return { uri: fileUri, mime, name };
+}
+
+/** Upload one or more signature files to /api/evaluations/:id/signatures as multipart */
+async function uploadSignaturesMultipart({
+  baseUrl,
+  evaluationId,
+  token, // EXACTLY like your other calls
+  files,
+}: {
+  baseUrl: string;
+  evaluationId: string;
+  token: string; // whatever AsyncStorage has; you already pass it raw to axios in other places
+  files: {
+    employee?: { uri: string; mime: string; name: string };
+    trainer?: { uri: string; mime: string; name: string };
+    supervisor?: { uri: string; mime: string; name: string };
+  };
+}) {
+  const fd = new FormData();
+
+  if (files.employee) {
+    fd.append("employee", {
+      uri: files.employee.uri,
+      type: files.employee.mime,
+      name: files.employee.name,
+    } as any);
+  }
+  if (files.trainer) {
+    fd.append("trainer", {
+      uri: files.trainer.uri,
+      type: files.trainer.mime,
+      name: files.trainer.name,
+    } as any);
+  }
+  if (files.supervisor) {
+    fd.append("supervisor", {
+      uri: files.supervisor.uri,
+      type: files.supervisor.mime,
+      name: files.supervisor.name,
+    } as any);
+  }
+
+  try {
+    const { data } = await axios.patch(
+      `${baseUrl}/evaluations/${evaluationId}/signatures`,
+      fd,
+      {
+        headers: {
+          Authorization: token, // same style as your other requests
+          ...(Platform.OS !== "web"
+            ? { "Content-Type": "multipart/form-data" }
+            : {}),
+          Accept: "application/json",
+        },
+      }
+    );
+    return data;
+  } catch (err: any) {
+    const msg =
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err?.message ||
+      "Upload failed";
+    throw new Error(msg);
+  }
+}
 
 /* ---------------- small presentational bits ---------------- */
 const Labeled = ({
@@ -131,6 +224,7 @@ export default function Step2Form() {
     handStretchCompleted: false,
     hasPain: false,
     comments: "",
+    // previews (server URL or local temp file)
     trainerSignature: "",
     teamMemberSignature: "",
     supervisorSignature: "",
@@ -157,18 +251,18 @@ export default function Step2Form() {
           { headers: { Authorization: token! } }
         );
 
-        setJobStartDate(data.personalInfo.jobStartDate);
-        setTraineeName(data.personalInfo.teamMemberName || "Trainee");
+        setJobStartDate(data.personalInfo?.jobStartDate);
+        setTraineeName(data.personalInfo?.teamMemberName || "Trainee");
         setProjectedTrainingHours(
-          Number(data.personalInfo.projectedTrainingHours) || 200
+          Number(data.personalInfo?.projectedTrainingHours) || 200
         );
 
-        const cumulative = data.evaluations
+        const cumulative = (data.evaluations || [])
           .filter((e: any) => e.weekNumber < currentWeek)
           .reduce((sum: number, e: any) => sum + (e.totalHoursOnJob || 0), 0);
         setPrevHoursOnJob(cumulative);
 
-        const weekData = data.evaluations.find(
+        const weekData = (data.evaluations || []).find(
           (e: any) => e.weekNumber === currentWeek
         );
         if (weekData) {
@@ -179,6 +273,27 @@ export default function Step2Form() {
             else next[k] = v;
           });
           setFormData((f) => ({ ...f, ...next }));
+        }
+
+        // pre-fill server previews if signatures exist
+        const fsigs = data?.finalSignatures || {};
+        const trainerUrl = fsigs?.trainer?.gridfsId
+          ? `${baseUrl}/signatures/${fsigs.trainer.gridfsId}`
+          : "";
+        const employeeUrl = fsigs?.employee?.gridfsId
+          ? `${baseUrl}/signatures/${fsigs.employee.gridfsId}`
+          : "";
+        const supervisorUrl = fsigs?.supervisor?.gridfsId
+          ? `${baseUrl}/signatures/${fsigs.supervisor.gridfsId}`
+          : "";
+
+        if (trainerUrl || employeeUrl || supervisorUrl) {
+          setFormData((f) => ({
+            ...f,
+            trainerSignature: trainerUrl || f.trainerSignature,
+            teamMemberSignature: employeeUrl || f.teamMemberSignature,
+            supervisorSignature: supervisorUrl || f.supervisorSignature,
+          }));
         }
       } catch {
         Alert.alert("Error", "Failed to load evaluation");
@@ -198,7 +313,6 @@ export default function Step2Form() {
 
   // expectedQualified with quarter rounding (stores as number)
   const expectedQualified = useMemo(() => {
-    // make weekSum numeric-safe
     const weekSum = [
       "hoursMonday",
       "hoursTuesday",
@@ -239,21 +353,17 @@ export default function Step2Form() {
       next = fmtMMDDYYYY(raw);
     } else if (key === "knifeScore") {
       const s = knifeSanitize(raw);
-      next = s === "" ? "" : toNum(s);
+      next = s === "" ? "" : toNumSafe(s);
       len = s.length;
     } else if (NUMERIC.has(key)) {
       const s = intOnly(raw);
-      next = s === "" ? "" : toNum(s);
+      next = s === "" ? "" : toNumSafe(s);
       len = s.length;
     }
 
     setFormData((prev) => {
       const prevLen = prev[key] == null ? 0 : String(prev[key]).length;
-
-      // write new value
       const updated = { ...prev, [key]: next };
-
-      // if user just *entered* the first digit, advance focus
       if (typeof index === "number" && prevLen === 0 && len === 1) {
         requestAnimationFrame(() => {
           inputRefs.current[index + 1]?.focus();
@@ -658,9 +768,65 @@ export default function Step2Form() {
 
       <SignatureModal
         visible={!!signatureType}
-        onOK={(b64: string) => {
-          setFormData((f) => ({ ...f, [signatureType!]: b64 }));
-          setSignatureType(null);
+        onOK={async (b64: string) => {
+          try {
+            setIsSubmitting(true);
+
+            // 1) Convert base64 from modal into a temp file
+            const file = await dataUrlToTempFile(b64, {
+              name: `${signatureType}_${Date.now()}.png`,
+            });
+
+            // 2) Upload via multipart — with the SAME token header style as other calls
+            const token = await AsyncStorage.getItem("token");
+            const baseUrl = await getServerIP();
+
+            const files: any = {};
+            if (signatureType === "trainerSignature") files.trainer = file;
+            if (signatureType === "teamMemberSignature") files.employee = file;
+            if (signatureType === "supervisorSignature")
+              files.supervisor = file;
+
+            const updated = await uploadSignaturesMultipart({
+              baseUrl,
+              evaluationId: String(evaluationId),
+              token: token!, // ← this was missing before
+              files,
+            });
+
+            // 3) Preview from server if possible, otherwise show local file
+            const fsigs = updated?.finalSignatures || {};
+            let previewUrl: string | null = null;
+            if (
+              signatureType === "trainerSignature" &&
+              fsigs.trainer?.gridfsId
+            ) {
+              previewUrl = `${baseUrl}/signatures/${fsigs.trainer.gridfsId}`;
+            } else if (
+              signatureType === "teamMemberSignature" &&
+              fsigs.employee?.gridfsId
+            ) {
+              previewUrl = `${baseUrl}/signatures/${fsigs.employee.gridfsId}`;
+            } else if (
+              signatureType === "supervisorSignature" &&
+              fsigs.supervisor?.gridfsId
+            ) {
+              previewUrl = `${baseUrl}/signatures/${fsigs.supervisor.gridfsId}`;
+            }
+
+            setFormData((f) => ({
+              ...f,
+              [signatureType!]: previewUrl || file.uri, // fallback to local preview
+            }));
+          } catch (e: any) {
+            Alert.alert(
+              "Upload failed",
+              e?.message || "Could not upload signature."
+            );
+          } finally {
+            setIsSubmitting(false);
+            setSignatureType(null);
+          }
         }}
         onCancel={() => setSignatureType(null)}
       />

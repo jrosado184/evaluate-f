@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import SlideUpModal from "@/components/SlideUpModal";
@@ -42,7 +42,6 @@ const AddUser = () => {
       location: "",
     });
   }, []);
-
   return (
     <SafeAreaView className="flex-1 bg-white p-6">
       <SinglePressTouchable
@@ -52,12 +51,12 @@ const AddUser = () => {
         <Icon name="chevron-left" size={29} />
         <Text className="text-[1.3rem]">Add user</Text>
       </SinglePressTouchable>
-      <View
+      <ScrollView
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="w-full gap-7 my-4">
+        <View className="w-full gap-7 my-2">
           {/* Name Field */}
           <View className={`${errors.employee_id ? "h-28" : ""}`}>
             <FormField
@@ -97,11 +96,11 @@ const AddUser = () => {
               title="Position"
               placeholder="Select Position"
               options={options}
-              onSelect={(value: { position: string; department: string }) => {
+              onSelect={(value) => {
                 setAddEmployeeInfo((prev: any) => ({
                   ...prev,
-                  position: value.position,
-                  department: value.department,
+                  position: value?.value,
+                  department: value?.department,
                 }));
                 setErrors((prev: any) => ({
                   ...prev,
@@ -205,7 +204,7 @@ const AddUser = () => {
             />
           </View>
         </View>
-      </View>
+      </ScrollView>
 
       <SlideUpModal
         mode="assignLocker"
