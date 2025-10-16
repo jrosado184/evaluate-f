@@ -7,7 +7,9 @@ const getServerIP = async () => {
     return localUrl;
   }
 
-  const prodUrl = Constants.expoConfig?.extra?.PROD_API_URL;
+  const prodUrl =
+    Constants.expoConfig?.extra?.PROD_API_URL ||
+    "https://api.javy-tech.org/api";
   return prodUrl || "";
 };
 

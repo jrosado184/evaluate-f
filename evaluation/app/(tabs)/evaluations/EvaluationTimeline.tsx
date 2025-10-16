@@ -1,26 +1,71 @@
-import React, { useMemo, useState } from "react";
+// components/EvaluationTimeline.tsx
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, Image, Modal, Pressable } from "react-native";
 import { useRouter } from "expo-router";
 import SinglePressTouchable from "@/app/utils/SinglePress";
+import getServerIP from "@/app/requests/NetworkAddress";
 
-const EvaluationTimeline = ({ fileData }: any) => {
+type EvalWeek = {
+  weekNumber: number;
+  totalHoursOnJob?: number;
+  totalHoursOffJob?: number;
+  totalHoursWithTrainee?: number;
+  percentQualified?: number | string;
+  expectedQualified?: number;
+  reTimeAchieved?: number | string | null;
+  knifeSkillsAuditDate?: string;
+  yieldAuditDate?: string;
+  knifeScore?: number | string | null;
+  handStretchCompleted?: boolean;
+  hasPain?: boolean;
+  comments?: string;
+  trainerSignature?: string; // can be absolute or "/api/..."
+  teamMemberSignature?: string; // same
+  supervisorSignature?: string; // same
+};
+
+type Props = {
+  fileData: {
+    _id: string;
+    status: "in_progress" | "complete" | string;
+    personalInfo: { projectedTrainingHours: number | string };
+    evaluations: EvalWeek[];
+  };
+};
+
+const EvaluationTimeline = ({ fileData }: Props) => {
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [apiBase, setApiBase] = useState<string>("");
 
-  const completedWeeks: any = new Map(
-    fileData.evaluations?.map((e: any) => [e.weekNumber, e]) || []
+  useEffect(() => {
+    (async () => setApiBase((await getServerIP()) || ""))();
+  }, []);
+
+  // Turn "/api/signatures/..." into "https://host/api/signatures/..."
+  const toAbs = (u?: string) => {
+    if (!u) return "";
+    if (/^https?:\/\//i.test(u)) return u; // already absolute
+    if (!apiBase) return u; // will re-render once apiBase is loaded
+    const origin = apiBase.replace(/\/api\/?$/, ""); // strip trailing /api
+    return u.startsWith("/") ? `${origin}${u}` : `${origin}/${u}`;
+  };
+
+  const completedWeeks = new Map<number, EvalWeek>(
+    (fileData.evaluations || []).map((e) => [e.weekNumber, e])
   );
 
-  const projectedTrainingWeeks =
-    fileData.personalInfo.projectedTrainingHours / 40;
+  const projectedTrainingHours =
+    Number(fileData.personalInfo.projectedTrainingHours) || 0;
+
+  const projectedTrainingWeeks = projectedTrainingHours
+    ? Math.ceil(projectedTrainingHours / 40)
+    : 0;
 
   const handleEdit = (weekNumber: number) => {
     router.push({
       pathname: `/evaluations/[id]/step2`,
-      params: {
-        id: fileData?._id,
-        week: String(weekNumber), // <-- use "week", not weekNumber
-      },
+      params: { id: fileData?._id, week: String(weekNumber) },
     });
   };
 
@@ -28,96 +73,79 @@ const EvaluationTimeline = ({ fileData }: any) => {
     router.push(`/evaluations/${fileData?._id}/step2?week=${weekNumber}`);
   };
 
-  const renderSignature = (label: string, uri: string) => (
-    <Pressable
-      key={label}
-      onPress={() => setSelectedImage(uri)}
-      className="items-center flex-1"
-    >
-      <View className="w-32 h-16 bg-neutral-50 border border-neutral-400 rounded-md overflow-hidden">
-        <Image
-          source={{ uri }}
-          className="w-full h-full"
-          resizeMode="contain"
-        />
-      </View>
-      <Text className="text-xs text-gray-400 mt-1">{label}</Text>
-    </Pressable>
-  );
+  const renderSignature = (label: string, rawUri: string) => {
+    const uri = toAbs(rawUri);
+    if (!uri) return null;
+    return (
+      <Pressable
+        key={label}
+        onPress={() => setSelectedImage(uri)}
+        className="items-center flex-1"
+      >
+        <View className="w-32 h-16 bg-neutral-50 border border-neutral-400 rounded-md overflow-hidden">
+          <Image
+            source={{ uri }}
+            className="w-full h-full"
+            resizeMode="contain"
+          />
+        </View>
+        <Text className="text-xs text-gray-400 mt-1">{label}</Text>
+      </Pressable>
+    );
+  };
 
-  // Calculate current total hours
+  // Totals across all saved weeks
   const totalHoursOnJob = fileData.evaluations?.reduce(
-    (sum: number, e: any) => sum + (e.totalHoursOnJob || 0),
+    (sum, e) => sum + (e.totalHoursOnJob || 0),
     0
   );
   const totalHoursOffJob = fileData.evaluations?.reduce(
-    (sum: number, e: any) => sum + (e.totalHoursOffJob || 0),
+    (sum, e) => sum + (e.totalHoursOffJob || 0),
     0
   );
   const totalHoursWithTrainee = fileData.evaluations?.reduce(
-    (sum: number, e: any) => sum + (e.totalHoursWithTrainee || 0),
+    (sum, e) => sum + (e.totalHoursWithTrainee || 0),
     0
   );
 
-  const projectedTrainingHours =
-    Number(fileData.personalInfo.projectedTrainingHours) || 0;
-
-  /* 2. Memoised onTrack -------------------------------------------------- */
   const onTrack = useMemo(() => {
-    if (projectedTrainingHours === 0 || completedWeeks.size === 0) {
-      return false;
-    }
-
-    /* latest completed week */
+    if (projectedTrainingHours === 0 || completedWeeks.size === 0) return false;
     const lastWeekNumber = Math.max(...completedWeeks.keys());
-    const currentEval: any = completedWeeks.get(lastWeekNumber) || {};
+    const currentEval = completedWeeks.get(lastWeekNumber);
+    if (!currentEval) return false;
 
-    /* ---- numbers ------------------------------------------------------ */
-    const totalHoursOnJob = Number(currentEval.totalHoursOnJob) || 0;
+    const hours = Number(currentEval.totalHoursOnJob) || 0;
 
-    /* percentQualified may look like "25" or "25%" → strip % then parse */
-    const rawPercent = currentEval?.percentQualified;
+    const raw = currentEval.percentQualified;
+    const actual =
+      Number(typeof raw === "string" ? raw.replace("%", "") : raw ?? 0) || 0;
 
-    const actualPercentCompleted =
-      Number(
-        typeof rawPercent === "string"
-          ? rawPercent.replace("%", "")
-          : rawPercent ?? 0
-      ) || 0;
-
-    if (totalHoursOnJob === 0 || actualPercentCompleted === 0) {
-      return false;
-    }
-
-    /* ---- expected progress so far ------------------------------------ */
-    const expectedPercentToDate =
-      (totalHoursOnJob / projectedTrainingHours) * 100; // e.g. 40/200 = 20%
-
-    /* on-track when actual ≥ expected */
-    const result = actualPercentCompleted >= expectedPercentToDate;
-
-    return result;
+    if (hours === 0 || actual === 0) return false;
+    const expected = (hours / projectedTrainingHours) * 100;
+    return actual >= expected;
   }, [projectedTrainingHours, completedWeeks]);
+
+  // how many cards to show
+  const listLength = (() => {
+    if (fileData.status === "complete") return fileData.evaluations.length;
+    const hasRoom =
+      Number(totalHoursOnJob) -
+        (fileData?.evaluations?.[0]?.totalHoursOnJob || 0) <
+      Number(projectedTrainingHours);
+    return hasRoom
+      ? fileData.evaluations.length + 1
+      : Math.max(fileData.evaluations.length, projectedTrainingWeeks || 0);
+  })();
 
   return (
     <View className="mt-2">
-      {Array.from({
-        length:
-          fileData.status === "complete"
-            ? fileData.evaluations.length
-            : Number(totalHoursOnJob) -
-                fileData?.evaluations[0].totalHoursOnJob <
-              Number(projectedTrainingHours)
-            ? fileData.evaluations.length + 1
-            : projectedTrainingWeeks,
-      }).map((_, i) => {
+      {Array.from({ length: listLength }).map((_, i) => {
         const week = i + 1;
-
-        const evaluation: any = completedWeeks.get(week) || {};
-
+        const evaluation = completedWeeks.get(week);
         const prevWeekComplete = completedWeeks.has(week - 1) || week === 1;
-        const isComplete = completedWeeks.has(week);
+        const isComplete = !!evaluation;
         const nextWeekExists = completedWeeks.has(week + 1);
+
         return (
           <View
             key={week}
@@ -125,7 +153,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
           >
             <Text className="text-lg font-semibold mb-3">Week {week}</Text>
 
-            {isComplete && (
+            {isComplete && evaluation && (
               <>
                 {/* Key Metrics */}
                 <View className="flex-row flex-wrap gap-y-2">
@@ -158,7 +186,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
                       Percent Qualified:{" "}
                       <Text className="font-semibold text-gray-900">
                         {evaluation.percentQualified
-                          ? `${evaluation?.percentQualified}%`
+                          ? `${evaluation.percentQualified}%`
                           : "-"}
                       </Text>
                     </Text>
@@ -167,7 +195,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
                     <Text className="text-sm text-gray-700">
                       Expected Qualified:{" "}
                       <Text className="font-semibold text-gray-900">
-                        {evaluation.expectedQualified
+                        {evaluation.expectedQualified != null
                           ? `${evaluation.expectedQualified}%`
                           : "-"}
                       </Text>
@@ -177,9 +205,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
                     <Text className="text-sm text-gray-700">
                       RE Time Achieved:{" "}
                       <Text className="font-semibold text-gray-900">
-                        {evaluation.reTimeAchieved
-                          ? evaluation.reTimeAchieved
-                          : "-"}
+                        {evaluation.reTimeAchieved ?? "-"}
                       </Text>
                     </Text>
                   </View>
@@ -187,9 +213,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
                     <Text className="text-sm text-gray-700">
                       Knife Audit Date:{" "}
                       <Text className="font-semibold text-gray-900">
-                        {evaluation.knifeSkillsAuditDate
-                          ? evaluation.knifeSkillsAuditDate
-                          : "-"}
+                        {evaluation.knifeSkillsAuditDate || "-"}
                       </Text>
                     </Text>
                   </View>
@@ -197,9 +221,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
                     <Text className="text-sm text-gray-700">
                       Yield Audit Date:{" "}
                       <Text className="font-semibold text-gray-900">
-                        {evaluation.yieldAuditDate
-                          ? evaluation.yieldAuditDate
-                          : "-"}
+                        {evaluation.yieldAuditDate || "-"}
                       </Text>
                     </Text>
                   </View>
@@ -207,7 +229,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
                     <Text className="text-sm text-gray-700">
                       Knife Score:{" "}
                       <Text className="font-semibold text-gray-900">
-                        {evaluation.knifeScore ? evaluation.knifeScore : "-"}
+                        {evaluation.knifeScore ?? "-"}
                       </Text>
                     </Text>
                   </View>
@@ -233,7 +255,7 @@ const EvaluationTimeline = ({ fileData }: any) => {
                 <Text className="text-sm text-gray-500 mt-2">
                   Comments:{" "}
                   <Text className="font-medium text-gray-700">
-                    {evaluation.comments ? evaluation.comments : "-"}
+                    {evaluation.comments || "-"}
                   </Text>
                 </Text>
 
@@ -287,11 +309,10 @@ const EvaluationTimeline = ({ fileData }: any) => {
         );
       })}
 
-      {/* On Track to Qualify Summary */}
+      {/* Summary */}
       <View className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200 w-[90%] self-center">
         <Text className="text-base font-semibold mb-2">Summary</Text>
         <View className="flex-row flex-wrap">
-          {/* Row 1 */}
           <View className="w-1/2 p-1">
             <Text className="text-sm text-gray-700">
               Total Hours on Job:{" "}
@@ -300,7 +321,6 @@ const EvaluationTimeline = ({ fileData }: any) => {
               </Text>
             </Text>
           </View>
-
           <View className="w-1/2 p-1">
             <Text className="text-sm text-gray-700">
               Total Hours Off Job:{" "}
@@ -309,8 +329,6 @@ const EvaluationTimeline = ({ fileData }: any) => {
               </Text>
             </Text>
           </View>
-
-          {/* Row 2 */}
           <View className="w-1/2 p-1">
             <Text className="text-sm text-gray-700">
               Total Hours With Trainee:{" "}
@@ -319,7 +337,6 @@ const EvaluationTimeline = ({ fileData }: any) => {
               </Text>
             </Text>
           </View>
-
           <View className="w-1/2 p-1">
             <View className="flex-row items-center gap-1">
               <Text className="text-sm text-gray-700">
@@ -345,11 +362,13 @@ const EvaluationTimeline = ({ fileData }: any) => {
             </SinglePressTouchable>
           </View>
           <View className="bg-white p-4 rounded-lg w-[90%] h-[60%]">
-            <Image
-              source={{ uri: selectedImage! }}
-              className="w-full h-full"
-              resizeMode="contain"
-            />
+            {selectedImage ? (
+              <Image
+                source={{ uri: selectedImage }}
+                className="w-full h-full"
+                resizeMode="contain"
+              />
+            ) : null}
           </View>
         </Pressable>
       </Modal>
