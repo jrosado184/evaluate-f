@@ -24,6 +24,11 @@ import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 import { parseMDY } from "@/app/helpers/dates";
 import * as FileSystem from "expo-file-system";
+import {
+  pickSigUrlFromResponse,
+  toRelativeSignaturePath,
+  uploadSignaturesMultipart,
+} from "@/app/helpers/signatureHelpers";
 
 /* ---------------- helpers ---------------- */
 const NUMERIC = new Set([
@@ -101,103 +106,6 @@ async function dataUrlToTempFile(dataUrl: string, opts?: { name?: string }) {
     encoding: FileSystem.EncodingType.Base64,
   });
   return { uri: fileUri, mime, name };
-}
-
-/** Normalize any absolute/relative URL to a relative “/api/signatures/<id>” */
-function toRelativeSignaturePath(url: string, baseUrl: string) {
-  if (!url) return "";
-  if (url.startsWith("file://")) return "";
-
-  // already relative?
-  if (url.startsWith("/")) {
-    const m = url.match(/\/(?:api\/)?signatures\/([A-Za-z0-9]+)/);
-    return m ? `/api/signatures/${m[1]}` : "";
-  }
-
-  // absolute
-  try {
-    const u = new URL(url);
-    const m = u.pathname.match(/\/(?:api\/)?signatures\/([A-Za-z0-9]+)/);
-    if (m) return `/api/signatures/${m[1]}`;
-  } catch {}
-
-  // strip base prefix if present
-  if (baseUrl && url.startsWith(baseUrl)) {
-    const rest = url.slice(baseUrl.length);
-    const m = rest.match(/\/(?:api\/)?signatures\/([A-Za-z0-9]+)/);
-    if (m) return `/api/signatures/${m[1]}`;
-  }
-  return "";
-}
-
-/** Choose a URL from any server response shape */
-function pickSigUrlFromResponse(
-  role: "trainer" | "employee" | "supervisor",
-  data: any
-): string {
-  if (!data) return "";
-  if (data.files?.[role]?.url) return String(data.files[role].url);
-  if (data.files?.[role]?.gridfsId)
-    return `/api/signatures/${data.files[role].gridfsId}`;
-  if (data.finalSignatures?.[role]?.gridfsId)
-    return `/api/signatures/${data.finalSignatures[role].gridfsId}`;
-  if (data.url) return String(data.url);
-  if (data.gridfsId) return `/api/signatures/${data.gridfsId}`;
-  return "";
-}
-
-/** Multipart upload using axios (matches your other calls) */
-async function uploadSignaturesMultipart({
-  baseUrl,
-  evaluationId,
-  token, // "Bearer …"
-  files,
-}: {
-  baseUrl: string;
-  evaluationId: string;
-  token: string;
-  files: {
-    employee?: { uri: string; mime: string; name: string };
-    trainer?: { uri: string; mime: string; name: string };
-    supervisor?: { uri: string; mime: string; name: string };
-  };
-}) {
-  const fd = new FormData();
-  if (files.employee)
-    fd.append("employee", {
-      uri: files.employee.uri,
-      type: files.employee.mime,
-      name: files.employee.name,
-    } as any);
-  if (files.trainer)
-    fd.append("trainer", {
-      uri: files.trainer.uri,
-      type: files.trainer.mime,
-      name: files.trainer.name,
-    } as any);
-  if (files.supervisor)
-    fd.append("supervisor", {
-      uri: files.supervisor.uri,
-      type: files.supervisor.mime,
-      name: files.supervisor.name,
-    } as any);
-
-  const { data } = await axios.patch(
-    `${baseUrl}/evaluations/${evaluationId}/signatures`,
-    fd,
-    {
-      headers: {
-        Authorization: (token || "").startsWith("Bearer ")
-          ? token
-          : `Bearer ${token}`,
-        ...(Platform.OS !== "web"
-          ? { "Content-Type": "multipart/form-data" }
-          : {}),
-        Accept: "application/json",
-      },
-    }
-  );
-  return data; // raw (we’ll pick the url afterwards)
 }
 
 /** turn a stored relative path into an absolute URL for the <Image/> preview */
@@ -774,7 +682,6 @@ export default function Step2Form() {
         onOK={async (b64: string) => {
           try {
             setIsSubmitting(true);
-
             const file = await dataUrlToTempFile(b64, {
               name: `${signatureType}_${Date.now()}.png`,
             });
@@ -782,17 +689,21 @@ export default function Step2Form() {
             const token = (await AsyncStorage.getItem("token"))!;
             const baseUrl = apiBase || (await getServerIP());
 
+            // 3) Map UI key -> server field ("trainer"/"employee"/"supervisor")
             const files: any = {};
             if (signatureType === "trainerSignature") files.trainer = file;
             if (signatureType === "teamMemberSignature") files.employee = file;
             if (signatureType === "supervisorSignature")
               files.supervisor = file;
 
+            const weekNumber = Number(currentWeek);
+
             const resp = await uploadSignaturesMultipart({
               baseUrl,
               evaluationId: String(evaluationId),
               token,
               files,
+              weekNumber,
             });
 
             const role =
@@ -802,7 +713,7 @@ export default function Step2Form() {
                 ? "employee"
                 : "supervisor";
 
-            const absOrRel = pickSigUrlFromResponse(role as any, resp);
+            const absOrRel = pickSigUrlFromResponse(role, resp);
             const rel = toRelativeSignaturePath(absOrRel, baseUrl);
 
             if (!rel) {
@@ -810,8 +721,9 @@ export default function Step2Form() {
                 resp?.files?.[role]?.gridfsId ||
                 resp?.finalSignatures?.[role]?.gridfsId ||
                 resp?.gridfsId;
-              if (!maybeId)
-                throw new Error("Upload did not return a valid URL.");
+              if (!maybeId) {
+                throw new Error("Upload did not return a valid signature URL.");
+              }
               setFormData((f) => ({
                 ...f,
                 [signatureType!]: `/api/signatures/${maybeId}`,
