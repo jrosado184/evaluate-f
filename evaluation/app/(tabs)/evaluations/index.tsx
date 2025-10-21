@@ -18,7 +18,7 @@ const Evaluations = () => {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
       axios
-        .get(`${baseUrl}/evaluations`, {
+        .get(`${baseUrl}/evaluations?migrate=1`, {
           headers: {
             Authorization: token,
           },
