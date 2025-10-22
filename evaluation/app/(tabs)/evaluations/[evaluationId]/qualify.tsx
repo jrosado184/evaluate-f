@@ -18,22 +18,87 @@ import useAuthContext from "@/app/context/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
+import * as FileSystem from "expo-file-system";
 
 type SignatureData = {
   image: string;
   signedAt: string;
 };
 
+const ROLE_ORDER: Array<
+  | "teamMember"
+  | "trainer"
+  | "supervisor"
+  | "trainingSupervisor"
+  | "superintendent"
+> = [
+  "teamMember",
+  "trainer",
+  "supervisor",
+  "trainingSupervisor",
+  "superintendent",
+];
+
+// Convert base64 or dataURL into a temporary file compatible with RN FormData
+async function dataUrlToRNFile(data: string, name: string) {
+  const base64 = data.startsWith("data:") ? data.split(",")[1] || "" : data;
+  const path = `${FileSystem.cacheDirectory}${name}`;
+  await FileSystem.writeAsStringAsync(path, base64, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  return { uri: path, name, type: "image/png" };
+}
+
+/** Upload final signatures (multipart) to /api/evaluations/:id/final-signatures using axios */
+async function uploadFinalSignaturesMultipart({
+  baseUrl,
+  evaluationId,
+  token,
+  signatures,
+}: {
+  baseUrl: string;
+  evaluationId: string;
+  token: string;
+  signatures: Record<string, SignatureData>;
+}) {
+  const fd = new FormData();
+
+  // Must match server field names
+  for (const role of ROLE_ORDER) {
+    const sig = signatures[role];
+    if (sig?.image) {
+      const file = await dataUrlToRNFile(
+        sig.image,
+        `${role}_${Date.now()}.png`
+      );
+      // @ts-ignore - RN FormData shim
+      fd.append(role, file);
+      fd.append(`${role}_signedAt`, sig.signedAt || "");
+    }
+  }
+
+  const url = `${baseUrl}/evaluations/${encodeURIComponent(
+    evaluationId
+  )}/final-signatures`;
+
+  // Use axios with multipart
+  const resp = await axios.patch(url, fd, {
+    headers: {
+      Authorization: token,
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return resp.data;
+}
+
 const QualifyScreen = () => {
-  const { id, evaluationId } = useLocalSearchParams();
+  const { id, evaluationId, employee_name, department, position } =
+    useLocalSearchParams();
   const { employee } = useEmployeeContext();
   const { currentUser } = useAuthContext();
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-
-  const traineeName = employee?.employee_name;
-  const department = employee?.department;
-  const position = employee?.position;
 
   const [signatureType, setSignatureType] = useState<string | null>(null);
   const [signatures, setSignatures] = useState<Record<string, SignatureData>>({
@@ -44,66 +109,55 @@ const QualifyScreen = () => {
     superintendent: { image: "", signedAt: "" },
   });
 
-  const allSigned = Object.values(signatures).every((sig) => sig.image);
+  const allSigned = Object.values(signatures).every((sig) => !!sig.image);
 
   const handleSignature = (base64: string) => {
-    if (signatureType) {
-      const now = new Date();
-      const formattedDate = `${String(now.getMonth() + 1).padStart(
-        2,
-        "0"
-      )}/${String(now.getDate()).padStart(2, "0")}/${now.getFullYear()}`;
+    if (!signatureType) return;
+    const now = new Date();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const yyyy = now.getFullYear();
+    const formattedDate = `${mm}/${dd}/${yyyy}`;
 
-      setSignatures((prev) => ({
-        ...prev,
-        [signatureType]: { image: base64, signedAt: formattedDate },
-      }));
-      setSignatureType(null);
-    }
+    setSignatures((prev) => ({
+      ...prev,
+      [signatureType]: { image: base64, signedAt: formattedDate },
+    }));
+    setSignatureType(null);
   };
 
   const handleMarkQualified = async () => {
-    setLoading(true);
     try {
+      setLoading(true);
+
       const baseUrl = await getServerIP();
-      const token = await AsyncStorage.getItem("token");
+      const token = (await AsyncStorage.getItem("token")) || "";
 
-      // Use the date from the final signatures
-      const firstSignatureKey = Object.keys(signatures)[0];
+      await uploadFinalSignaturesMultipart({
+        baseUrl,
+        evaluationId: String(evaluationId),
+        token,
+        signatures,
+      });
+
+      const firstRoleWithDate = ROLE_ORDER.find((r) => signatures[r]?.signedAt);
       const qualifiedAtDate =
-        signatures[firstSignatureKey]?.signedAt || new Date().toISOString();
+        (firstRoleWithDate && signatures[firstRoleWithDate].signedAt) ||
+        new Date().toISOString();
 
-      await axios.patch(
-        `${baseUrl}/evaluations/${evaluationId}`,
-        {
-          action: "final_signatures",
-          data: { signatures },
-        },
-        {
-          headers: {
-            Authorization: token!,
-          },
-        }
-      );
-
-      // Also update the status AND add qualifiedAt
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}/status`,
-        {
-          status: "complete",
-          qualifiedAt: qualifiedAtDate, // include qualifiedAt in the final update
-        },
-        {
-          headers: {
-            Authorization: token,
-          },
-        }
+        { status: "complete", qualifiedAt: qualifiedAtDate },
+        { headers: { Authorization: token } }
       );
 
-      router.replace(`/users/${id}/evaluations/${evaluationId}`);
-    } catch (error) {
+      router.replace({
+        pathname: `/evaluations`,
+        params: { complete: "complete" },
+      });
+    } catch (error: any) {
       console.error("Failed to mark as qualified:", error);
-      Alert.alert("Error", "Failed to mark as qualified.");
+      Alert.alert("Error", error?.message || "Failed to mark as qualified.");
     } finally {
       setLoading(false);
     }
@@ -130,7 +184,7 @@ const QualifyScreen = () => {
         {/* Info */}
         <View className="mb-8 space-y-2">
           <Text className="text-base text-gray-700">
-            <Text className="font-semibold">Name:</Text> {traineeName}
+            <Text className="font-semibold">Name:</Text> {employee_name}
           </Text>
           <Text className="text-base text-gray-700">
             <Text className="font-semibold">Department:</Text> {department}
@@ -161,11 +215,11 @@ const QualifyScreen = () => {
                   <Text className="text-gray-400">Tap to Sign</Text>
                 )}
               </SinglePressTouchable>
-              {signedAt && (
+              {signedAt ? (
                 <Text className="text-xs text-gray-400 mt-1">
                   Signed at: {signedAt}
                 </Text>
-              )}
+              ) : null}
             </View>
           ))}
         </View>
@@ -173,9 +227,8 @@ const QualifyScreen = () => {
         {allSigned && (
           <SinglePressTouchable
             onPress={handleMarkQualified}
-            disabled={loading} // Disable while loading
-            className={`mt-10 py-4 rounded-md items-center bg-emerald-600
-            `}
+            disabled={loading}
+            className="mt-10 py-4 rounded-md items-center bg-emerald-600"
           >
             {loading ? (
               <ActivityIndicator size="small" color="#ffffff" />

@@ -16,6 +16,7 @@ import EvaluationButton from "@/components/buttons/EvaluationButton";
 import Icon from "react-native-vector-icons/Feather";
 import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
+import useEmployeeContext from "@/app/context/EmployeeContext";
 
 const EvaluationSummary = () => {
   const { evaluationId }: { id: any; evaluationId: any } =
@@ -70,7 +71,15 @@ const EvaluationSummary = () => {
     } else if (evaluation.status === "in_progress") {
       nextRoute =
         weeksDone >= 3
-          ? `/evaluations/${evaluationId}/qualify`
+          ? {
+              pathname: "/evaluations/[evaluationId]/qualify",
+              params: {
+                evaluationId, // required for [evaluationId]
+                employee_name: evaluation?.personalInfo.teamMemberName,
+                department: evaluation?.personalInfo.department,
+                position: evaluation?.position,
+              },
+            }
           : `/evaluations/${evaluationId}/step2`;
     }
 
@@ -197,7 +206,7 @@ const EvaluationSummary = () => {
         {evaluation.status !== "complete" && weeksDone > 0 && (
           <View className="px-4 mt-4 mb-8">
             <EvaluationButton
-              status={evaluation.status}
+              status={evaluation?.status}
               canQualify={canQualify}
               onPress={handleContinue}
               isLoading={submitting}

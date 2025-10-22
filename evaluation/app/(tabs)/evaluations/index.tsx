@@ -6,9 +6,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import axios from "axios";
 import { ActivityIndicator } from "react-native-paper";
+import { useLocalSearchParams } from "expo-router";
 
 const Evaluations = () => {
-  const [status, setStatus] = useState("in_progress");
+  const { complete } = useLocalSearchParams();
+  const [status, setStatus] = useState(complete || "in_progress");
   const [evaluations, setEvaluations] = useState<any>([]);
   const [loading, setLoading] = useState(false);
 
@@ -18,7 +20,7 @@ const Evaluations = () => {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
       axios
-        .get(`${baseUrl}/evaluations?migrate=1`, {
+        .get(`${baseUrl}/evaluations`, {
           headers: {
             Authorization: token,
           },
