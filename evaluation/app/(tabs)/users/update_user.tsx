@@ -164,10 +164,11 @@ const UpdateUser = () => {
               title="Position"
               placeholder="Select Position"
               options={options}
-              onSelect={(value: { position: string; department: string }) => {
+              onSelect={(value: { value: string; department: string }) => {
+                console.log(value);
                 setAddEmployeeInfo((prev: any) => ({
                   ...prev,
-                  position: value.position,
+                  position: value.value,
                   department: value.department,
                 }));
                 setErrors((prev: any) => ({

@@ -116,7 +116,6 @@ function absFromRelative(rel: string, baseUrl: string) {
     const u = new URL(baseUrl);
     return `${u.origin}${rel}`;
   } catch {
-    // baseUrl might be like http://192.168.0.90:9000/api — still safe:
     const origin = baseUrl.replace(/\/api\/?$/, "");
     return `${origin}${rel}`;
   }
@@ -193,6 +192,16 @@ export default function Step2Form() {
   const inputRefs = useRef<Array<TextInput | null>>([]);
   const [apiBase, setApiBase] = useState<string>("");
 
+  // NEW: stash base64 signatures here; we’ll upload them in handleSubmit
+  const [pendingSigs, setPendingSigs] = useState<
+    Partial<
+      Record<
+        "trainerSignature" | "teamMemberSignature" | "supervisorSignature",
+        string
+      >
+    >
+  >({});
+
   /* load evaluation */
   useEffect(() => {
     (async () => {
@@ -225,7 +234,6 @@ export default function Step2Form() {
             if (NUMERIC.has(k)) next[k] = v == null ? null : Number(v);
             else if (DATE_KEYS.has(k)) next[k] = typeof v === "string" ? v : "";
             else if (typeof v === "string" && /\/signatures\//.test(v)) {
-              // normalize any absolute to relative
               next[k] = toRelativeSignaturePath(v, baseUrl) || v;
             } else next[k] = v;
           });
@@ -320,6 +328,76 @@ export default function Step2Form() {
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
+
+      const token = await AsyncStorage.getItem("token");
+      const baseUrl = apiBase || (await getServerIP());
+      const weekNumber = Number(currentWeek);
+
+      // 0) Upload any pending base64 signatures first
+      let nextFormData = { ...formData };
+      const hasAnyPending =
+        !!pendingSigs.trainerSignature ||
+        !!pendingSigs.teamMemberSignature ||
+        !!pendingSigs.supervisorSignature;
+
+      if (hasAnyPending) {
+        const files: any = {};
+        if (pendingSigs.trainerSignature) {
+          files.trainer = await dataUrlToTempFile(
+            pendingSigs.trainerSignature,
+            { name: `trainer_${Date.now()}.png` }
+          );
+        }
+        if (pendingSigs.teamMemberSignature) {
+          files.employee = await dataUrlToTempFile(
+            pendingSigs.teamMemberSignature,
+            { name: `employee_${Date.now()}.png` }
+          );
+        }
+        if (pendingSigs.supervisorSignature) {
+          files.supervisor = await dataUrlToTempFile(
+            pendingSigs.supervisorSignature,
+            { name: `supervisor_${Date.now()}.png` }
+          );
+        }
+
+        const resp = await uploadSignaturesMultipart({
+          baseUrl,
+          evaluationId: String(evaluationId),
+          token: token!,
+          files,
+          weekNumber,
+        });
+
+        // Map backend response to our UI keys, store RELATIVE path
+        const roleToKey: Record<string, keyof typeof nextFormData> = {
+          trainer: "trainerSignature",
+          employee: "teamMemberSignature",
+          supervisor: "supervisorSignature",
+        };
+
+        for (const role of Object.keys(roleToKey)) {
+          if (!files[role]) continue;
+          const uiKey = roleToKey[role];
+          const absOrRel = pickSigUrlFromResponse(role, resp);
+          const rel = toRelativeSignaturePath(absOrRel, baseUrl);
+          if (rel) {
+            nextFormData[uiKey] = rel;
+          } else {
+            const id =
+              resp?.files?.[role]?.gridfsId ||
+              resp?.finalSignatures?.[role]?.gridfsId ||
+              resp?.gridfsId;
+            if (!id) throw new Error("Upload did not return a valid URL.");
+            nextFormData[uiKey] = `/api/signatures/${id}`;
+          }
+        }
+
+        setPendingSigs({});
+        setFormData(nextFormData);
+      }
+
+      // 1) compute totals
       const totalHoursOnJob = sum([
         "hoursMonday",
         "hoursTuesday",
@@ -346,16 +424,14 @@ export default function Step2Form() {
       ]);
       const totalHours = totalHoursOnJob + totalHoursOffJob;
 
-      const token = await AsyncStorage.getItem("token");
-      const baseUrl = apiBase || (await getServerIP());
-
+      // 2) save the week (now includes the resolved signature URLs)
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
         {
           action: "add_or_update_week",
           data: {
             weekData: {
-              ...formData, // contains relative /api/signatures/* if any
+              ...nextFormData,
               expectedQualified,
               weekNumber: currentWeek,
               totalHours,
@@ -368,6 +444,7 @@ export default function Step2Form() {
         { headers: { Authorization: token! } }
       );
 
+      // 3) ensure status is in_progress
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
         {
@@ -381,8 +458,8 @@ export default function Step2Form() {
         pathname: `/evaluations/${evaluationId}`,
         params: { employeeId },
       });
-    } catch {
-      Alert.alert("Error", "Failed to save evaluation");
+    } catch (e: any) {
+      Alert.alert("Error", e?.message || "Failed to save evaluation");
     } finally {
       setIsSubmitting(false);
     }
@@ -679,67 +756,16 @@ export default function Step2Form() {
 
       <SignatureModal
         visible={!!signatureType}
-        onOK={async (b64: string) => {
-          try {
-            setIsSubmitting(true);
-            const file = await dataUrlToTempFile(b64, {
-              name: `${signatureType}_${Date.now()}.png`,
-            });
+        onOK={(b64: string) => {
+          if (!signatureType) return;
+          setPendingSigs((p) => ({ ...p, [signatureType]: b64 }));
+          const tempPreviewUrl = b64;
+          setFormData((f) => ({
+            ...f,
+            [signatureType]: tempPreviewUrl,
+          }));
 
-            const token = (await AsyncStorage.getItem("token"))!;
-            const baseUrl = apiBase || (await getServerIP());
-
-            // 3) Map UI key -> server field ("trainer"/"employee"/"supervisor")
-            const files: any = {};
-            if (signatureType === "trainerSignature") files.trainer = file;
-            if (signatureType === "teamMemberSignature") files.employee = file;
-            if (signatureType === "supervisorSignature")
-              files.supervisor = file;
-
-            const weekNumber = Number(currentWeek);
-
-            const resp = await uploadSignaturesMultipart({
-              baseUrl,
-              evaluationId: String(evaluationId),
-              token,
-              files,
-              weekNumber,
-            });
-
-            const role =
-              signatureType === "trainerSignature"
-                ? "trainer"
-                : signatureType === "teamMemberSignature"
-                ? "employee"
-                : "supervisor";
-
-            const absOrRel = pickSigUrlFromResponse(role, resp);
-            const rel = toRelativeSignaturePath(absOrRel, baseUrl);
-
-            if (!rel) {
-              const maybeId =
-                resp?.files?.[role]?.gridfsId ||
-                resp?.finalSignatures?.[role]?.gridfsId ||
-                resp?.gridfsId;
-              if (!maybeId) {
-                throw new Error("Upload did not return a valid signature URL.");
-              }
-              setFormData((f) => ({
-                ...f,
-                [signatureType!]: `/api/signatures/${maybeId}`,
-              }));
-            } else {
-              setFormData((f) => ({ ...f, [signatureType!]: rel }));
-            }
-          } catch (e: any) {
-            Alert.alert(
-              "Upload failed",
-              e?.message || "Could not upload signature."
-            );
-          } finally {
-            setIsSubmitting(false);
-            setSignatureType(null);
-          }
+          setSignatureType(null);
         }}
         onCancel={() => setSignatureType(null)}
       />
