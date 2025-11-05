@@ -1,5 +1,6 @@
+// components/ActionBar.tsx
 // @ts-nocheck
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Actionsheet,
   ActionsheetBackdrop,
@@ -9,27 +10,39 @@ import {
   ActionsheetItem,
   ActionsheetItemText,
 } from "./ui/actionsheet";
-import { ScrollView, Text, View } from "react-native";
+import {
+  FlatList,
+  Text,
+  TextInput,
+  View,
+  ActivityIndicator,
+} from "react-native";
 import Icon from "react-native-vector-icons/Feather";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 
-/**
- * We support EITHER flat options OR hierarchical (with children).
- * For our jobs list we use FLAT options: { label, value, children?: {dept_name, dept_code, task_code} }
- */
 export interface TreeNode {
   label: string;
   value?: any;
-  children?: TreeNode[] | any; // allow arbitrary payload (we keep it intact)
+  children?: TreeNode[] | any;
+  id?: string;
+  __k?: string;
 }
 
 interface ActionBarProps {
   showActionSheet: boolean;
   setShowActionsheet: (value: boolean) => void;
   options: TreeNode[];
-  onSelect: (value: any) => void; // we return the FULL node untouched
+  onSelect: (value: any) => void;
   style?: object;
   title?: string;
+
+  // search + pagination
+  searchable?: boolean;
+  query?: string;
+  onSearchChange?: (text: string) => void;
+  loadMore?: () => void;
+  hasMore?: boolean;
+  isLoading?: boolean;
 }
 
 const ActionBar: React.FC<ActionBarProps> = ({
@@ -39,6 +52,13 @@ const ActionBar: React.FC<ActionBarProps> = ({
   onSelect,
   title = "Select an Option",
   style,
+
+  searchable = true,
+  query = "",
+  onSearchChange,
+  loadMore,
+  hasMore = false,
+  isLoading = false,
 }) => {
   const [breadcrumbs, setBreadcrumbs] = useState<string[]>([]);
 
@@ -58,10 +78,9 @@ const ActionBar: React.FC<ActionBarProps> = ({
 
   useEffect(() => {
     if (showActionSheet) setBreadcrumbs([]);
-  }, [showActionSheet, options]);
+  }, [showActionSheet]);
 
   const handleSelect = (node: TreeNode) => {
-    // If node has array children, drill down; else return FULL node unchanged
     if (Array.isArray(node.children) && node.children.length > 0) {
       setBreadcrumbs((prev) => [...prev, node.label]);
       return;
@@ -76,6 +95,21 @@ const ActionBar: React.FC<ActionBarProps> = ({
   };
 
   const list = (currentOptions.length ? currentOptions : options) || [];
+  const atRoot = breadcrumbs.length === 0;
+
+  // Stable footer (avoid remounts/jumps)
+  const Footer = () => (
+    <View className="py-3 items-center">
+      {isLoading ? (
+        <ActivityIndicator />
+      ) : hasMore && atRoot ? (
+        <Text className="text-gray-500">Scroll for more…</Text>
+      ) : null}
+    </View>
+  );
+
+  // Momentum guard for iOS double-fire
+  const calledDuringMomentum = useRef(false);
 
   return (
     <Actionsheet
@@ -116,20 +150,58 @@ const ActionBar: React.FC<ActionBarProps> = ({
               {breadcrumbs.join(" / ")}
             </Text>
           )}
+
+          {atRoot && searchable && typeof onSearchChange === "function" && (
+            <TextInput
+              value={query}
+              onChangeText={onSearchChange}
+              placeholder="Search…"
+              className="border border-gray-300 rounded-xl px-3 h-12 mt-3"
+              autoCapitalize="none"
+              autoCorrect={false}
+              clearButtonMode="while-editing"
+              blurOnSubmit={true}
+              returnKeyType="search"
+            />
+          )}
         </View>
 
-        <ScrollView className="h-48 w-full">
-          {list.map((option, index) => (
-            <ActionsheetItem
-              key={`${option.label}-${index}`}
-              onPress={() => handleSelect(option)}
-            >
+        <FlatList
+          data={list}
+          keyExtractor={(item) =>
+            String(
+              item.__k ??
+                item.id ??
+                item.value ??
+                `${item.label}|${item?.children?.dept_code ?? ""}|${
+                  item?.children?.matching_task_codes?.[0] ?? ""
+                }`
+            )
+          }
+          renderItem={({ item }) => (
+            <ActionsheetItem onPress={() => handleSelect(item)}>
               <ActionsheetItemText className="font-inter-regular text-[1rem] p-1">
-                {option.label}
+                {item.label}
               </ActionsheetItemText>
             </ActionsheetItem>
-          ))}
-        </ScrollView>
+          )}
+          style={{ width: "100%", maxHeight: 320 }}
+          removeClippedSubviews={false}
+          maintainVisibleContentPosition={{ minIndexForVisible: 1 }}
+          onMomentumScrollBegin={() => {
+            calledDuringMomentum.current = false;
+          }}
+          onEndReachedThreshold={0.2}
+          onEndReached={() => {
+            if (!atRoot || !hasMore || isLoading) return;
+            if (calledDuringMomentum.current) return;
+            calledDuringMomentum.current = true;
+            loadMore?.();
+          }}
+          ListFooterComponent={Footer}
+          initialNumToRender={20}
+          windowSize={8}
+        />
       </ActionsheetContent>
     </Actionsheet>
   );

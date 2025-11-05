@@ -5,7 +5,7 @@ import useEmployeeContext from "@/app/context/EmployeeContext";
 import useValidation from "@/app/validation/useValidation";
 import useAuthContext from "@/app/context/AuthContext";
 import addEmployee from "@/app/requests/addEmployee";
-import { router, useNavigation } from "expo-router";
+import { router } from "expo-router";
 import useActionContext from "@/app/context/ActionsContext";
 
 const useAddUser = () => {
@@ -32,8 +32,6 @@ const useAddUser = () => {
   const { newErrors } = useValidation(errors);
   const { currentUser } = useAuthContext();
   const { setActionsMessage } = useActionContext();
-
-  const navigation: any = useNavigation();
 
   useEffect(() => {
     fetchJobs();

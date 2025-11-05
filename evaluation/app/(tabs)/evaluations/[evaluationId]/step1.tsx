@@ -32,6 +32,8 @@ import SinglePressTouchable from "@/app/utils/SinglePress";
 import formatISODate from "@/app/conversions/ConvertIsoDate";
 import { dateValidation } from "@/app/validation/dateValidation";
 import SelectInput from "@/components/SelectField";
+import { titleCase } from "@/app/helpers/names";
+import { loadJobOptions } from "@/app/requests/loadJobs";
 
 const PersonalInfoForm = () => {
   const router = useRouter();
@@ -49,6 +51,7 @@ const PersonalInfoForm = () => {
     task_snapshot: null, // full task record (for snapshot)
     // department (manual)
     department: "", // label shown
+    supervisor: null,
     dept_code: "", // selected dept_code
     dept_snapshot: null, // full department record (for snapshot)
     // other fields
@@ -75,16 +78,6 @@ const PersonalInfoForm = () => {
     "hireDate",
   ] as const;
 
-  // ---- Loaders for SelectInput (jobs + departments) ----
-  const loadJobOptions = useCallback(async () => {
-    const token = await AsyncStorage.getItem("token");
-    const baseUrl = await getServerIP();
-    const resp = await axios.get(`${baseUrl}/tasks/options`, {
-      headers: { Authorization: token! },
-    });
-    return resp.data?.results ?? [];
-  }, []);
-
   const loadDepartmentOptions = useCallback(async () => {
     const token = await AsyncStorage.getItem("token");
     const baseUrl = await getServerIP();
@@ -100,9 +93,22 @@ const PersonalInfoForm = () => {
           d?.children?.local_name ||
           d?.children?.department_name ||
           d?.children?.sap_description ||
-          d.label, // fallback
+          d.label,
       })) ?? []
     );
+  }, []);
+
+  const loadSupervisorsOptions = useCallback(async () => {
+    const token = await AsyncStorage.getItem("token");
+    const baseUrl = await getServerIP();
+    const resp = await axios.get(`${baseUrl}/management`, {
+      headers: { Authorization: token! },
+    });
+
+    return resp.data.map((supervisor) => ({
+      ...supervisor,
+      label: titleCase(supervisor?.name),
+    }));
   }, []);
 
   // ---- Fetch existing evaluation to prefill (if any) ----
@@ -514,6 +520,23 @@ const PersonalInfoForm = () => {
               {errors.department}
             </Text>
           )}
+
+          <SelectInput
+            title="Supervisor"
+            placeholder="Select Supervisor"
+            selectedValue={formData.supervisor}
+            onSelect={(val) =>
+              setFormData({
+                ...formData,
+                supervisor: val,
+              })
+            }
+            loadData={loadSupervisorsOptions}
+            borderColor={
+              errors.department ? "border-red-500" : "border-gray-300"
+            }
+            containerStyles="mb-5"
+          />
 
           {/* Editable fields */}
           {[

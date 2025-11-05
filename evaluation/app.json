@@ -4,7 +4,7 @@
     "slug": "evaluation",
     "version": "1.0.0",
     "extra": {
-      "PROD_API_URL": "https://evaluation-oojz.onrender.com/api",
+      "PROD_API_URL": "https://api.javy-tech.org/api",
       "router": {},
       "eas": {
         "projectId": "a65685d4-0ed5-4986-9c94-129e36623a9f"

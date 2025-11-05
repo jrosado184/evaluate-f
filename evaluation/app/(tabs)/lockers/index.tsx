@@ -21,7 +21,6 @@ import SinglePressTouchable from "@/app/utils/SinglePress";
 import SlideUpModal from "@/components/SlideUpModal";
 import SuccessModal from "@/components/SuccessModal";
 import { Swipeable } from "react-native-gesture-handler";
-import Icon from "react-native-vector-icons/Feather";
 
 const Lockers = () => {
   const {

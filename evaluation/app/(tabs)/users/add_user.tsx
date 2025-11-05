@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { View, Text, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -7,15 +7,13 @@ import FormField from "@/components/FormField";
 import Button from "@/components/Button";
 import SelectField from "@/components/SelectField";
 import { router } from "expo-router";
-import useGetJobs from "@/app/requests/useGetJobs";
 import useEmployeeContext from "@/app/context/EmployeeContext";
-import useSelect from "@/hooks/useSelect";
 import Error from "@/components/ErrorText";
 import useAddUser from "@/hooks/useAddUser";
 import SinglePressTouchable from "@/app/utils/SinglePress";
+import { loadJobOptions } from "@/app/requests/loadJobs";
 
 const AddUser = () => {
-  const { setSelectedValue } = useSelect();
   const {
     errors,
     setErrors,
@@ -25,8 +23,8 @@ const AddUser = () => {
     modalVisible,
     setModalVisible,
   } = useAddUser();
+
   const { setAddEmployeeInfo, addEmployeeInfo, loading } = useEmployeeContext();
-  const { fetchJobs } = useGetJobs();
 
   useEffect(() => {
     setAddEmployeeInfo({
@@ -42,6 +40,7 @@ const AddUser = () => {
       location: "",
     });
   }, []);
+
   return (
     <SafeAreaView className="flex-1 bg-white p-6">
       <SinglePressTouchable
@@ -51,6 +50,7 @@ const AddUser = () => {
         <Icon name="chevron-left" size={29} />
         <Text className="text-[1.3rem]">Add user</Text>
       </SinglePressTouchable>
+
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 40 }}
@@ -83,32 +83,31 @@ const AddUser = () => {
               handleChangeText={(value: any) =>
                 handleEmployeeInfo(
                   "employee_id",
-                  typeof value === "number" ? value : parseInt(value)
+                  typeof value === "number" ? value : parseInt(value, 10)
                 )
               }
             />
             <Error hidden={!errors.employee_id} title={errors.employee_id} />
           </View>
 
-          {/* Position Field */}
+          {/* Position Field (async + searchable) */}
           <View className={`${errors.position ? "h-28" : ""}`}>
             <SelectField
               title="Position"
               placeholder="Select Position"
+              searchable
               options={options}
-              onSelect={(value) => {
+              loadData={loadJobOptions}
+              returnOption
+              onSelect={(opt) => {
                 setAddEmployeeInfo((prev: any) => ({
                   ...prev,
-                  position: value?.value,
-                  department: value?.department,
+                  position: opt?.__k ?? opt?.value ?? opt,
+                  department: opt?.children?.department_name ?? "",
                 }));
-                setErrors((prev: any) => ({
-                  ...prev,
-                  position: "",
-                }));
+                setErrors((prev: any) => ({ ...prev, position: "" }));
               }}
               selectedValue={addEmployeeInfo?.position}
-              loadData={fetchJobs}
             />
             <Error hidden={!errors.position} title={errors.position} />
           </View>
@@ -140,7 +139,7 @@ const AddUser = () => {
             <Error hidden={!errors.hire_date} title={errors.hire_date} />
           </View>
 
-          {/* Location Field */}
+          {/* Location Field (static) */}
           <SelectField
             title="Location"
             placeholder="Select Locker Location"
@@ -154,11 +153,12 @@ const AddUser = () => {
                 location: value,
                 locker_number: null,
               }));
+              setErrors((prev: any) => ({ ...prev, locker_number: "" }));
             }}
             selectedValue={addEmployeeInfo?.location}
           />
 
-          {/* Locker Field */}
+          {/* Locker Field (uses your external SlideUpModal) */}
           <View
             className={`${
               errors.existing_employee || errors.locker_number ? "h-28" : ""
@@ -167,25 +167,23 @@ const AddUser = () => {
             <SelectField
               title="Locker Number"
               placeholder="Select Locker"
-              onSelect={(value: any) => {
-                setSelectedValue(parseInt(value));
-                setAddEmployeeInfo((prev: any) => ({
-                  ...prev,
-                  locker_number:
-                    typeof value === "number" ? value : parseInt(value),
-                }));
-              }}
-              selectedValue={addEmployeeInfo?.locker_number}
-              toggleModal={() => {
-                if (!addEmployeeInfo?.location) {
-                  setErrors((prev: any) => ({
-                    ...prev,
-                    locker_number: "Please select a location first",
-                  }));
-                  return;
+              openExternally
+              toggleModal={(open: boolean) => {
+                if (open) {
+                  if (!addEmployeeInfo?.location) {
+                    setErrors((prev: any) => ({
+                      ...prev,
+                      locker_number: "Please select a location first",
+                    }));
+                    return;
+                  }
+                  setModalVisible(true);
+                } else {
+                  setModalVisible(false);
                 }
-                setModalVisible(true);
               }}
+              onSelect={() => {}}
+              selectedValue={addEmployeeInfo?.locker_number}
             />
             <Error
               hidden={!errors.locker_number && !errors.existing_employee}
@@ -211,10 +209,15 @@ const AddUser = () => {
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         onLockerSelected={(locker: any) => {
-          setAddEmployeeInfo((prev: any) => ({
-            ...prev,
-            locker_number: locker.locker_number,
-          }));
+          const num = locker?.locker_number;
+          if (num != null) {
+            const parsed =
+              typeof num === "number" ? num : parseInt(String(num), 10);
+            setAddEmployeeInfo((prev: any) => ({
+              ...prev,
+              locker_number: parsed,
+            }));
+          }
           setErrors((prev: any) => ({
             ...prev,
             locker_number: "",

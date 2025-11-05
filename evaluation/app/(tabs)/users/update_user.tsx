@@ -16,6 +16,7 @@ import useActionContext from "@/app/context/ActionsContext";
 import updateEmployee from "@/app/requests/updateEmployee";
 import useValidation from "@/app/validation/useValidation";
 import SinglePressTouchable from "@/app/utils/SinglePress";
+import { loadJobOptions } from "@/app/requests/loadJobs";
 
 const UpdateUser = () => {
   const { setSelectedValue } = useSelect();
@@ -59,6 +60,7 @@ const UpdateUser = () => {
     await updateUser();
   };
 
+  addEmployeeInfo;
   const updateUser = async () => {
     try {
       const { _id, ...updateData } = addEmployeeInfo;
@@ -159,17 +161,18 @@ const UpdateUser = () => {
           </View>
 
           {/* Position */}
-          <View className={errors.position && "h-28"}>
+          <View className={`${errors.position ? "h-28" : ""}`}>
             <SelectField
+              searchable
               title="Position"
               placeholder="Select Position"
               options={options}
-              onSelect={(value: { value: string; department: string }) => {
-                console.log(value);
+              returnOption
+              onSelect={(opt) => {
                 setAddEmployeeInfo((prev: any) => ({
                   ...prev,
-                  position: value.value,
-                  department: value.department,
+                  position: opt?.__k ?? opt?.value ?? opt,
+                  department: opt?.children?.department_name ?? "",
                 }));
                 setErrors((prev: any) => ({
                   ...prev,
@@ -177,7 +180,7 @@ const UpdateUser = () => {
                 }));
               }}
               selectedValue={addEmployeeInfo?.position}
-              loadData={fetchJobs}
+              loadData={loadJobOptions}
             />
             <Error hidden={!errors.position} title={errors.position} />
           </View>

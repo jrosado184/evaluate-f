@@ -1,36 +1,50 @@
+// components/SelectField.tsx
 // @ts-nocheck
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { View, Text, ActivityIndicator } from "react-native";
 import ActionBar from "./ActionBar";
 import useSelect from "@/hooks/useSelect";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 
-/**
- * Props for SelectInput
- */
-interface SelectInputProps {
+type Option = { label: string; value: any; children?: any };
+
+interface SelectFieldProps {
   title: string;
   placeholder: string;
-  options?: Array<{ label: string; value: string; children?: any }>;
-  onSelect?: (value: any) => void; // Returns the full selected option
+  options?: Option[];
+  onSelect?: (value: any) => void;
   selectedValue: any;
+
+  // Use this ONLY for static mode, or when openExternally=true
   toggleModal?: (open: boolean) => void;
+
   containerStyles?: string;
   borderColor?: string;
   rounded?: string;
-  loadData?: (
-    query?: string
-  ) => Promise<Array<{ label: string; value: string; children?: any }>>;
-  searchable?: boolean; // optional: allow in-ActionBar search
+
+  // Async loader (switches to async mode if provided)
+  loadData?: (args?: {
+    query?: string;
+    page?: number;
+    signal?: AbortSignal;
+  }) => Promise<{
+    results: Option[];
+    currentPage: number;
+    totalPages: number;
+    total: number;
+  }>;
+
+  // Show a searchbar (local for static, server-side for async)
+  searchable?: boolean;
+
+  // Return the whole option object instead of option.value
+  returnOption?: boolean;
+
+  // NEW: when true, pressing the field will ONLY call toggleModal(true) and NOT open ActionBar
+  openExternally?: boolean;
 }
 
-/**
- * Lightweight SelectInput Component optimized for async dropdowns.
- * - Uses lazy loading via `useSelect`
- * - Gracefully handles loading, empty, and error states
- * - Compatible with ActionBar + backend `/options` endpoints
- */
-const SelectInput: React.FC<SelectInputProps> = ({
+const SelectField: React.FC<SelectFieldProps> = ({
   title,
   placeholder,
   options = [],
@@ -41,48 +55,112 @@ const SelectInput: React.FC<SelectInputProps> = ({
   borderColor = "border-gray-400",
   rounded = "rounded-[0.625rem]",
   loadData,
-  searchable = true,
+  searchable = false,
+  returnOption = false,
+  openExternally = false,
 }) => {
+  const isAsync = !!loadData;
+
+  // ============ ASYNC (server) ============
   const {
-    handlePress,
-    handleSelect,
+    handlePress, // opens the sheet
+    handleSelect, // calls onSelect + closes the sheet
     showActionSheet,
     setShowActionSheet,
     options: lazyOptions,
     isLoading,
     error,
-  } = useSelect(loadData, toggleModal, onSelect);
+    loadMore,
+    hasMore,
+    query,
+    setSearch,
+  } = useSelect(
+    isAsync ? loadData : undefined,
+    undefined, // do not bubble open/close upward in async mode
+    (opt: any) => {
+      const out = returnOption ? opt : opt?.value ?? opt;
+      onSelect?.(out);
+    }
+  );
 
-  // useMemo to avoid rerender thrashing
-  const displayOptions = useMemo(() => {
-    if (isLoading) return [{ label: "Loading…", value: "__loading__" }];
-    if (error)
-      return [{ label: error || "Error loading options", value: "__error__" }];
-    const opts = lazyOptions?.length ? lazyOptions : options;
+  // ============ STATIC (local) ============
+  const [localQuery, setLocalQuery] = useState("");
+  const [localOpen, setLocalOpen] = useState(false);
+
+  const openStatic = useCallback(() => {
+    // if using external modal, don't open ActionBar at all
+    if (openExternally) {
+      toggleModal?.(true);
+      return;
+    }
+    setLocalOpen(true);
+    toggleModal?.(true);
+  }, [openExternally, toggleModal]);
+
+  const closeStatic = useCallback(() => {
+    setLocalOpen(false);
+    toggleModal?.(false);
+  }, [toggleModal]);
+
+  const filteredStaticOptions = useMemo(() => {
+    if (!searchable || !localQuery.trim()) return options;
+    const q = localQuery.toLowerCase();
+    return options.filter(
+      (o) =>
+        String(o.label).toLowerCase().includes(q) ||
+        String(o.value).toLowerCase().includes(q)
+    );
+  }, [options, searchable, localQuery]);
+
+  // ============ COMMON DISPLAY ============
+  const displayOptions: Option[] = useMemo(() => {
+    if (isAsync) {
+      if (error)
+        return [
+          { label: error || "Error loading options", value: "__error__" },
+        ];
+      const opts = lazyOptions?.length ? lazyOptions : options;
+      return opts.length
+        ? opts
+        : [{ label: "No options found", value: "__empty__" }];
+    }
+    const opts = filteredStaticOptions;
     return opts.length
       ? opts
       : [{ label: "No options found", value: "__empty__" }];
-  }, [isLoading, error, lazyOptions, options]);
+  }, [isAsync, error, lazyOptions, options, filteredStaticOptions]);
 
   const displayLabel = useMemo(() => {
-    if (!selectedValue) return placeholder;
-    if (typeof selectedValue === "string") return selectedValue;
+    if (selectedValue == null || selectedValue === "") return placeholder;
+    if (typeof selectedValue === "string" || typeof selectedValue === "number")
+      return String(selectedValue);
     if (selectedValue?.label) return selectedValue.label;
     return String(selectedValue);
   }, [selectedValue, placeholder]);
 
+  const onSelectStatic = useCallback(
+    (opt: any) => {
+      if (!opt || ["__loading__", "__empty__", "__error__"].includes(opt.value))
+        return;
+      const out = returnOption ? opt : opt?.value ?? opt;
+      onSelect?.(out);
+      closeStatic();
+    },
+    [onSelect, closeStatic, returnOption]
+  );
+
+  const showSpinner = isAsync && isLoading;
+
   return (
     <View className={`gap-y-2 ${containerStyles}`}>
-      {/* Title */}
       <Text className="text-base font-inter-regular">{title}</Text>
 
-      {/* Touchable Input */}
       <SinglePressTouchable
-        onPress={handlePress}
+        onPress={isAsync ? handlePress : openStatic}
         className={`border ${borderColor} w-full h-16 flex-row items-center ${rounded} px-4`}
       >
         <View className="flex-1 flex-row items-center">
-          {isLoading && (
+          {showSpinner && (
             <ActivityIndicator
               size="small"
               color="#888"
@@ -100,24 +178,48 @@ const SelectInput: React.FC<SelectInputProps> = ({
         </View>
       </SinglePressTouchable>
 
-      {/* Dropdown ActionSheet */}
-      <ActionBar
-        title={title}
-        showActionSheet={showActionSheet}
-        setShowActionsheet={setShowActionSheet}
-        options={displayOptions}
-        searchable={searchable}
-        onSelect={(opt: any) => {
-          if (
-            !opt ||
-            ["__loading__", "__empty__", "__error__"].includes(opt.value)
-          )
-            return;
-          handleSelect(opt); // Pass full object
-        }}
-      />
+      {/* Only render ActionBar if we're NOT using an external modal */}
+      {!openExternally &&
+        (isAsync ? (
+          <ActionBar
+            title={title}
+            showActionSheet={showActionSheet}
+            setShowActionsheet={setShowActionSheet}
+            options={displayOptions}
+            onSelect={(opt: any) => {
+              if (
+                !opt ||
+                ["__loading__", "__empty__", "__error__"].includes(opt.value)
+              )
+                return;
+              handleSelect(opt);
+            }}
+            searchable={searchable}
+            query={query}
+            onSearchChange={setSearch}
+            loadMore={loadMore}
+            hasMore={hasMore}
+            isLoading={isLoading}
+          />
+        ) : (
+          <ActionBar
+            title={title}
+            showActionSheet={localOpen}
+            setShowActionsheet={(v: boolean) =>
+              v ? setLocalOpen(true) : closeStatic()
+            }
+            options={displayOptions}
+            onSelect={onSelectStatic}
+            searchable={searchable}
+            query={localQuery}
+            onSearchChange={setLocalQuery}
+            loadMore={undefined}
+            hasMore={false}
+            isLoading={false}
+          />
+        ))}
     </View>
   );
 };
 
-export default SelectInput;
+export default SelectField;
