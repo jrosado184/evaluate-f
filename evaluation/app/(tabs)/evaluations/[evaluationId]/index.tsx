@@ -125,7 +125,7 @@ const EvaluationSummary = () => {
   // Build rows in the exact order you want to display them
   const info = evaluation.personalInfo || {};
   const rows: Array<{ label: string; value: any }> = [
-    { label: "Training TYpw", value: info.trainingType },
+    { label: "Training Type", value: info.trainingType },
     { label: "Team Member Name", value: info.teamMemberName },
     { label: "Employee Id", value: info.employeeId },
     { label: "Hire Date", value: info.hireDate },

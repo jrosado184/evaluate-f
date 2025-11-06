@@ -144,8 +144,11 @@ const AddUser = () => {
             title="Location"
             placeholder="Select Locker Location"
             options={[
-              { label: "Fabrication Womens", value: "Fabrication Womens" },
-              { label: "Fabrication Mens", value: "Fabrication Mens" },
+              { label: "Fabrication Mens A", value: "Fabrication Mens A" },
+              { label: "Fabrication Mens B", value: "Fabrication Mens B" },
+              { label: "Fabrication Mens C", value: "Fabrication Mens C" },
+              { label: "Womens General", value: "Womens General" },
+              { label: "Harvest Mens", value: "Harvest Mens" },
             ]}
             onSelect={(value: any) => {
               setAddEmployeeInfo((prev: any) => ({
@@ -206,6 +209,9 @@ const AddUser = () => {
 
       <SlideUpModal
         mode="assignLocker"
+        filter={encodeURIComponent(
+          addEmployeeInfo?.location || addEmployeeInfo?.locker_info?.location
+        )}
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         onLockerSelected={(locker: any) => {

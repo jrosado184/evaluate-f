@@ -35,6 +35,7 @@ const SlideUpModal = ({
   onAssignmentComplete,
   mode = "assignEmployee",
   source,
+  filter,
 }: any) => {
   const screenHeight = Dimensions.get("window").height;
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
@@ -65,7 +66,7 @@ const SlideUpModal = ({
     const url =
       mode === "assignEmployee"
         ? `${baseUrl}/employees?page=${page}&limit=${limit}`
-        : `${baseUrl}/lockers?page=${page}&limit=${limit}`;
+        : `${baseUrl}/lockers?page=${page}&limit=${limit}&location=${filter}`;
     const res = await axios.get(url, { headers: { Authorization: token } });
 
     return {
