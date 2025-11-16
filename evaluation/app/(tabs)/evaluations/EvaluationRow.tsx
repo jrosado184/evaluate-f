@@ -67,8 +67,7 @@ const EvaluationRow = ({
       );
 
       const info = evalDoc.personalInfo || {};
-      const hasInfo =
-        !!info.teamMemberName && !!info.position && !!info.department;
+      const hasInfo = !!info.teamMemberName && !!info.position;
 
       if (!hasInfo || evalDoc.status === "uploaded") {
         router.push(`/(tabs)/evaluations/${evaluationId}/step1`);

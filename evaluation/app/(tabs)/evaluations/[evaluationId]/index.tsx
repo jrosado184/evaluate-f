@@ -47,7 +47,6 @@ const EvaluationSummary = () => {
   const path = segments.join("/");
 
   const employeeId = evaluation?.employeeId;
-
   useFocusEffect(
     useCallback(() => {
       if (path !== "(tabs)/users/[id]") {
@@ -130,7 +129,7 @@ const EvaluationSummary = () => {
     { label: "Employee Id", value: info.employeeId },
     { label: "Hire Date", value: info.hireDate },
     { label: "Training Position", value: evaluation?.position },
-    { label: "Department", value: info.department },
+    { label: "Department", value: evaluation.department },
     { label: "Locker Number", value: info.lockerNumber },
     { label: "Phone Number", value: info.phoneNumber || "-" },
     { label: "Job Start Date", value: info.jobStartDate },

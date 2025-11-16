@@ -100,9 +100,18 @@ const AddUser = () => {
               loadData={loadJobOptions}
               returnOption
               onSelect={(opt) => {
+                let newHire = "";
+
+                if (
+                  opt.__k === "New Hire W/ Ppe Fab" ||
+                  opt.__k === "New Hire W/ Ppe Kill"
+                ) {
+                  newHire = "NON-QUALIFIED";
+                }
+
                 setAddEmployeeInfo((prev: any) => ({
                   ...prev,
-                  position: opt?.__k ?? opt?.value ?? opt,
+                  position: newHire || (opt?.__k ?? opt?.value ?? opt),
                   department: opt?.children?.department_name ?? "",
                 }));
                 setErrors((prev: any) => ({ ...prev, position: "" }));

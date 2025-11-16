@@ -252,8 +252,8 @@ const PersonalInfoForm = () => {
       trainingPosition: opt?.label || "",
       task_code: meta?.task_code || "",
       task_snapshot: meta || null,
-      department: "",
-      dept_code: "",
+      department: meta?.department_name,
+      dept_code: meta?.department_code,
       dept_snapshot: null,
     }));
     setErrors((e) => {
@@ -408,7 +408,7 @@ const PersonalInfoForm = () => {
                     params: { evaluationId, from },
                   });
                 } else {
-                  handleDeleteEvaluation();
+                  // handleDeleteEvaluation();
                   router.replace(`/users/${employeeId}`);
                 }
               }}
@@ -490,6 +490,7 @@ const PersonalInfoForm = () => {
             title="Job Title"
             placeholder="Select Job Title"
             selectedValue={formData.trainingPosition}
+            returnOption
             onSelect={handleJobSelect}
             loadData={loadJobOptions}
             borderColor={
@@ -500,24 +501,6 @@ const PersonalInfoForm = () => {
           {errors.trainingPosition && (
             <Text className="text-red-500 text-sm -mt-4 mb-4">
               {errors.trainingPosition}
-            </Text>
-          )}
-
-          {/* Department -> SelectInput (manual selection) */}
-          <SelectInput
-            title="Department"
-            placeholder="Select Department"
-            selectedValue={formData.department}
-            onSelect={handleDeptSelect}
-            loadData={loadDepartmentOptions}
-            borderColor={
-              errors.department ? "border-red-500" : "border-gray-300"
-            }
-            containerStyles="mb-5"
-          />
-          {errors.department && (
-            <Text className="text-red-500 text-sm -mt-4 mb-4">
-              {errors.department}
             </Text>
           )}
 

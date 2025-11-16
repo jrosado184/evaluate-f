@@ -41,8 +41,12 @@ const UserCard: React.FC<UserCardTypes> = ({
             </Text>
             <View className="flex-row items-center mb-1">
               <Text className="text-base text-neutral-700">{position}</Text>
-              <Entypo name="dot-single" size={18} color="#D1D5DB" />
-              <Text className="text-base text-neutral-700">{department}</Text>
+              {department && (
+                <Entypo name="dot-single" size={18} color="#D1D5DB" />
+              )}
+              <Text className="text-base text-neutral-700">
+                {department && department}
+              </Text>
             </View>
             <Text className="text-sm text-neutral-500 mb-1">
               ID: {employee_id}

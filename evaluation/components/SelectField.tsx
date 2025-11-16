@@ -6,12 +6,10 @@ import ActionBar from "./ActionBar";
 import useSelect from "@/hooks/useSelect";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 
-type Option = { label: string; value: any; children?: any };
-
 interface SelectFieldProps {
   title: string;
   placeholder: string;
-  options?: Option[];
+  options?: any;
   onSelect?: (value: any) => void;
   selectedValue: any;
 
@@ -34,13 +32,10 @@ interface SelectFieldProps {
     total: number;
   }>;
 
-  // Show a searchbar (local for static, server-side for async)
   searchable?: boolean;
 
-  // Return the whole option object instead of option.value
   returnOption?: boolean;
 
-  // NEW: when true, pressing the field will ONLY call toggleModal(true) and NOT open ActionBar
   openExternally?: boolean;
 }
 
@@ -88,7 +83,6 @@ const SelectField: React.FC<SelectFieldProps> = ({
   const [localOpen, setLocalOpen] = useState(false);
 
   const openStatic = useCallback(() => {
-    // if using external modal, don't open ActionBar at all
     if (openExternally) {
       toggleModal?.(true);
       return;
