@@ -9,14 +9,18 @@ import SelectField from "@/components/SelectField";
 import { router } from "expo-router";
 import useGetJobs from "@/app/requests/useGetJobs";
 import useEmployeeContext from "@/app/context/EmployeeContext";
-import useSelect from "@/hooks/useSelect";
 import Error from "@/components/ErrorText";
 import useAddUser from "@/hooks/useAddUser";
 import useActionContext from "@/app/context/ActionsContext";
 import updateEmployee from "@/app/requests/updateEmployee";
 import useValidation from "@/app/validation/useValidation";
 import SinglePressTouchable from "@/app/utils/SinglePress";
-import { loadJobOptions } from "@/app/requests/loadJobs";
+import {
+  loadJobOptions,
+  loadSupervisorsOptions,
+} from "@/app/requests/loadData";
+import { titleCase } from "@/app/helpers/names";
+import SelectInput from "@/components/SelectField";
 
 const UpdateUser = () => {
   const {
@@ -183,6 +187,23 @@ const UpdateUser = () => {
             />
             <Error hidden={!errors.position} title={errors.position} />
           </View>
+
+          <SelectInput
+            searchable
+            title="Supervisor"
+            placeholder="Select Supervisor"
+            selectedValue={addEmployeeInfo.supervisor}
+            onSelect={(val: any) =>
+              setAddEmployeeInfo({
+                ...addEmployeeInfo,
+                supervisor: titleCase(val),
+              })
+            }
+            loadData={loadSupervisorsOptions}
+            borderColor={
+              errors.department ? "border-red-500" : "border-gray-300"
+            }
+          />
 
           {/* Location */}
           <SelectField

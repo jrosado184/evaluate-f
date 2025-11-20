@@ -2,19 +2,8 @@
 // @ts-nocheck
 import { useCallback, useEffect, useRef, useState } from "react";
 
-type LoadFn = (args?: {
-  query?: string;
-  page?: number;
-  signal?: AbortSignal;
-}) => Promise<{
-  results: Array<{ label: string; value: string; children?: any; id?: string }>;
-  currentPage: number;
-  totalPages: number;
-  total: number;
-}>;
-
 const useSelect = (
-  loadData?: LoadFn,
+  loadData?: any,
   toggleModal?: (open: boolean) => void,
   onSelect?: (opt: any) => void
 ) => {

@@ -1,5 +1,4 @@
 import React, { createContext, useState, useContext, ReactNode } from "react";
-import formatISODate from "../conversions/ConvertIsoDate";
 
 type Employee = {
   _id: string;
@@ -9,6 +8,7 @@ type Employee = {
   knife_number: string | null;
   department: string;
   position: string;
+  supervisor: string;
   assigned_by: string;
   date_of_hire: string;
   last_updated: string;
@@ -55,6 +55,7 @@ export const EmployeeProvider = ({ children }: { children: ReactNode }) => {
     employee_id: null,
     department: "",
     position: "",
+    supervisor: "",
     knife_number: null,
     added_by: "",
     date_of_hire: "",

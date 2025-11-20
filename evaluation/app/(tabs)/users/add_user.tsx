@@ -11,7 +11,12 @@ import useEmployeeContext from "@/app/context/EmployeeContext";
 import Error from "@/components/ErrorText";
 import useAddUser from "@/hooks/useAddUser";
 import SinglePressTouchable from "@/app/utils/SinglePress";
-import { loadJobOptions } from "@/app/requests/loadJobs";
+import {
+  loadJobOptions,
+  loadSupervisorsOptions,
+} from "@/app/requests/loadData";
+import { titleCase } from "@/app/helpers/names";
+import SelectInput from "@/components/SelectField";
 
 const AddUser = () => {
   const {
@@ -34,6 +39,7 @@ const AddUser = () => {
       employee_id: null,
       department: "",
       position: "",
+      supervisor: { name: "", id: null },
       knife_number: null,
       added_by: "",
       date_of_hire: "",
@@ -120,6 +126,24 @@ const AddUser = () => {
             />
             <Error hidden={!errors.position} title={errors.position} />
           </View>
+
+          <SelectInput
+            searchable
+            title="Supervisor"
+            placeholder="Select Supervisor"
+            selectedValue={addEmployeeInfo.supervisor?.name}
+            onSelect={(val: any) => {
+              setAddEmployeeInfo({
+                ...addEmployeeInfo,
+                supervisor: { name: titleCase(val.__k), id: val?.children?.id },
+              });
+            }}
+            returnOption
+            loadData={loadSupervisorsOptions}
+            borderColor={
+              errors.department ? "border-red-500" : "border-gray-300"
+            }
+          />
 
           {/* Hire Date Field */}
           <View className={`${errors.hire_date ? "h-28" : ""}`}>

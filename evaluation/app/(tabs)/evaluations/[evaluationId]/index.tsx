@@ -16,7 +16,6 @@ import EvaluationButton from "@/components/buttons/EvaluationButton";
 import Icon from "react-native-vector-icons/Feather";
 import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
-import useEmployeeContext from "@/app/context/EmployeeContext";
 
 const EvaluationSummary = () => {
   const { evaluationId }: { id: any; evaluationId: any } =
@@ -130,13 +129,17 @@ const EvaluationSummary = () => {
     { label: "Hire Date", value: info.hireDate },
     { label: "Training Position", value: evaluation?.position },
     { label: "Department", value: evaluation.department },
+    {
+      label: "Supervisor",
+      value: evaluation?.supervisor,
+    },
     { label: "Locker Number", value: info.lockerNumber },
     { label: "Phone Number", value: info.phoneNumber || "-" },
     { label: "Job Start Date", value: info.jobStartDate },
     { label: "Projected Training Hours", value: info.projectedTrainingHours },
     { label: "Current Position", value: info.position },
+    { label: "Current Supervisor", value: info?.supervisor },
     { label: "Projected Qualifying Date", value: info.projectedQualifyingDate },
-    // ↓ The two positions appear here, in order, without changing the rest of the layout
   ];
 
   return (

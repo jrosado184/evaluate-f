@@ -33,7 +33,10 @@ import formatISODate from "@/app/conversions/ConvertIsoDate";
 import { dateValidation } from "@/app/validation/dateValidation";
 import SelectInput from "@/components/SelectField";
 import { titleCase } from "@/app/helpers/names";
-import { loadJobOptions } from "@/app/requests/loadJobs";
+import {
+  loadJobOptions,
+  loadSupervisorsOptions,
+} from "@/app/requests/loadData";
 
 const PersonalInfoForm = () => {
   const router = useRouter();
@@ -98,19 +101,6 @@ const PersonalInfoForm = () => {
     );
   }, []);
 
-  const loadSupervisorsOptions = useCallback(async () => {
-    const token = await AsyncStorage.getItem("token");
-    const baseUrl = await getServerIP();
-    const resp = await axios.get(`${baseUrl}/management`, {
-      headers: { Authorization: token! },
-    });
-
-    return resp.data.map((supervisor) => ({
-      ...supervisor,
-      label: titleCase(supervisor?.name),
-    }));
-  }, []);
-
   // ---- Fetch existing evaluation to prefill (if any) ----
   const fetchEvaluation = useCallback(async () => {
     try {
@@ -149,7 +139,10 @@ const PersonalInfoForm = () => {
         projectedTrainingHours: info.projectedTrainingHours || "",
         projectedQualifyingDate: info.projectedQualifyingDate || "",
         // restore previously saved selections if present
-        trainingPosition: info.trainingPosition || "",
+        trainingPosition:
+          (res?.data?.position !== "Untitled" && res?.data?.position) || "",
+        // supervisor can come from new root field, old personalInfo, or employee doc
+        supervisor: res.data?.supervsior || "",
         task_code: info.task_code || "",
         task_snapshot: info.task_snapshot || null,
         department: info.department || "",
@@ -181,9 +174,7 @@ const PersonalInfoForm = () => {
       "trainingType",
       "teamMemberName",
       "employeeId",
-      "trainingPosition", // must pick a job
-      "department", // must pick a department
-      "lockerNumber",
+      "trainingPosition",
       "projectedTrainingHours",
       "hireDate",
       "jobStartDate",
@@ -314,11 +305,14 @@ const PersonalInfoForm = () => {
         projectedQualifyingDate,
         trainingPosition,
         department,
+        supervisor,
         task_code,
         task_snapshot,
         dept_code,
         dept_snapshot,
       } = formData;
+
+      const supervisorClean = (supervisor || "").toString().trim();
 
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
@@ -327,6 +321,7 @@ const PersonalInfoForm = () => {
           data: {
             // human-readable mirrors
             trainingPosition: trainingPosition.trim(),
+            supervisor: supervisorClean,
             department: department.trim(),
             // coded mirrors (DB-friendly)
             task_code: task_code || null,
@@ -342,6 +337,7 @@ const PersonalInfoForm = () => {
               hireDate,
               lockerNumber,
               phoneNumber,
+              supervisor: supervisorClean,
               jobStartDate,
               projectedTrainingHours,
               projectedQualifyingDate,
@@ -408,7 +404,7 @@ const PersonalInfoForm = () => {
                     params: { evaluationId, from },
                   });
                 } else {
-                  // handleDeleteEvaluation();
+                  handleDeleteEvaluation();
                   router.replace(`/users/${employeeId}`);
                 }
               }}
@@ -487,6 +483,7 @@ const PersonalInfoForm = () => {
 
           {/* Job Title -> SelectInput */}
           <SelectInput
+            searchable
             title="Job Title"
             placeholder="Select Job Title"
             selectedValue={formData.trainingPosition}
@@ -504,19 +501,24 @@ const PersonalInfoForm = () => {
             </Text>
           )}
 
+          {/* Supervisor */}
           <SelectInput
+            searchable
             title="Supervisor"
             placeholder="Select Supervisor"
             selectedValue={formData.supervisor}
-            onSelect={(val) =>
-              setFormData({
-                ...formData,
-                supervisor: val,
-              })
-            }
+            onSelect={(val) => {
+              // val can be a string or an option object { label, ... }
+              const name =
+                typeof val === "string" ? val : val?.label ?? val?.name ?? "";
+              setFormData((f: any) => ({
+                ...f,
+                supervisor: titleCase(name),
+              }));
+            }}
             loadData={loadSupervisorsOptions}
             borderColor={
-              errors.department ? "border-red-500" : "border-gray-300"
+              errors.supervisor ? "border-red-500" : "border-gray-300"
             }
             containerStyles="mb-5"
           />

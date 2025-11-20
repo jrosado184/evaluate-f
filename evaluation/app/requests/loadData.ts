@@ -18,3 +18,20 @@ export const loadJobOptions = async ({
   });
   return resp.data;
 };
+
+export const loadSupervisorsOptions = async ({
+  query = "",
+  page = 1,
+  signal,
+}: { query?: string; page?: number; signal?: AbortSignal } = {}) => {
+  const token = await AsyncStorage.getItem("token");
+  const baseUrl = await getServerIP();
+
+  const resp = await axios.get(`${baseUrl}/management`, {
+    headers: { Authorization: token! },
+    params: { q: query, page, limit: 50 },
+    signal,
+  });
+
+  return resp.data;
+};
