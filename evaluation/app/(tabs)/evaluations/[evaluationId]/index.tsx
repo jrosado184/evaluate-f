@@ -91,7 +91,7 @@ const EvaluationSummary = () => {
   };
 
   const handleClose = () => {
-    if (from && typeof from === "string") {
+    if (!from || (from && typeof from === "string")) {
       setTimeout(() => {
         router.replace(`/(tabs)/users/${from}`);
       }, 5);
@@ -131,14 +131,14 @@ const EvaluationSummary = () => {
     { label: "Department", value: evaluation.department },
     {
       label: "Supervisor",
-      value: evaluation?.supervisor,
+      value: evaluation?.supervisor?.name,
     },
     { label: "Locker Number", value: info.lockerNumber },
     { label: "Phone Number", value: info.phoneNumber || "-" },
     { label: "Job Start Date", value: info.jobStartDate },
     { label: "Projected Training Hours", value: info.projectedTrainingHours },
     { label: "Current Position", value: info.position },
-    { label: "Current Supervisor", value: info?.supervisor },
+    { label: "Current Supervisor", value: info?.supervisor?.name },
     { label: "Projected Qualifying Date", value: info.projectedQualifyingDate },
   ];
 

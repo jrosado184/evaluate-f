@@ -31,7 +31,6 @@ const UpdateUser = () => {
     modalVisible,
     setModalVisible,
   } = useAddUser();
-  const { fetchJobs } = useGetJobs();
   const { setActionsMessage } = useActionContext();
   const { newErrors } = useValidation(errors);
 
@@ -192,13 +191,17 @@ const UpdateUser = () => {
             searchable
             title="Supervisor"
             placeholder="Select Supervisor"
-            selectedValue={addEmployeeInfo.supervisor}
-            onSelect={(val: any) =>
+            selectedValue={addEmployeeInfo.supervisor?.name}
+            returnOption
+            onSelect={(val: any) => {
               setAddEmployeeInfo({
                 ...addEmployeeInfo,
-                supervisor: titleCase(val),
-              })
-            }
+                supervisor: {
+                  name: titleCase(val?.__k),
+                  id: val?.children?.id,
+                },
+              });
+            }}
             loadData={loadSupervisorsOptions}
             borderColor={
               errors.department ? "border-red-500" : "border-gray-300"
