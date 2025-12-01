@@ -91,9 +91,9 @@ const EvaluationSummary = () => {
   };
 
   const handleClose = () => {
-    if (!from || (from && typeof from === "string")) {
+    if (from && typeof from === "string") {
       setTimeout(() => {
-        router.replace(`/(tabs)/users/${from}`);
+        router.replace(`/(tabs)/users/${employeeId}`);
       }, 5);
     } else {
       router.back();

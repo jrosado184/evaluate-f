@@ -69,15 +69,28 @@ const EvaluationRow = ({
       const info = evalDoc.personalInfo || {};
       const hasInfo = !!info.teamMemberName && !!info.position;
 
+      const employeeIdParam =
+        info.employeeId?.toString?.() ?? file?.employeeId?.toString?.() ?? "";
+
+      const fromParam =
+        typeof from === "string" && from.length > 0 ? from : undefined;
+
+      const params: Record<string, string> = {
+        evaluationId,
+      };
+
+      if (employeeIdParam) params.employeeId = employeeIdParam;
+      if (fromParam) params.from = fromParam;
+
       if (!hasInfo || evalDoc.status === "uploaded") {
-        router.push(`/(tabs)/evaluations/${evaluationId}/step1`);
+        router.push({
+          pathname: "/(tabs)/evaluations/[evaluationId]/step1",
+          params,
+        });
       } else {
         router.push({
-          pathname: `/(tabs)/evaluations/${evaluationId}`,
-          params: {
-            from: from,
-            employeeId: file?.employeeId,
-          },
+          pathname: "/(tabs)/evaluations/[evaluationId]",
+          params,
         });
       }
     } catch (err) {

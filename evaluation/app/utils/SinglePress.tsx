@@ -6,9 +6,7 @@ import {
 } from "react-native";
 
 type SinglePressProps = TouchableOpacityProps & {
-  /** Minimum ms between taps to count as a new press */
   minInterval?: number;
-  /** If true, disable further presses until onPress resolves */
   lockDuringPress?: boolean;
 };
 
@@ -34,7 +32,6 @@ const SinglePressTouchable: React.FC<SinglePressProps> = ({
     async (e: GestureResponderEvent) => {
       const now = Date.now();
 
-      // hard block if we're currently locked (e.g., async onPress still running)
       if (lockRef.current) return;
 
       // debounce: ignore presses within minInterval
