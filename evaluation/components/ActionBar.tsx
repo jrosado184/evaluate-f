@@ -32,9 +32,17 @@ interface ActionBarProps {
   showActionSheet: boolean;
   setShowActionsheet: (value: boolean) => void;
   options: TreeNode[];
+
   onSelect: (value: any) => void;
+
   style?: object;
   title?: string;
+
+  // NEW: how to map the selected node into the payload we pass to onSelect
+  // "node"  = pass the full TreeNode (current behavior, default)
+  // "value" = pass node.value ?? node.label
+  // "label" = pass node.label
+  selectMode?: "node" | "value" | "label";
 
   // search + pagination
   searchable?: boolean;
@@ -52,6 +60,8 @@ const ActionBar: React.FC<ActionBarProps> = ({
   onSelect,
   title = "Select an Option",
   style,
+
+  selectMode = "node",
 
   searchable = true,
   query = "",
@@ -85,7 +95,17 @@ const ActionBar: React.FC<ActionBarProps> = ({
       setBreadcrumbs((prev) => [...prev, node.label]);
       return;
     }
-    onSelect(node);
+
+    let payload: any = node;
+
+    if (selectMode === "value") {
+      payload = node.value ?? node.label;
+    } else if (selectMode === "label") {
+      payload = node.label;
+    }
+    // default "node" → payload = node (backwards compatible)
+
+    onSelect(payload);
     setShowActionsheet(false);
   };
 
@@ -97,7 +117,6 @@ const ActionBar: React.FC<ActionBarProps> = ({
   const list = (currentOptions.length ? currentOptions : options) || [];
   const atRoot = breadcrumbs.length === 0;
 
-  // Stable footer (avoid remounts/jumps)
   const Footer = () => (
     <View className="py-3 items-center">
       {isLoading ? (
@@ -108,7 +127,6 @@ const ActionBar: React.FC<ActionBarProps> = ({
     </View>
   );
 
-  // Momentum guard for iOS double-fire
   const calledDuringMomentum = useRef(false);
 
   return (
