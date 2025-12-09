@@ -257,7 +257,11 @@ const SlideUpModal = ({
           onPress={() => handleAssign(item._id)}
           activeOpacity={0.8}
         >
-          <AssignEmployeeCard {...item} assigned={!!item.locker_id} />
+          <AssignEmployeeCard
+            source={source}
+            {...item}
+            assigned={!!item.locker_id}
+          />
         </SinglePressTouchable>
       );
     } else {

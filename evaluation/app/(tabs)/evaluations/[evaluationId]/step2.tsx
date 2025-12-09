@@ -699,6 +699,63 @@ export default function Step2Form() {
             );
           })}
 
+          {simpleFields.map((f) => {
+            const raw = formData[f.key];
+            const val = f.format ? f.format() : raw == null ? "" : String(raw);
+            return (
+              <Labeled key={f.key} label={f.label}>
+                <TextInput
+                  value={val}
+                  onChangeText={(t) => handleChange(f.key, t)}
+                  placeholder={f.label}
+                  editable={f.editable !== false}
+                  multiline={!!f.multiline}
+                  keyboardType={f.keyboardType || "default"}
+                  className={`border ${
+                    errors[f.key] ? "border-red-500" : "border-gray-300"
+                  } rounded-md px-4 py-3 text-gray-900 ${
+                    f.editable === false ? "bg-gray-100 text-gray-400" : ""
+                  }`}
+                  style={{ textAlignVertical: f.multiline ? "top" : "center" }}
+                  numberOfLines={f.multiline ? 4 : 1}
+                />
+                {errors[f.key] && (
+                  <Text className="text-sm text-red-500 mt-1">
+                    {errors[f.key]}
+                  </Text>
+                )}
+              </Labeled>
+            );
+          })}
+
+          {/* Hand Stretch Completed */}
+
+          {(["hasPain", "handStretchCompleted"] as const).map((k) => (
+            <View key={k} className="mb-6">
+              <Text className="text-base font-medium text-gray-700 mb-2">
+                {k === "hasPain"
+                  ? "Any pain/numbness?"
+                  : "Hand Stretch Exercises Completed"}
+              </Text>
+              <SinglePressTouchable
+                onPress={() => setFormData((f) => ({ ...f, [k]: !f[k] }))}
+                className={`py-3 rounded-md items-center ${
+                  k === "hasPain"
+                    ? formData.hasPain
+                      ? "bg-red-600"
+                      : "bg-green-600"
+                    : formData.handStretchCompleted
+                    ? "bg-green-600"
+                    : "bg-red-600"
+                }`}
+              >
+                <Text className="text-white text-lg font-semibold">
+                  {formData[k] ? "Yes" : "No"}
+                </Text>
+              </SinglePressTouchable>
+            </View>
+          ))}
+
           {(
             [
               { key: "trainerSignature", label: currentUser.name },
@@ -737,20 +794,22 @@ export default function Step2Form() {
             );
           })}
 
-          <SinglePressTouchable
-            onPress={handleSubmit}
-            activeOpacity={0.85}
-            className="bg-[#1a237e] py-4 rounded-md items-center"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color="#FFF" size="small" />
-            ) : (
-              <Text className="text-white text-lg font-semibold">
-                Save & Continue
-              </Text>
-            )}
-          </SinglePressTouchable>
+          <View className="my-6">
+            <SinglePressTouchable
+              onPress={handleSubmit}
+              activeOpacity={0.85}
+              className="bg-[#1a237e] py-4 rounded-md items-center"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="#FFF" size="small" />
+              ) : (
+                <Text className="text-white text-lg font-semibold">
+                  Save & Continue
+                </Text>
+              )}
+            </SinglePressTouchable>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 

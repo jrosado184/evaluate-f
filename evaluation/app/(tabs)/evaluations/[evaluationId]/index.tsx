@@ -206,7 +206,7 @@ const EvaluationSummary = () => {
 
         {/* Continue / Qualify Button */}
         {evaluation.status !== "complete" && weeksDone > 0 && (
-          <View className="px-4 mt-4 mb-8">
+          <View className="px-4 mt-8 mb-8">
             <EvaluationButton
               status={evaluation?.status}
               canQualify={canQualify}
@@ -218,7 +218,7 @@ const EvaluationSummary = () => {
 
         {/* View PDF */}
         {weeksDone > 0 && (
-          <View className="w-full items-center bg-white mt-4">
+          <View className="w-full items-center bg-white">
             <SinglePressTouchable
               onPress={() =>
                 router.push({
