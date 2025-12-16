@@ -699,35 +699,6 @@ export default function Step2Form() {
             );
           })}
 
-          {simpleFields.map((f) => {
-            const raw = formData[f.key];
-            const val = f.format ? f.format() : raw == null ? "" : String(raw);
-            return (
-              <Labeled key={f.key} label={f.label}>
-                <TextInput
-                  value={val}
-                  onChangeText={(t) => handleChange(f.key, t)}
-                  placeholder={f.label}
-                  editable={f.editable !== false}
-                  multiline={!!f.multiline}
-                  keyboardType={f.keyboardType || "default"}
-                  className={`border ${
-                    errors[f.key] ? "border-red-500" : "border-gray-300"
-                  } rounded-md px-4 py-3 text-gray-900 ${
-                    f.editable === false ? "bg-gray-100 text-gray-400" : ""
-                  }`}
-                  style={{ textAlignVertical: f.multiline ? "top" : "center" }}
-                  numberOfLines={f.multiline ? 4 : 1}
-                />
-                {errors[f.key] && (
-                  <Text className="text-sm text-red-500 mt-1">
-                    {errors[f.key]}
-                  </Text>
-                )}
-              </Labeled>
-            );
-          })}
-
           {/* Hand Stretch Completed */}
 
           {(["hasPain", "handStretchCompleted"] as const).map((k) => (
