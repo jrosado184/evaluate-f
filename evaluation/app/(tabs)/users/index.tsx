@@ -306,7 +306,7 @@ const Users = () => {
               {fetchingMoreUsers && (
                 <ActivityIndicator size="small" color="#0000ff" />
               )}
-              <View style={{ height: 20 }} />
+              <View style={{ height: `${employees.length < 5 ? 80 : 40}` }} />
             </>
           )}
           contentContainerStyle={{ gap: 14 }}

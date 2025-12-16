@@ -188,7 +188,12 @@ const UpdateUser = () => {
                 setErrors((prev: any) => ({ ...prev, position: "" }));
               }}
               selectedValue={addEmployeeInfo?.position}
-              loadData={loadJobOptions}
+              loadData={(args) =>
+                loadJobOptions({
+                  ...args,
+                  includeNewHires: true,
+                })
+              }
             />
             <Error hidden={!errors.position} title={errors.position} />
           </View>

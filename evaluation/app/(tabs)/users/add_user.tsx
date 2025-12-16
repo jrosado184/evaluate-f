@@ -103,7 +103,12 @@ const AddUser = () => {
               placeholder="Select Position"
               searchable
               options={options}
-              loadData={loadJobOptions}
+              loadData={(args) =>
+                loadJobOptions({
+                  ...args,
+                  includeNewHires: true,
+                })
+              }
               returnOption
               onSelect={(opt) => {
                 let newHire = "";

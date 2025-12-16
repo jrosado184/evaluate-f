@@ -68,26 +68,6 @@ const PersonalInfoForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasDeletedEvaluation, setHasDeletedEvaluation] = useState(false);
 
-  const loadDepartmentOptions = useCallback(async () => {
-    const token = await AsyncStorage.getItem("token");
-    const baseUrl = await getServerIP();
-    const resp = await axios.get(`${baseUrl}/departments/options`, {
-      headers: { Authorization: token! },
-    });
-
-    return (
-      resp.data?.results?.map((d: any) => ({
-        ...d,
-        label:
-          d?.children?.custom_name ||
-          d?.children?.local_name ||
-          d?.children?.department_name ||
-          d?.children?.sap_description ||
-          d.label,
-      })) ?? []
-    );
-  }, []);
-
   const fetchEvaluation = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem("token");
@@ -455,7 +435,12 @@ const PersonalInfoForm = () => {
             selectedValue={formData.trainingPosition}
             returnOption
             onSelect={handleJobSelect}
-            loadData={loadJobOptions}
+            loadData={(args) =>
+              loadJobOptions({
+                ...args,
+                includeNewHires: true,
+              })
+            }
             borderColor={
               errors.trainingPosition ? "border-red-500" : "border-gray-300"
             }

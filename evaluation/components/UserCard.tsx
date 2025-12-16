@@ -15,7 +15,6 @@ interface UserCardTypes {
   date_of_hire: any;
   last_update: string;
   locker_number: string | undefined;
-  status: string;
   button?: string;
   knife_number: number | any;
 }
