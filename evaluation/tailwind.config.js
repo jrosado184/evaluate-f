@@ -7,6 +7,13 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
+      screens: {
+        xs: "320", // SE / very small phones
+        sm: "375", // typical iPhone (base/Pro)
+        proMax: "410", // big phones (Pro Max ~430 width)
+        md: "768", // iPads/tablets
+        lg: "1024", // large tablets / desktop layouts (rare in RN)
+      },
       colors: {
         primary: {
           0: "rgb(var(--color-primary-0)/<alpha-value>)",
@@ -190,5 +197,6 @@ module.exports = {
       },
     },
   },
+
   plugins: [gluestackPlugin],
 };

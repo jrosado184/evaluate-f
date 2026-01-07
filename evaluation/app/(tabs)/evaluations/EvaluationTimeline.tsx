@@ -260,7 +260,7 @@ const EvaluationTimeline = ({ fileData }: Props) => {
                 </Text>
 
                 {/* Signatures */}
-                <View className="mt-3 flex-row justify-between gap-4">
+                <View className="mt-3 flex-row justify-between xs:gap-8 proMax:gap-4">
                   {evaluation.trainerSignature &&
                     renderSignature("Trainer", evaluation.trainerSignature)}
                   {evaluation.teamMemberSignature &&
