@@ -613,12 +613,7 @@ export default function Step2Form() {
         >
           <View className="flex-row items-center mb-6">
             <SinglePressTouchable
-              onPress={() =>
-                router.replace({
-                  pathname: `/evaluations/[evaluationId]`,
-                  params: { evaluationId, from },
-                })
-              }
+              onPress={() => router.back()}
               className="mr-3"
             >
               <Icon name="chevron-left" size={28} color="#1a237e" />

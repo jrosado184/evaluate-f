@@ -1,13 +1,5 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, ScrollView, Alert } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  useLocalSearchParams,
-  useFocusEffect,
-  router,
-  useGlobalSearchParams,
-  useSegments,
-} from "expo-router";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
@@ -16,23 +8,28 @@ import EvaluationButton from "@/components/buttons/EvaluationButton";
 import Icon from "react-native-vector-icons/Feather";
 import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
+import { router } from "expo-router";
 
-const EvaluationSummary = () => {
-  const { evaluationId }: { id: any; evaluationId: any } =
-    useLocalSearchParams();
+type Props = {
+  evaluationId: string;
+  onClose: () => void;
+};
+
+const EvaluationSummary = ({ evaluationId, onClose }: Props) => {
   const [evaluation, setEvaluation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  const { from } = useGlobalSearchParams();
-
-  const fetchEvaluation = async () => {
+  const fetchEvaluation = useCallback(async () => {
     try {
+      setLoading(true);
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
+
       const res = await axios.get(`${baseUrl}/evaluations/${evaluationId}`, {
         headers: { Authorization: token! },
       });
+
       setEvaluation(res?.data);
     } catch (err: any) {
       console.error("Failed to fetch evaluation:", err);
@@ -40,21 +37,19 @@ const EvaluationSummary = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [evaluationId]);
 
-  const segments: any = useSegments();
-  const path = segments.join("/");
+  useEffect(() => {
+    if (evaluationId) fetchEvaluation();
+  }, [evaluationId, fetchEvaluation]);
 
-  const employeeId = evaluation?.employeeId;
-  useFocusEffect(
-    useCallback(() => {
-      if (path !== "(tabs)/users/[id]") {
-        fetchEvaluation();
-      } else {
-        return;
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [path])
+  const navigateAfterClose = useCallback(
+    (to: any) => {
+      onClose();
+      // Small delay makes navigation reliable while the modal dismiss animation runs
+      setTimeout(() => router.push(to), 50);
+    },
+    [onClose]
   );
 
   const handleContinue = () => {
@@ -65,24 +60,24 @@ const EvaluationSummary = () => {
     let nextRoute: any = "";
 
     if (evaluation.status === "uploaded") {
-      nextRoute = `/evaluations/${evaluationId}/step1`;
+      nextRoute = `/evaluations/${evaluationId}/edit/step1`;
     } else if (evaluation.status === "in_progress") {
       nextRoute =
         weeksDone >= 3
           ? {
               pathname: "/evaluations/[evaluationId]/qualify",
               params: {
-                evaluationId, // required for [evaluationId]
+                evaluationId,
                 employee_name: evaluation?.personalInfo.teamMemberName,
                 department: evaluation?.personalInfo.department,
                 position: evaluation?.position,
               },
             }
-          : `/evaluations/${evaluationId}/step2`;
+          : `/evaluations/${evaluationId}/edit/step2`;
     }
 
     if (nextRoute) {
-      router.push(nextRoute);
+      navigateAfterClose(nextRoute);
     } else {
       Alert.alert("Error", "Can't continue from here.");
     }
@@ -90,27 +85,33 @@ const EvaluationSummary = () => {
     setTimeout(() => setSubmitting(false), 300);
   };
 
-  const handleClose = () => {
-    if (from) {
-      router.replace(`/(tabs)/users/${employeeId}`);
-    } else {
-      router.back();
-    }
-  };
-
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 justify-center items-center bg-white">
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#fff",
+        }}
+      >
         <ActivityIndicator size="large" color="#1a237e" />
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!evaluation) {
     return (
-      <SafeAreaView className="flex-1 justify-center items-center bg-white">
-        <Text className="text-gray-600">No evaluation found.</Text>
-      </SafeAreaView>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#fff",
+        }}
+      >
+        <Text style={{ color: "#6b7280" }}>No evaluation found.</Text>
+      </View>
     );
   }
 
@@ -118,19 +119,18 @@ const EvaluationSummary = () => {
   const canQualify = weeksDone >= 3;
   const pdfpreview = evaluation?.fileUrl?.split("/")[2];
 
-  // Build rows in the exact order you want to display them
+  const employeeId =
+    evaluation?.employeeId ?? evaluation?.personalInfo?.employeeId ?? "";
+
   const info = evaluation.personalInfo || {};
-  const rows: Array<{ label: string; value: any }> = [
+  const rows = [
     { label: "Training Type", value: info.trainingType },
     { label: "Team Member Name", value: info.teamMemberName },
     { label: "Employee Id", value: info.employeeId },
     { label: "Hire Date", value: info.hireDate },
     { label: "Training Position", value: evaluation?.position },
     { label: "Department", value: evaluation.department },
-    {
-      label: "Supervisor",
-      value: evaluation?.supervisor?.name,
-    },
+    { label: "Supervisor", value: evaluation?.supervisor?.name },
     { label: "Locker Number", value: info.lockerNumber },
     { label: "Phone Number", value: info.phoneNumber || "-" },
     { label: "Job Start Date", value: info.jobStartDate },
@@ -141,30 +141,24 @@ const EvaluationSummary = () => {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-white mb-14">
-      {/* Header */}
-      <View className="flex-row items-center p-4">
-        <SinglePressTouchable onPress={handleClose} className="mr-4">
-          <Icon name="x" size={26} color="#1a237e" />
-        </SinglePressTouchable>
-        <Text className="text-xl font-semibold">Evaluation Summary</Text>
-      </View>
-
+    <View style={{ flex: 1, backgroundColor: "#fff" }}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 40 }}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 140 }}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        {/* Personal Information */}
-        <View className="px-4 mb-6 pl-7 pt-6">
+        <View className="mb-6 pl-7 pt-6 pr-4">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-lg font-bold text-gray-900">
               Personal Information
             </Text>
+
             <SinglePressTouchable
               onPress={() =>
-                router.replace({
-                  pathname: `/evaluations/${evaluationId}/step1`,
-                  params: { from: "details", id: employeeId },
+                navigateAfterClose({
+                  pathname: `/evaluations/${evaluationId}/edit/step1`,
+                  params: { id: String(employeeId) },
                 })
               }
               className="px-3 py-1 border border-gray-300 rounded-md"
@@ -183,7 +177,6 @@ const EvaluationSummary = () => {
           ))}
         </View>
 
-        {/* Timeline or Placeholder */}
         {weeksDone > 0 ? (
           <EvaluationTimeline fileData={evaluation} />
         ) : (
@@ -195,14 +188,13 @@ const EvaluationSummary = () => {
             <SinglePressTouchable
               onPress={handleContinue}
               disabled={submitting}
-              className="mt-4 w-42 h-12 flex items-center justify-center bg-[#1a237e] px-6 py-2 rounded-md"
+              className="mt-4 h-12 flex items-center justify-center bg-[#1a237e] px-6 rounded-md"
             >
               <Text className="text-white font-semibold">Start Evaluation</Text>
             </SinglePressTouchable>
           </View>
         )}
 
-        {/* Continue / Qualify Button */}
         {evaluation.status !== "complete" && weeksDone > 0 && (
           <View className="px-4 mt-8 mb-8">
             <EvaluationButton
@@ -214,17 +206,18 @@ const EvaluationSummary = () => {
           </View>
         )}
 
-        {/* View PDF */}
         {weeksDone > 0 && (
-          <View className="w-full items-center bg-white">
+          <View className="w-full items-center bg-white pt-8">
             <SinglePressTouchable
               onPress={() =>
-                router.push({
+                navigateAfterClose({
                   pathname: `/evaluations/${evaluationId}/${pdfpreview}`,
-                  params: { filename: pdfpreview, employeeId },
+                  params: {
+                    filename: String(pdfpreview),
+                    employeeId: String(employeeId),
+                  },
                 })
               }
-              activeOpacity={0.85}
               className="w-[90vw] border border-gray-300 rounded-lg bg-white px-4 py-3"
             >
               <View className="flex-row justify-between items-center">
@@ -246,7 +239,7 @@ const EvaluationSummary = () => {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

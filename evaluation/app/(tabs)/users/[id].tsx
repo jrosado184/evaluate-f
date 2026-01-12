@@ -1,12 +1,15 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
-  ScrollView,
   Alert,
   TouchableWithoutFeedback,
+  StyleSheet,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { router, useFocusEffect, useGlobalSearchParams } from "expo-router";
 import Icon from "react-native-vector-icons/Feather";
 import { Swipeable } from "react-native-gesture-handler";
@@ -19,9 +22,20 @@ import useAuthContext from "@/app/context/AuthContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import EvaluationRow from "@/app/(tabs)/evaluations/EvaluationRow";
 import { ActivityIndicator } from "react-native-paper";
-import SinglePressTouchableTouchable from "@/app/utils/SinglePress";
+import SinglePressTouchable from "@/app/utils/SinglePress";
+
+import {
+  BottomSheetModal,
+  BottomSheetView,
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+} from "@gorhom/bottom-sheet";
+
+import EvaluationSummary from "@/components/evaluations/EvaluationSummary";
 
 const User = () => {
+  const insets = useSafeAreaInsets();
+
   const { id } = useGlobalSearchParams();
   const { employee, setEmployee, setAddEmployeeInfo } = useEmployeeContext();
   const { currentUser } = useAuthContext();
@@ -30,8 +44,38 @@ const User = () => {
   const [evaluationFiles, setEvaluationFiles] = useState<any[]>([]);
   const openSwipeableRef = useRef<Swipeable | null>(null);
 
+  // -------------------------
+  // BottomSheetModal control
+  // -------------------------
+  const sheetRef = useRef<BottomSheetModal>(null);
+  const snapPoints = useMemo(() => ["94%"], []);
+  const [selectedEvaluationId, setSelectedEvaluationId] = useState<
+    string | null
+  >(null);
+
+  const renderBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
+
+  const openSheet = useCallback((evaluationId: string) => {
+    setSelectedEvaluationId(evaluationId);
+    requestAnimationFrame(() => sheetRef.current?.present());
+  }, []);
+
+  const closeSheet = useCallback(() => {
+    sheetRef.current?.dismiss();
+  }, []);
+
   // Fetch employee + evals
-  const fetchEmployee = async () => {
+  const fetchEmployee = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
@@ -44,8 +88,11 @@ const User = () => {
 
       const evalRes = await axios.get(
         `${baseUrl}/employees/${id}/evaluations`,
-        { headers: { Authorization: token! } }
+        {
+          headers: { Authorization: token! },
+        }
       );
+
       if (evalRes.status === 200 && evalRes.data) {
         setEvaluationFiles(evalRes.data);
       }
@@ -55,13 +102,13 @@ const User = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, setAddEmployeeInfo, setEmployee]);
 
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
       fetchEmployee();
-    }, [])
+    }, [fetchEmployee])
   );
 
   /** Always go to step1 when creating **/
@@ -81,10 +128,8 @@ const User = () => {
 
       const newEvalId = res.data._id;
       router.push({
-        pathname: `/evaluations/${newEvalId}/step1`,
-        params: {
-          id: id,
-        },
+        pathname: `/evaluations/${newEvalId}/edit/step1`,
+        params: { id: String(id) },
       });
     } catch (err) {
       console.error("Failed to start evaluation:", err);
@@ -109,7 +154,9 @@ const User = () => {
               await axios.delete(`${baseUrl}/evaluations/${evaluationId}`, {
                 headers: { Authorization: token! },
               });
-              fetchEmployee(); //FIX THIS CAUSING ISSUES
+
+              // Refresh list
+              fetchEmployee();
             } catch {
               Alert.alert("Error", "Failed to delete evaluation.");
             }
@@ -123,8 +170,6 @@ const User = () => {
     if (openSwipeableRef.current && openSwipeableRef.current !== ref) {
       openSwipeableRef.current.close?.();
     }
-
-    // Store the currently opened swipeable
     openSwipeableRef.current = ref;
   };
 
@@ -138,14 +183,7 @@ const User = () => {
   // Full-screen loader
   if (loading) {
     return (
-      <SafeAreaView
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "#FFFFFF",
-        }}
-      >
+      <SafeAreaView style={styles.loader}>
         <ActivityIndicator size="large" color="#1a237e" />
       </SafeAreaView>
     );
@@ -154,14 +192,10 @@ const User = () => {
   return (
     <TouchableWithoutFeedback onPress={handleTapOutside}>
       <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
-        <View
-          contentContainerStyle={{ paddingBottom: 80 }}
-          onScrollBeginDrag={handleTapOutside}
-          scrollEventThrottle={16}
-        >
+        <View style={{ flex: 1 }}>
           <View style={{ padding: 24 }}>
             {/* Back */}
-            <SinglePressTouchableTouchable
+            <SinglePressTouchable
               onPress={() => router.replace("/users")}
               style={{
                 flexDirection: "row",
@@ -170,16 +204,10 @@ const User = () => {
               }}
             >
               <Icon name="chevron-left" size={28} />
-              <Text
-                style={{
-                  marginLeft: 4,
-                  fontSize: 20,
-                  fontWeight: "600",
-                }}
-              >
+              <Text style={{ marginLeft: 4, fontSize: 20, fontWeight: "600" }}>
                 Back
               </Text>
-            </SinglePressTouchableTouchable>
+            </SinglePressTouchable>
 
             {/* Employee card */}
             <UserCard
@@ -206,7 +234,8 @@ const User = () => {
               <Text style={{ fontSize: 18, fontWeight: "600" }}>
                 Evaluations
               </Text>
-              <SinglePressTouchableTouchable
+
+              <SinglePressTouchable
                 onPress={handleStartEvaluation}
                 style={{
                   flexDirection: "row",
@@ -220,17 +249,12 @@ const User = () => {
               >
                 <Icon name="plus" size={12} color="#2563EB" />
                 <Text style={{ color: "#2563EB", marginLeft: 4 }}>Create</Text>
-              </SinglePressTouchableTouchable>
+              </SinglePressTouchable>
             </View>
 
             {/* Empty state */}
             {evaluationFiles.length === 0 ? (
-              <View
-                style={{
-                  alignItems: "center",
-                  marginTop: 48,
-                }}
-              >
+              <View style={{ alignItems: "center", marginTop: 48 }}>
                 <Icon name="clipboard" size={50} color="#9CA3AF" />
                 <Text style={{ color: "#6B7280", marginTop: 16 }}>
                   No evaluations yet.
@@ -240,9 +264,10 @@ const User = () => {
               <View>
                 {evaluationFiles.map((file) => (
                   <EvaluationRow
-                    from={id?.toString()}
                     key={file._id}
                     file={file}
+                    includeName
+                    onPress={() => openSheet(file._id)}
                     onDelete={handleDeleteEvaluation}
                     handleSwipeableWillOpen={(ref: Swipeable | null) =>
                       handleSwipeableWillOpen(ref)
@@ -253,9 +278,66 @@ const User = () => {
             )}
           </View>
         </View>
+
+        <BottomSheetModal
+          ref={sheetRef}
+          snapPoints={snapPoints}
+          enablePanDownToClose
+          backdropComponent={renderBackdrop}
+          topInset={insets.top}
+          onDismiss={() => setSelectedEvaluationId(null)}
+          backgroundStyle={styles.sheetBg}
+          handleIndicatorStyle={styles.handle}
+          handleStyle={{ paddingTop: 6 }}
+          enableContentPanningGesture={false}
+        >
+          <BottomSheetScrollView style={{ flex: 1 }}>
+            {/* Header */}
+            <View style={styles.sheetHeader}>
+              <SinglePressTouchable
+                onPress={closeSheet}
+                style={{ marginRight: 12 }}
+              >
+                <Icon name="x" size={26} color="#1a237e" />
+              </SinglePressTouchable>
+              <Text style={styles.sheetTitle}>Evaluation Summary</Text>
+            </View>
+
+            <View style={{ flex: 1 }}>
+              {selectedEvaluationId ? (
+                <EvaluationSummary
+                  evaluationId={selectedEvaluationId}
+                  onClose={closeSheet}
+                />
+              ) : null}
+            </View>
+          </BottomSheetScrollView>
+        </BottomSheetModal>
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
 };
+
+const styles = StyleSheet.create({
+  loader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+  },
+  sheetBg: {
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+  },
+  handle: { width: 44 },
+  sheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 8,
+  },
+  sheetTitle: { fontSize: 18, fontWeight: "700" },
+});
 
 export default User;

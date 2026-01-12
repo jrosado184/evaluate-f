@@ -300,22 +300,12 @@ const PersonalInfoForm = () => {
         { headers: { Authorization: token! } }
       );
 
-      if (from !== "details") {
-        await axios.patch(
-          `${baseUrl}/evaluations/${evaluationId}`,
-          { action: "update_status", data: { status: "in_progress" } },
-          { headers: { Authorization: token! } }
-        );
-        router.push({
-          pathname: `/evaluations/[evaluationId]/step2`,
-          params: { evaluationId, from: employee?._id },
-        });
-      } else {
-        router.push({
-          pathname: `/evaluations/[evaluationId]`,
-          params: { from: employee?._id, evaluationId },
-        });
-      }
+      await axios.patch(
+        `${baseUrl}/evaluations/${evaluationId}`,
+        { action: "update_status", data: { status: "in_progress" } },
+        { headers: { Authorization: token! } }
+      );
+      router.back();
     } catch (err) {
       console.error(err);
       Alert.alert("Error", "Failed to save information.");
@@ -347,15 +337,8 @@ const PersonalInfoForm = () => {
           <View className="flex-row items-center mb-6">
             <SinglePressTouchable
               onPress={() => {
-                if (from) {
-                  router.replace({
-                    pathname: `/evaluations/[evaluationId]`,
-                    params: { evaluationId, from },
-                  });
-                } else {
-                  handleDeleteEvaluation();
-                  router.replace(`/users/${employeeId}`);
-                }
+                router.back();
+                console.log(employeeId);
               }}
               className="mr-3"
             >

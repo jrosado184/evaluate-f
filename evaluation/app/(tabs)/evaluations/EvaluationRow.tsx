@@ -1,23 +1,26 @@
 import React, { useRef } from "react";
-import { View, Text, Animated, Alert } from "react-native";
+import { View, Text, Animated } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
-import Icon from "react-native-vector-icons/Feather";
-import { useGlobalSearchParams, useRouter } from "expo-router";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import SinglePressTouchable from "@/app/utils/SinglePress";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import getServerIP from "@/app/requests/NetworkAddress";
-import axios from "axios";
+
+type Props = {
+  file: any;
+  includeName?: boolean;
+
+  onPress: (evaluationId: string) => void;
+  onDelete?: (id: string) => void;
+  handleSwipeableWillOpen?: (ref: Swipeable | null) => void;
+};
 
 const EvaluationRow = ({
   file,
   onDelete,
   handleSwipeableWillOpen,
-  from,
   includeName,
-}: any) => {
+  onPress,
+}: Props) => {
   const swipeableRef = useRef<Swipeable>(null);
-  const router = useRouter();
 
   const renderRightActions = (
     progress: Animated.AnimatedInterpolation<number>
@@ -57,62 +60,20 @@ const EvaluationRow = ({
     );
   };
 
-  const handleEvaluationPress = async (evaluationId: string) => {
-    try {
-      const token = await AsyncStorage.getItem("token");
-      const baseUrl = await getServerIP();
-      const { data: evalDoc } = await axios.get(
-        `${baseUrl}/evaluations/${evaluationId}`,
-        { headers: { Authorization: token! } }
-      );
-
-      const info = evalDoc.personalInfo || {};
-      const hasInfo = !!info.teamMemberName && !!info.position;
-
-      const employeeIdParam =
-        info.employeeId?.toString?.() ?? file?.employeeId?.toString?.() ?? "";
-
-      const fromParam =
-        typeof from === "string" && from.length > 0 ? from : undefined;
-
-      const params: Record<string, string> = {
-        evaluationId,
-      };
-
-      if (employeeIdParam) params.employeeId = employeeIdParam;
-      if (fromParam) params.from = fromParam;
-
-      if (!hasInfo || evalDoc.status === "uploaded") {
-        router.push({
-          pathname: "/(tabs)/evaluations/[evaluationId]/step1",
-          params,
-        });
-      } else {
-        router.push({
-          pathname: "/(tabs)/evaluations/[evaluationId]",
-          params,
-        });
-      }
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Could not load evaluation details.");
-    }
-  };
-
   return (
     <Swipeable
       ref={swipeableRef}
-      friction={handleSwipeableWillOpen && 0.8}
-      overshootRight={handleSwipeableWillOpen ? true : false}
-      rightThreshold={handleSwipeableWillOpen && 10}
+      friction={handleSwipeableWillOpen ? 0.8 : 1}
+      overshootRight={!!handleSwipeableWillOpen}
+      rightThreshold={handleSwipeableWillOpen ? 10 : 0}
       onSwipeableWillOpen={() =>
-        handleSwipeableWillOpen && handleSwipeableWillOpen(swipeableRef.current)
+        handleSwipeableWillOpen?.(swipeableRef.current)
       }
       renderRightActions={renderRightActions}
       containerStyle={{ width: "100%" }}
     >
       <SinglePressTouchable
-        onPress={() => handleEvaluationPress(file._id)}
+        onPress={() => onPress(file._id)} // ✅ always open modal
         activeOpacity={0.8}
         style={{
           flexDirection: "row",
@@ -129,6 +90,7 @@ const EvaluationRow = ({
           <Text style={{ fontSize: 16, fontWeight: "600" }}>
             {file.position}
           </Text>
+
           {includeName && (
             <Text
               className="font-semibold"
@@ -137,6 +99,7 @@ const EvaluationRow = ({
               {file.personalInfo?.teamMemberName}
             </Text>
           )}
+
           <Text
             style={{
               color: "#9CA3AF",
@@ -148,6 +111,7 @@ const EvaluationRow = ({
             created: {formatISODate(file.uploadedAt)}
           </Text>
         </View>
+
         <Text
           style={{
             fontSize: 12,
