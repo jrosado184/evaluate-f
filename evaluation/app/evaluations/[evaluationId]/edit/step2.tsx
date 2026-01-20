@@ -5,7 +5,6 @@ import {
   View,
   Text,
   TextInput,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
   StatusBar,
@@ -29,6 +28,8 @@ import {
   toRelativeSignaturePath,
   uploadSignaturesMultipart,
 } from "@/app/helpers/signatureHelpers";
+import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import { ScrollView } from "react-native-gesture-handler";
 
 /* ---------------- helpers ---------------- */
 const NUMERIC = new Set([
@@ -84,7 +85,6 @@ const knifeSanitize = (s: string) => {
 const toNumSafe = (s: string) =>
   s === "" ? null : Number.isNaN(+s) ? null : +s;
 
-/** base64 dataURL -> temp file */
 async function dataUrlToTempFile(dataUrl: string, opts?: { name?: string }) {
   const match = dataUrl.match(/^data:(.+?);base64,(.*)$/);
   if (!match) throw new Error("Invalid data URL");
@@ -108,10 +108,9 @@ async function dataUrlToTempFile(dataUrl: string, opts?: { name?: string }) {
   return { uri: fileUri, mime, name };
 }
 
-/** turn a stored relative path into an absolute URL for the <Image/> preview */
 function absFromRelative(rel: string, baseUrl: string) {
   if (!rel) return "";
-  if (!rel.startsWith("/")) return rel; // already absolute (or file://)
+  if (!rel.startsWith("/")) return rel;
   try {
     const u = new URL(baseUrl);
     return `${u.origin}${rel}`;
@@ -121,7 +120,6 @@ function absFromRelative(rel: string, baseUrl: string) {
   }
 }
 
-/* ---------------- small presentational bits ---------------- */
 const Labeled = ({
   label,
   children,
@@ -135,17 +133,24 @@ const Labeled = ({
   </View>
 );
 
-/* =============================== screen =============================== */
-export default function Step2Form() {
+type Props = {
+  evaluationId?: string;
+  week?: number;
+  onBack?: () => void;
+  onDone?: () => void;
+};
+
+export default function Step2Form(props: Props) {
   const router = useRouter();
-  const {
-    id: employeeId,
-    evaluationId,
-    week,
-    from,
-  }: any = useLocalSearchParams();
+  const params: any = useLocalSearchParams();
+
+  const evaluationId =
+    props?.evaluationId ?? params?.evaluationId ?? params?.id;
+  const employeeId = params?.id ?? params?.employeeId;
+  const weekParam = props?.week ?? params?.week;
+
   const { currentUser } = useAuthContext();
-  const currentWeek = parseInt((week as string) || "1", 10);
+  const currentWeek = parseInt(String(weekParam || "1"), 10);
 
   const [formData, setFormData] = useState<Record<string, any>>({
     hoursMonday: null,
@@ -159,7 +164,7 @@ export default function Step2Form() {
     hoursOffJobWednesday: null,
     hoursOffJobThursday: null,
     hoursOffJobFriday: null,
-    hoursOffSaturday: null,
+    hoursOffJobSaturday: null,
     hoursWithTraineeMonday: null,
     hoursWithTraineeTuesday: null,
     hoursWithTraineeWednesday: null,
@@ -175,11 +180,11 @@ export default function Step2Form() {
     handStretchCompleted: false,
     hasPain: false,
     comments: "",
-    // store RELATIVE paths ("/api/signatures/<id>") — never file:// or full LAN IP
     trainerSignature: "",
     teamMemberSignature: "",
     supervisorSignature: "",
   });
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -192,7 +197,6 @@ export default function Step2Form() {
   const inputRefs = useRef<Array<TextInput | null>>([]);
   const [apiBase, setApiBase] = useState<string>("");
 
-  // NEW: stash base64 signatures here; we’ll upload them in handleSubmit
   const [pendingSigs, setPendingSigs] = useState<
     Partial<
       Record<
@@ -202,13 +206,13 @@ export default function Step2Form() {
     >
   >({});
 
-  /* load evaluation */
   useEffect(() => {
     (async () => {
       try {
         const token = await AsyncStorage.getItem("token");
         const baseUrl = await getServerIP();
         setApiBase(baseUrl);
+
         const { data } = await axios.get(
           `${baseUrl}/evaluations/${evaluationId}`,
           { headers: { Authorization: token! } }
@@ -247,7 +251,6 @@ export default function Step2Form() {
     })();
   }, [evaluationId, currentWeek]);
 
-  // helpers
   const toNum = (v: any) => {
     const n = Number(v);
     return Number.isFinite(n) ? n : 0;
@@ -285,7 +288,6 @@ export default function Step2Form() {
     projectedTrainingHours,
   ]);
 
-  /* input handler */
   const handleChange = (key: string, raw: string, index?: number) => {
     let next: string | number | null = raw;
     let len = raw.length;
@@ -333,7 +335,6 @@ export default function Step2Form() {
       const baseUrl = apiBase || (await getServerIP());
       const weekNumber = Number(currentWeek);
 
-      // 0) Upload any pending base64 signatures first
       let nextFormData = { ...formData };
       const hasAnyPending =
         !!pendingSigs.trainerSignature ||
@@ -369,7 +370,6 @@ export default function Step2Form() {
           weekNumber,
         });
 
-        // Map backend response to our UI keys, store RELATIVE path
         const roleToKey: Record<string, keyof typeof nextFormData> = {
           trainer: "trainerSignature",
           employee: "teamMemberSignature",
@@ -381,9 +381,8 @@ export default function Step2Form() {
           const uiKey = roleToKey[role];
           const absOrRel = pickSigUrlFromResponse(role, resp);
           const rel = toRelativeSignaturePath(absOrRel, baseUrl);
-          if (rel) {
-            nextFormData[uiKey] = rel;
-          } else {
+          if (rel) nextFormData[uiKey] = rel;
+          else {
             const id =
               resp?.files?.[role]?.gridfsId ||
               resp?.finalSignatures?.[role]?.gridfsId ||
@@ -397,7 +396,6 @@ export default function Step2Form() {
         setFormData(nextFormData);
       }
 
-      // 1) compute totals
       const totalHoursOnJob = sum([
         "hoursMonday",
         "hoursTuesday",
@@ -424,7 +422,6 @@ export default function Step2Form() {
       ]);
       const totalHours = totalHoursOnJob + totalHoursOffJob;
 
-      // 2) save the week (now includes the resolved signature URLs)
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
         {
@@ -444,20 +441,20 @@ export default function Step2Form() {
         { headers: { Authorization: token! } }
       );
 
-      // 3) ensure status is in_progress
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
-        {
-          action: "update_status",
-          data: { status: "in_progress" },
-        },
+        { action: "update_status", data: { status: "in_progress" } },
         { headers: { Authorization: token! } }
       );
 
-      router.replace({
-        pathname: `/evaluations/${evaluationId}`,
-        params: { employeeId },
-      });
+      if (props?.onDone) {
+        props.onDone();
+      } else {
+        router.replace({
+          pathname: `/evaluations/${evaluationId}`,
+          params: { employeeId },
+        });
+      }
     } catch (e: any) {
       Alert.alert("Error", e?.message || "Failed to save evaluation");
     } finally {
@@ -465,15 +462,6 @@ export default function Step2Form() {
     }
   };
 
-  if (loading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color="#1a237e" />
-      </View>
-    );
-  }
-
-  /* compact field group */
   const FieldGroup = ({
     title,
     keys,
@@ -548,7 +536,7 @@ export default function Step2Form() {
                     ? "border-red-500 border text-gray-900"
                     : "border border-gray-300 text-gray-900"
                 }`}
-                maxLength={1}
+                maxLength={2}
               />
               {errors[k] && !isDisabled && (
                 <Text className="text-sm text-red-500 mt-1">{errors[k]}</Text>
@@ -599,8 +587,16 @@ export default function Step2Form() {
   const makePreview = (value: string) =>
     value?.startsWith("/api/") ? absFromRelative(value, apiBase) : value;
 
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator size="large" color="#1a237e" />
+      </View>
+    );
+  }
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView edges={["bottom"]} className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -608,23 +604,12 @@ export default function Step2Form() {
       >
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          className="px-5 pt-5"
-          contentContainerStyle={{ paddingBottom: 140 }}
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingBottom: 80,
+            paddingTop: 20,
+          }}
         >
-          <View className="flex-row items-center mb-6">
-            <SinglePressTouchable
-              onPress={() => router.back()}
-              className="mr-3"
-            >
-              <Icon name="chevron-left" size={28} color="#1a237e" />
-            </SinglePressTouchable>
-            <Text className="text-2xl font-semibold text-gray-900">
-              {`${currentWeek}${
-                ["st", "nd", "rd"][currentWeek - 1] || "th"
-              } Week`}
-            </Text>
-          </View>
-
           <FieldGroup
             title="Hours On Job"
             keys={[
@@ -694,8 +679,6 @@ export default function Step2Form() {
             );
           })}
 
-          {/* Hand Stretch Completed */}
-
           {(["hasPain", "handStretchCompleted"] as const).map((k) => (
             <View key={k} className="mb-6">
               <Text className="text-base font-medium text-gray-700 mb-2">
@@ -725,7 +708,7 @@ export default function Step2Form() {
           {(
             [
               { key: "trainerSignature", label: currentUser.name },
-              { key: "teamMemberSignature", label: "Trainee" },
+              { key: "teamMemberSignature", label: traineeName || "Trainee" },
               { key: "supervisorSignature", label: "Supervisor" },
             ] as const
           ).map((s) => {
@@ -760,7 +743,7 @@ export default function Step2Form() {
             );
           })}
 
-          <View className="my-6">
+          <View className="my-10">
             <SinglePressTouchable
               onPress={handleSubmit}
               activeOpacity={0.85}
@@ -784,12 +767,7 @@ export default function Step2Form() {
         onOK={(b64: string) => {
           if (!signatureType) return;
           setPendingSigs((p) => ({ ...p, [signatureType]: b64 }));
-          const tempPreviewUrl = b64;
-          setFormData((f) => ({
-            ...f,
-            [signatureType]: tempPreviewUrl,
-          }));
-
+          setFormData((f) => ({ ...f, [signatureType]: b64 }));
           setSignatureType(null);
         }}
         onCancel={() => setSignatureType(null)}

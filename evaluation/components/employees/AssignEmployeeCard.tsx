@@ -12,7 +12,6 @@ const AssignEmployeeCard = ({
   source,
   ...item
 }: any) => {
-  console.log(assigned);
   return (
     <View className="w-[90vw] h-28 bg-white border border-gray-400 rounded-lg px-4 py-3 mb-3">
       <View className="flex-row justify-between items-start h-full">

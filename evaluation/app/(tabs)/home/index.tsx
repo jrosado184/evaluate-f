@@ -95,7 +95,7 @@ export default function ModernDashboard() {
       <SafeAreaView className="p-6">
         <Header />
 
-        <View className="mb-8">
+        <View className="mb-2">
           <Greeting />
         </View>
 

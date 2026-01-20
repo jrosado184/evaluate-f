@@ -1,21 +1,33 @@
+// components/evaluations/EvaluationSummary.tsx
+// @ts-nocheck
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, ScrollView, Alert } from "react-native";
+import { View, Text, Alert } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
-import EvaluationTimeline from "@/app/(tabs)/evaluations/EvaluationTimeline";
+import EvaluationTimeline from "@/components/evaluations/sheets/EvaluationTimeline";
 import EvaluationButton from "@/components/buttons/EvaluationButton";
 import Icon from "react-native-vector-icons/Feather";
 import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 import { router } from "expo-router";
+import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 
 type Props = {
   evaluationId: string;
   onClose: () => void;
+  onEdit?: () => void; // should switch parent sheetView to step1
+  onOpenStep2?: (args: { week: number }) => void; // should switch parent sheetView to step2 + set week
+  inSheet?: boolean; // ✅ if rendered inside BottomSheetScrollView in parent, keep false
 };
 
-const EvaluationSummary = ({ evaluationId, onClose }: Props) => {
+const EvaluationSummary = ({
+  evaluationId,
+  onClose,
+  onEdit,
+  onOpenStep2,
+  inSheet = false,
+}: Props) => {
   const [evaluation, setEvaluation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -45,46 +57,61 @@ const EvaluationSummary = ({ evaluationId, onClose }: Props) => {
 
   const navigateAfterClose = useCallback(
     (to: any) => {
-      onClose();
-      // Small delay makes navigation reliable while the modal dismiss animation runs
+      onClose?.();
       setTimeout(() => router.push(to), 50);
     },
-    [onClose]
+    [onClose],
   );
 
   const handleContinue = () => {
     if (!evaluation || submitting) return;
-    setSubmitting(true);
 
     const weeksDone = evaluation.evaluations?.length || 0;
-    let nextRoute: any = "";
 
     if (evaluation.status === "uploaded") {
-      nextRoute = `/evaluations/${evaluationId}/edit/step1`;
-    } else if (evaluation.status === "in_progress") {
-      nextRoute =
-        weeksDone >= 3
-          ? {
-              pathname: "/evaluations/[evaluationId]/qualify",
-              params: {
-                evaluationId,
-                employee_name: evaluation?.personalInfo.teamMemberName,
-                department: evaluation?.personalInfo.department,
-                position: evaluation?.position,
-              },
-            }
-          : `/evaluations/${evaluationId}/edit/step2`;
+      if (onEdit) onEdit();
+      else navigateAfterClose(`/evaluations/${evaluationId}/edit/step1`);
+      return;
     }
 
-    if (nextRoute) {
-      navigateAfterClose(nextRoute);
-    } else {
-      Alert.alert("Error", "Can't continue from here.");
+    if (evaluation.status === "in_progress") {
+      // after 3 weeks -> qualify
+      if (weeksDone >= 3) {
+        setSubmitting(true);
+
+        const nextRoute = {
+          pathname: "/evaluations/[evaluationId]/qualify",
+          params: {
+            evaluationId,
+            employee_name: evaluation?.personalInfo?.teamMemberName,
+            department: evaluation?.personalInfo?.department,
+            position: evaluation?.position,
+          },
+        };
+
+        navigateAfterClose(nextRoute);
+        setTimeout(() => setSubmitting(false), 300);
+        return;
+      }
+
+      // open Step2 week N+1
+      if (onOpenStep2) {
+        onOpenStep2({ week: weeksDone + 1 });
+        return;
+      }
+
+      setSubmitting(true);
+      navigateAfterClose(
+        `/evaluations/${evaluationId}/edit/step2?week=${weeksDone + 1}`,
+      );
+      setTimeout(() => setSubmitting(false), 300);
+      return;
     }
 
-    setTimeout(() => setSubmitting(false), 300);
+    Alert.alert("Error", "Can't continue from here.");
   };
 
+  // ---------- states ----------
   if (loading) {
     return (
       <View
@@ -115,39 +142,48 @@ const EvaluationSummary = ({ evaluationId, onClose }: Props) => {
     );
   }
 
+  // ---------- derived ----------
   const weeksDone = evaluation.evaluations?.length || 0;
   const canQualify = weeksDone >= 3;
-  const pdfpreview = evaluation?.fileUrl?.split("/")[2];
 
-  const employeeId =
-    evaluation?.employeeId ?? evaluation?.personalInfo?.employeeId ?? "";
+  // safer pdf preview parsing
+  const pdfpreview =
+    typeof evaluation?.fileUrl === "string"
+      ? evaluation.fileUrl.split("/").filter(Boolean).pop()
+      : "";
 
   const info = evaluation.personalInfo || {};
+
   const rows = [
     { label: "Training Type", value: info.trainingType },
     { label: "Team Member Name", value: info.teamMemberName },
     { label: "Employee Id", value: info.employeeId },
     { label: "Hire Date", value: info.hireDate },
     { label: "Training Position", value: evaluation?.position },
-    { label: "Department", value: evaluation.department },
-    { label: "Supervisor", value: evaluation?.supervisor?.name },
+    { label: "Department", value: evaluation?.department ?? info.department },
+    { label: "Supervisor", value: evaluation?.supervisor?.name ?? "-" },
     { label: "Locker Number", value: info.lockerNumber },
     { label: "Phone Number", value: info.phoneNumber || "-" },
     { label: "Job Start Date", value: info.jobStartDate },
     { label: "Projected Training Hours", value: info.projectedTrainingHours },
-    { label: "Current Position", value: info.position },
-    { label: "Current Supervisor", value: info?.supervisor?.name },
     { label: "Projected Qualifying Date", value: info.projectedQualifyingDate },
   ];
 
+  const Content = inSheet ? View : BottomSheetScrollView;
+
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
-      <ScrollView
+      <Content
+        {...(!inSheet
+          ? {
+              keyboardShouldPersistTaps: "handled",
+              showsVerticalScrollIndicator: false,
+              contentContainerStyle: { paddingBottom: 140 },
+            }
+          : {})}
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 140 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
       >
+        {/* Personal info block */}
         <View className="mb-6 pl-7 pt-6 pr-4">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-lg font-bold text-gray-900">
@@ -155,12 +191,11 @@ const EvaluationSummary = ({ evaluationId, onClose }: Props) => {
             </Text>
 
             <SinglePressTouchable
-              onPress={() =>
-                navigateAfterClose({
-                  pathname: `/evaluations/${evaluationId}/edit/step1`,
-                  params: { id: String(employeeId) },
-                })
-              }
+              onPress={() => {
+                if (onEdit) onEdit();
+                else
+                  navigateAfterClose(`/evaluations/${evaluationId}/edit/step1`);
+              }}
               className="px-3 py-1 border border-gray-300 rounded-md"
             >
               <Text className="text-sm text-[#1a237e] font-medium">Edit</Text>
@@ -177,8 +212,14 @@ const EvaluationSummary = ({ evaluationId, onClose }: Props) => {
           ))}
         </View>
 
+        {/* Timeline or empty */}
         {weeksDone > 0 ? (
-          <EvaluationTimeline fileData={evaluation} />
+          <EvaluationTimeline
+            fileData={evaluation}
+            onOpenStep2={(weekNumber: number) =>
+              onOpenStep2?.({ week: weekNumber })
+            }
+          />
         ) : (
           <View className="flex-1 justify-center items-center py-20">
             <Icon name="clipboard" size={40} color="#9ca3af" />
@@ -195,6 +236,7 @@ const EvaluationSummary = ({ evaluationId, onClose }: Props) => {
           </View>
         )}
 
+        {/* Continue / Qualify button */}
         {evaluation.status !== "complete" && weeksDone > 0 && (
           <View className="px-4 mt-8 mb-8">
             <EvaluationButton
@@ -206,15 +248,16 @@ const EvaluationSummary = ({ evaluationId, onClose }: Props) => {
           </View>
         )}
 
-        {weeksDone > 0 && (
-          <View className="w-full items-center bg-white pt-8">
+        {/* PDF link */}
+        {weeksDone > 0 ? (
+          <View className="w-full items-center bg-white">
             <SinglePressTouchable
               onPress={() =>
                 navigateAfterClose({
-                  pathname: `/evaluations/${evaluationId}/${pdfpreview}`,
+                  pathname: `/evaluations/${evaluationId}/[pdfpreview]`,
                   params: {
                     filename: String(pdfpreview),
-                    employeeId: String(employeeId),
+                    employeeId: evaluation?.employeeId,
                   },
                 })
               }
@@ -237,8 +280,8 @@ const EvaluationSummary = ({ evaluationId, onClose }: Props) => {
               </View>
             </SinglePressTouchable>
           </View>
-        )}
-      </ScrollView>
+        ) : null}
+      </Content>
     </View>
   );
 };

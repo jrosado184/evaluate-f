@@ -23,15 +23,14 @@ import axios from "axios";
 import { ActivityIndicator } from "react-native-paper";
 import { useLocalSearchParams } from "expo-router";
 
-import {
-  BottomSheetModal,
-  BottomSheetView,
-  BottomSheetBackdrop,
-} from "@gorhom/bottom-sheet";
+import { BottomSheetModal, BottomSheetBackdrop } from "@gorhom/bottom-sheet";
 import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+
 import Icon from "react-native-vector-icons/Feather";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 import EvaluationSummary from "@/components/evaluations/EvaluationSummary";
+import PersonalInfoForm from "@/app/evaluations/[evaluationId]/edit/step1";
+import Step2Form from "../../evaluations/[evaluationId]/edit/step2";
 
 const Evaluations = () => {
   const insets = useSafeAreaInsets();
@@ -43,12 +42,20 @@ const Evaluations = () => {
 
   const sheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ["94%"], []);
+
   const [selectedEvaluationId, setSelectedEvaluationId] = useState<
     string | null
   >(null);
 
+  const [sheetView, setSheetView] = useState<"summary" | "step1" | "step2">(
+    "summary",
+  );
+
+  const [step2Week, setStep2Week] = useState<number>(1);
+
   const openSheet = useCallback((evaluationId: string) => {
     setSelectedEvaluationId(evaluationId);
+    setSheetView("summary");
     requestAnimationFrame(() => sheetRef.current?.present());
   }, []);
 
@@ -65,7 +72,7 @@ const Evaluations = () => {
         pressBehavior="close"
       />
     ),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -95,6 +102,20 @@ const Evaluations = () => {
     if (status === "in_progress" && eva.status === "incomplete") return true;
     return eva.status === status;
   });
+
+  const headerTitle =
+    sheetView === "step1"
+      ? "Personal Information"
+      : sheetView === "step2"
+        ? `Weekly Evaluation`
+        : "Evaluation Summary";
+
+  const headerIcon = sheetView === "summary" ? "x" : ("chevron-left" as any);
+
+  const handleHeaderPress = () => {
+    if (sheetView === "summary") closeSheet();
+    else setSheetView("summary");
+  };
 
   return (
     <View style={{ flex: 1 }}>
@@ -161,32 +182,61 @@ const Evaluations = () => {
       <BottomSheetModal
         ref={sheetRef}
         snapPoints={snapPoints}
-        enablePanDownToClose
+        enablePanDownToClose={sheetView === "summary"}
         backdropComponent={renderBackdrop}
         topInset={insets.top}
-        onDismiss={() => setSelectedEvaluationId(null)}
+        onDismiss={() => {
+          setSelectedEvaluationId(null);
+          setSheetView("summary");
+          setStep2Week(1);
+        }}
         backgroundStyle={styles.sheetBg}
         handleIndicatorStyle={styles.handle}
-        handleStyle={{ paddingTop: 6 }} // ✅ reduces “dead” area near top
+        handleStyle={{ paddingTop: 6 }}
       >
-        <BottomSheetScrollView style={{ flex: 1 }}>
-          {/* Header */}
+        <ScrollView
+          style={{ flex: 1 }}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ flexGrow: 1 }}
+        >
           <View style={styles.sheetHeader}>
-            <SinglePressTouchable onPress={closeSheet} className="mr-4">
-              <Icon name="x" size={26} color="#1a237e" />
+            <SinglePressTouchable onPress={handleHeaderPress} className="mr-4">
+              <Icon name={headerIcon} size={26} color="#1a237e" />
             </SinglePressTouchable>
-            <Text style={styles.sheetTitle}>Evaluation Summary</Text>
+
+            <Text style={styles.sheetTitle}>{headerTitle}</Text>
           </View>
 
           <View style={{ flex: 1 }}>
             {selectedEvaluationId ? (
-              <EvaluationSummary
-                evaluationId={selectedEvaluationId}
-                onClose={closeSheet}
-              />
+              sheetView === "summary" ? (
+                <EvaluationSummary
+                  evaluationId={selectedEvaluationId}
+                  onClose={closeSheet}
+                  onEdit={() => setSheetView("step1")}
+                  onOpenStep2={({ week }: any) => {
+                    setStep2Week(Number(week) || 1);
+                    setSheetView("step2");
+                  }}
+                />
+              ) : sheetView === "step1" ? (
+                <PersonalInfoForm
+                  evaluationId={selectedEvaluationId}
+                  id={""}
+                  onBack={() => setSheetView("summary")}
+                  onDone={() => setSheetView("summary")}
+                />
+              ) : (
+                <Step2Form
+                  evaluationId={selectedEvaluationId}
+                  week={step2Week}
+                  onBack={() => setSheetView("summary")}
+                  onDone={() => setSheetView("summary")}
+                />
+              )
             ) : null}
           </View>
-        </BottomSheetScrollView>
+        </ScrollView>
       </BottomSheetModal>
     </View>
   );

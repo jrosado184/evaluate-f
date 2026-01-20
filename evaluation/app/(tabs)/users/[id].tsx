@@ -1,3 +1,5 @@
+// app/screens/User.tsx
+// @ts-nocheck
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   View,
@@ -15,6 +17,7 @@ import Icon from "react-native-vector-icons/Feather";
 import { Swipeable } from "react-native-gesture-handler";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import getServerIP from "@/app/requests/NetworkAddress";
 import UserCard from "@/components/UserCard";
 import useEmployeeContext from "@/app/context/EmployeeContext";
@@ -26,17 +29,18 @@ import SinglePressTouchable from "@/app/utils/SinglePress";
 
 import {
   BottomSheetModal,
-  BottomSheetView,
   BottomSheetBackdrop,
   BottomSheetScrollView,
 } from "@gorhom/bottom-sheet";
 
 import EvaluationSummary from "@/components/evaluations/EvaluationSummary";
+import PersonalInfoForm from "@/app/evaluations/[evaluationId]/edit/step1";
+import Step2Form from "@/app/evaluations/[evaluationId]/edit/step2";
 
 const User = () => {
   const insets = useSafeAreaInsets();
-
   const { id } = useGlobalSearchParams();
+
   const { employee, setEmployee, setAddEmployeeInfo } = useEmployeeContext();
   const { currentUser } = useAuthContext();
 
@@ -44,14 +48,20 @@ const User = () => {
   const [evaluationFiles, setEvaluationFiles] = useState<any[]>([]);
   const openSwipeableRef = useRef<Swipeable | null>(null);
 
-  // -------------------------
-  // BottomSheetModal control
-  // -------------------------
+  // Bottom sheet
   const sheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = useMemo(() => ["94%"], []);
+
   const [selectedEvaluationId, setSelectedEvaluationId] = useState<
     string | null
   >(null);
+  const [sheetView, setSheetView] = useState<"summary" | "step1" | "step2">(
+    "summary",
+  );
+  const [step2Week, setStep2Week] = useState<number>(1);
+
+  // Tracks create-mode evaluation id (created inside Step1)
+  const createdEvalIdRef = useRef<string | null>(null);
 
   const renderBackdrop = useCallback(
     (props: any) => (
@@ -62,19 +72,21 @@ const User = () => {
         pressBehavior="close"
       />
     ),
-    []
+    [],
   );
-
-  const openSheet = useCallback((evaluationId: string) => {
-    setSelectedEvaluationId(evaluationId);
-    requestAnimationFrame(() => sheetRef.current?.present());
-  }, []);
 
   const closeSheet = useCallback(() => {
     sheetRef.current?.dismiss();
   }, []);
 
-  // Fetch employee + evals
+  const openSheet = useCallback((evaluationId: string) => {
+    createdEvalIdRef.current = null;
+    setSelectedEvaluationId(evaluationId);
+    setSheetView("summary");
+    setStep2Week(1);
+    requestAnimationFrame(() => sheetRef.current?.present());
+  }, []);
+
   const fetchEmployee = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem("token");
@@ -83,6 +95,7 @@ const User = () => {
       const empRes = await axios.get(`${baseUrl}/employees/${id}`, {
         headers: { Authorization: token! },
       });
+
       setEmployee(empRes.data);
       setAddEmployeeInfo(empRes.data);
 
@@ -90,7 +103,7 @@ const User = () => {
         `${baseUrl}/employees/${id}/evaluations`,
         {
           headers: { Authorization: token! },
-        }
+        },
       );
 
       if (evalRes.status === 200 && evalRes.data) {
@@ -108,79 +121,97 @@ const User = () => {
     useCallback(() => {
       setLoading(true);
       fetchEmployee();
-    }, [fetchEmployee])
+    }, [fetchEmployee]),
   );
 
-  /** Always go to step1 when creating **/
-  const handleStartEvaluation = async () => {
-    try {
-      const token = await AsyncStorage.getItem("token");
-      const baseUrl = await getServerIP();
+  /**
+   * ✅ Create button: open Step1 in "create mode"
+   * - Do NOT create here. Step1 creates only when user taps Save & Continue.
+   */
+  const handleStartEvaluation = useCallback(() => {
+    createdEvalIdRef.current = null;
+    setSelectedEvaluationId(null); // create mode => undefined eval id
+    setSheetView("step1");
+    setStep2Week(1);
 
-      const res = await axios.post(
-        `${baseUrl}/employees/${id}/evaluations`,
-        {
-          position: "Untitled",
-          createdBy: currentUser?.name,
-        },
-        { headers: { Authorization: token! } }
-      );
-
-      const newEvalId = res.data._id;
-      router.push({
-        pathname: `/evaluations/${newEvalId}/edit/step1`,
-        params: { id: String(id) },
-      });
-    } catch (err) {
-      console.error("Failed to start evaluation:", err);
-      Alert.alert("Error", "Could not start evaluation.");
-    }
-  };
-
-  /** Swipe-to-delete **/
-  const handleDeleteEvaluation = (evaluationId: string) => {
-    Alert.alert(
-      "Delete Evaluation",
-      "Are you sure you want to delete this evaluation?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const token = await AsyncStorage.getItem("token");
-              const baseUrl = await getServerIP();
-              await axios.delete(`${baseUrl}/evaluations/${evaluationId}`, {
-                headers: { Authorization: token! },
-              });
-
-              // Refresh list
-              fetchEmployee();
-            } catch {
-              Alert.alert("Error", "Failed to delete evaluation.");
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleSwipeableWillOpen = (ref: Swipeable | null) => {
-    if (openSwipeableRef.current && openSwipeableRef.current !== ref) {
-      openSwipeableRef.current.close?.();
-    }
-    openSwipeableRef.current = ref;
-  };
-
-  const handleTapOutside = () => {
+    // Close any open swipe row so it doesn't intercept touches/gestures
     if (openSwipeableRef.current) {
       openSwipeableRef.current.close?.();
       openSwipeableRef.current = null;
     }
-  };
 
-  // Full-screen loader
+    requestAnimationFrame(() => sheetRef.current?.present());
+  }, []);
+
+  const handleDeleteEvaluation = useCallback(
+    (evaluationId: string) => {
+      Alert.alert(
+        "Delete Evaluation",
+        "Are you sure you want to delete this evaluation?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                const token = await AsyncStorage.getItem("token");
+                const baseUrl = await getServerIP();
+                await axios.delete(`${baseUrl}/evaluations/${evaluationId}`, {
+                  headers: { Authorization: token! },
+                });
+                fetchEmployee();
+              } catch {
+                Alert.alert("Error", "Failed to delete evaluation.");
+              }
+            },
+          },
+        ],
+      );
+    },
+    [fetchEmployee],
+  );
+
+  const handleSwipeableWillOpen = useCallback((ref: Swipeable | null) => {
+    if (openSwipeableRef.current && openSwipeableRef.current !== ref) {
+      openSwipeableRef.current.close?.();
+    }
+    openSwipeableRef.current = ref;
+  }, []);
+
+  const handleTapOutside = useCallback(() => {
+    if (openSwipeableRef.current) {
+      openSwipeableRef.current.close?.();
+      openSwipeableRef.current = null;
+    }
+  }, []);
+
+  const headerTitle =
+    sheetView === "step1"
+      ? "Personal Information"
+      : sheetView === "step2"
+        ? "Weekly Evaluation"
+        : "Evaluation Summary";
+
+  const headerIcon =
+    sheetView === "summary" ? ("x" as any) : ("chevron-left" as any);
+
+  const handleHeaderPress = useCallback(() => {
+    // If user is creating a new evaluation and hasn't saved Step1 yet,
+    // close the sheet instead of going to "summary" (which would be blank).
+    if (
+      sheetView === "step1" &&
+      !selectedEvaluationId &&
+      !createdEvalIdRef.current
+    ) {
+      closeSheet();
+      return;
+    }
+
+    if (sheetView === "summary") closeSheet();
+    else setSheetView("summary");
+  }, [closeSheet, sheetView, selectedEvaluationId]);
+
   if (loading) {
     return (
       <SafeAreaView style={styles.loader}>
@@ -194,7 +225,6 @@ const User = () => {
       <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
         <View style={{ flex: 1 }}>
           <View style={{ padding: 24 }}>
-            {/* Back */}
             <SinglePressTouchable
               onPress={() => router.replace("/users")}
               style={{
@@ -209,7 +239,6 @@ const User = () => {
               </Text>
             </SinglePressTouchable>
 
-            {/* Employee card */}
             <UserCard
               name={employee?.employee_name}
               employee_id={employee?.employee_id}
@@ -221,7 +250,6 @@ const User = () => {
               last_update={formatISODate(employee?.last_updated)}
             />
 
-            {/* Header + Create */}
             <View
               style={{
                 flexDirection: "row",
@@ -252,7 +280,6 @@ const User = () => {
               </SinglePressTouchable>
             </View>
 
-            {/* Empty state */}
             {evaluationFiles.length === 0 ? (
               <View style={{ alignItems: "center", marginTop: 48 }}>
                 <Icon name="clipboard" size={50} color="#9CA3AF" />
@@ -266,7 +293,6 @@ const User = () => {
                   <EvaluationRow
                     key={file._id}
                     file={file}
-                    includeName
                     onPress={() => openSheet(file._id)}
                     onDelete={handleDeleteEvaluation}
                     handleSwipeableWillOpen={(ref: Swipeable | null) =>
@@ -282,36 +308,96 @@ const User = () => {
         <BottomSheetModal
           ref={sheetRef}
           snapPoints={snapPoints}
-          enablePanDownToClose
+          enablePanDownToClose={sheetView === "summary"}
           backdropComponent={renderBackdrop}
           topInset={insets.top}
-          onDismiss={() => setSelectedEvaluationId(null)}
+          onDismiss={() => {
+            createdEvalIdRef.current = null;
+            setSelectedEvaluationId(null);
+            setSheetView("summary");
+            setStep2Week(1);
+          }}
           backgroundStyle={styles.sheetBg}
           handleIndicatorStyle={styles.handle}
           handleStyle={{ paddingTop: 6 }}
-          enableContentPanningGesture={false}
         >
-          <BottomSheetScrollView style={{ flex: 1 }}>
-            {/* Header */}
+          <View style={{ flex: 1 }}>
             <View style={styles.sheetHeader}>
               <SinglePressTouchable
-                onPress={closeSheet}
-                style={{ marginRight: 12 }}
+                onPress={handleHeaderPress}
+                className="mr-4"
               >
-                <Icon name="x" size={26} color="#1a237e" />
+                <Icon name={headerIcon} size={26} color="#1a237e" />
               </SinglePressTouchable>
-              <Text style={styles.sheetTitle}>Evaluation Summary</Text>
+              <Text style={styles.sheetTitle}>{headerTitle}</Text>
             </View>
 
-            <View style={{ flex: 1 }}>
-              {selectedEvaluationId ? (
-                <EvaluationSummary
+            <BottomSheetScrollView
+              style={{ flex: 1 }}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{
+                flexGrow: 1,
+              }}
+            >
+              {sheetView === "summary" ? (
+                selectedEvaluationId ? (
+                  <EvaluationSummary
+                    evaluationId={selectedEvaluationId}
+                    onClose={closeSheet}
+                    onEdit={() => setSheetView("step1")}
+                    onOpenStep2={({ week }: any) => {
+                      setStep2Week(Number(week) || 1);
+                      setSheetView("step2");
+                    }}
+                  />
+                ) : null
+              ) : sheetView === "step1" ? (
+                <PersonalInfoForm
+                  // create mode => undefined until Step1 creates on Save & Continue
+                  evaluationId={selectedEvaluationId ?? undefined}
+                  id={String(id)}
+                  createdBy={currentUser?.name || ""}
+                  inSheet
+                  onCreated={(newEvalId: string) => {
+                    createdEvalIdRef.current = newEvalId;
+                    setSelectedEvaluationId(newEvalId);
+                    fetchEmployee(); // show new eval in list after closing
+                  }}
+                  onBack={() => {
+                    // if not saved yet, close instead of empty summary
+                    if (!selectedEvaluationId && !createdEvalIdRef.current)
+                      closeSheet();
+                    else setSheetView("summary");
+                  }}
+                  onDone={() => {
+                    // After Step1 save, stay in-sheet and go back to summary (or step2 if you want)
+                    const evalId =
+                      createdEvalIdRef.current || selectedEvaluationId;
+                    if (evalId) {
+                      setSelectedEvaluationId(evalId);
+                      setSheetView("summary");
+                    } else {
+                      closeSheet();
+                    }
+                  }}
+                />
+              ) : // step2
+              selectedEvaluationId ? (
+                <Step2Form
                   evaluationId={selectedEvaluationId}
-                  onClose={closeSheet}
+                  week={step2Week}
+                  inSheet
+                  onBack={() => setSheetView("summary")}
+                  onDone={async () => {
+                    await fetchEmployee();
+
+                    // return to summary
+                    setSheetView("summary");
+                  }}
                 />
               ) : null}
-            </View>
-          </BottomSheetScrollView>
+            </BottomSheetScrollView>
+          </View>
         </BottomSheetModal>
       </SafeAreaView>
     </TouchableWithoutFeedback>

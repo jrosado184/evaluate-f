@@ -1,5 +1,6 @@
+// app/evaluations/[evaluationId]/edit/step1.tsx
 // @ts-nocheck
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,13 +10,7 @@ import {
   StatusBar,
   Alert,
 } from "react-native";
-import {
-  useRouter,
-  useLocalSearchParams,
-  useFocusEffect,
-  useSegments,
-} from "expo-router";
-import Icon from "react-native-vector-icons/Feather";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import {
   ActivityIndicator,
   Menu,
@@ -28,8 +23,6 @@ import FormField from "@/components/FormField";
 import Button from "@/components/Button";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useEmployeeContext from "@/app/context/EmployeeContext";
-import SinglePressTouchable from "@/app/utils/SinglePress";
-import formatISODate from "@/app/conversions/ConvertIsoDate";
 import { dateValidation } from "@/app/validation/dateValidation";
 import SelectInput from "@/components/SelectField";
 import { titleCase } from "@/app/helpers/names";
@@ -37,11 +30,30 @@ import {
   loadJobOptions,
   loadSupervisorsOptions,
 } from "@/app/requests/loadData";
+import formatISODate from "@/app/conversions/ConvertIsoDate";
 
-const PersonalInfoForm = () => {
+type Props = {
+  evaluationId?: string;
+  id?: string;
+  createdBy?: string;
+  inSheet?: boolean;
+  onBack?: () => void;
+  onDone?: () => void;
+  onCreated?: (newEvalId: string) => void;
+};
+
+const PersonalInfoForm = (props: Props) => {
   const router = useRouter();
-  const { id: employeeId, evaluationId, from }: any = useLocalSearchParams();
+  const params: any = useLocalSearchParams();
+
+  const initialEvalId = String(
+    props?.evaluationId ?? params?.evaluationId ?? ""
+  );
+  const employeeId = String(props?.id ?? params?.id ?? "");
+
   const { employee } = useEmployeeContext();
+
+  const [evaluationId, setEvaluationId] = useState<string>(initialEvalId || "");
 
   const [formData, setFormData] = useState<any>({
     trainingType: "",
@@ -52,7 +64,7 @@ const PersonalInfoForm = () => {
     task_code: "",
     task_snapshot: null,
     department: "",
-    supervisor: null, // training supervisor object { id, name }
+    supervisor: null,
     dept_code: "",
     dept_snapshot: null,
     lockerNumber: "",
@@ -66,39 +78,54 @@ const PersonalInfoForm = () => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasDeletedEvaluation, setHasDeletedEvaluation] = useState(false);
 
-  const fetchEvaluation = useCallback(async () => {
+  const loadPrefills = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
 
-      const res: any =
-        !hasDeletedEvaluation &&
-        (await axios.get(`${baseUrl}/evaluations/${evaluationId}`, {
-          headers: { Authorization: token! },
-        }));
-
-      const info = res?.data?.personalInfo || {};
-
+      // Always try to have employee data for prefills
       let fullEmployee = employee;
-      if (!employee || String(employee.employee_id) !== employeeId) {
+      if (
+        !fullEmployee ||
+        String(fullEmployee?._id || fullEmployee?.id || "") !== employeeId
+      ) {
+        // If your employeeId param is the employee document id:
+        // this endpoint matches your User.tsx usage: /employees/${id}
         const empRes = await axios.get(`${baseUrl}/employees/${employeeId}`, {
           headers: { Authorization: token! },
         });
         fullEmployee = empRes.data;
       }
 
-      const evalSup = res?.data?.supervisor;
+      // If we already have an evaluationId, load its data and merge
+      let info: any = {};
+      let evalSupervisor: any = null;
+      let evalPosition: string = "";
+
+      if (evaluationId) {
+        const evalRes = await axios.get(
+          `${baseUrl}/evaluations/${evaluationId}`,
+          {
+            headers: { Authorization: token! },
+          }
+        );
+        info = evalRes?.data?.personalInfo || {};
+        evalSupervisor = evalRes?.data?.supervisor || null;
+        evalPosition =
+          (evalRes?.data?.position !== "Untitled" && evalRes?.data?.position) ||
+          "";
+      }
+
       let supervisorObj: any = null;
-      if (evalSup) {
-        if (typeof evalSup === "object") {
+      if (evalSupervisor) {
+        if (typeof evalSupervisor === "object") {
           supervisorObj = {
-            id: evalSup.id ?? null,
-            name: evalSup.name ?? "",
+            id: evalSupervisor.id ?? null,
+            name: evalSupervisor.name ?? "",
           };
         } else {
-          supervisorObj = { id: null, name: String(evalSup) };
+          supervisorObj = { id: null, name: String(evalSupervisor) };
         }
       }
 
@@ -118,9 +145,8 @@ const PersonalInfoForm = () => {
         jobStartDate: info.jobStartDate || "",
         projectedTrainingHours: info.projectedTrainingHours || "",
         projectedQualifyingDate: info.projectedQualifyingDate || "",
-        trainingPosition:
-          (res?.data?.position !== "Untitled" && res?.data?.position) || "",
-        supervisor: supervisorObj,
+        trainingPosition: evalPosition || info.trainingPosition || "",
+        supervisor: supervisorObj || info.supervisor || null,
         task_code: info.task_code || "",
         task_snapshot: info.task_snapshot || null,
         department: info.department || "",
@@ -129,21 +155,17 @@ const PersonalInfoForm = () => {
       }));
     } catch (err) {
       console.error(err);
+      Alert.alert("Error", "Could not load personal information.");
     } finally {
       setLoading(false);
     }
-  }, [employee, employeeId, evaluationId, hasDeletedEvaluation]);
-
-  const segments: any = useSegments();
-  const path = segments.join("/");
+  }, [employee, employeeId, evaluationId]);
 
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
-      if (path !== "(tabs)/users/[id]") {
-        fetchEvaluation();
-      }
-    }, [fetchEvaluation, path])
+      loadPrefills();
+    }, [loadPrefills])
   );
 
   const validateForm = () => {
@@ -228,25 +250,42 @@ const PersonalInfoForm = () => {
     });
   };
 
-  const handleDeleteEvaluation = async () => {
-    try {
-      const token = await AsyncStorage.getItem("token");
-      const baseUrl = await getServerIP();
-      await axios.delete(`${baseUrl}/evaluations/${evaluationId}`, {
-        headers: { Authorization: token! },
-      });
-      setHasDeletedEvaluation(true);
-    } catch {
-      Alert.alert("Error", "Failed to delete evaluation.");
-    }
+  const createdEvalIdRef = useRef<string | null>(null);
+
+  const ensureEvaluationCreated = async (): Promise<string> => {
+    const existing = evaluationId || createdEvalIdRef.current;
+    if (existing) return existing;
+
+    const token = await AsyncStorage.getItem("token");
+    const baseUrl = await getServerIP();
+
+    const res = await axios.post(
+      `${baseUrl}/employees/${employeeId}/evaluations`,
+      {
+        position: "Untitled",
+        createdBy: props?.createdBy || "",
+      },
+      { headers: { Authorization: token! } }
+    );
+
+    const newId = res.data?._id;
+    if (!newId) throw new Error("Create evaluation did not return _id");
+
+    createdEvalIdRef.current = newId;
+
+    return newId;
   };
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
+    if (isSubmitting) return; // extra safety
     setIsSubmitting(true);
+
     try {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
+
+      const evalId = await ensureEvaluationCreated();
 
       const {
         trainingType,
@@ -268,13 +307,13 @@ const PersonalInfoForm = () => {
       } = formData;
 
       await axios.patch(
-        `${baseUrl}/evaluations/${evaluationId}`,
+        `${baseUrl}/evaluations/${evalId}`,
         {
           action: "update_personal_info",
           data: {
             trainingPosition: trainingPosition.trim(),
             trainingSupervisor: supervisor,
-            department: department.trim(),
+            department: (department || "").trim(),
             task_code: task_code || null,
             dept_code: dept_code || null,
             task_snapshot: task_snapshot || null,
@@ -301,11 +340,17 @@ const PersonalInfoForm = () => {
       );
 
       await axios.patch(
-        `${baseUrl}/evaluations/${evaluationId}`,
+        `${baseUrl}/evaluations/${evalId}`,
         { action: "update_status", data: { status: "in_progress" } },
         { headers: { Authorization: token! } }
       );
-      router.back();
+
+      if (!evaluationId) {
+        setEvaluationId?.(evalId);
+        props?.onCreated?.(evalId);
+      }
+
+      props?.onDone?.();
     } catch (err) {
       console.error(err);
       Alert.alert("Error", "Failed to save information.");
@@ -323,33 +368,25 @@ const PersonalInfoForm = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+    <View className="flex-1 bg-white">
+      {!props?.inSheet ? (
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      ) : null}
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          className="px-5 pt-5"
-          contentContainerStyle={{ paddingBottom: 120 }}
+          className={props?.inSheet ? "px-5" : "px-5 pt-5"}
+          contentContainerStyle={{
+            paddingTop: props?.inSheet ? 0 : 10,
+            paddingBottom: 120,
+          }}
         >
-          <View className="flex-row items-center mb-6">
-            <SinglePressTouchable
-              onPress={() => {
-                router.back();
-                console.log(employeeId);
-              }}
-              className="mr-3"
-            >
-              <Icon name="chevron-left" size={28} color="#1a237e" />
-            </SinglePressTouchable>
-            <Text className="text-2xl font-semibold text-gray-900">
-              Personal Information
-            </Text>
-          </View>
-
-          <View className="mb-5">
+          {/* Training Type */}
+          <View className="mb-5 my-4">
             <Text className="text-base font-medium text-gray-700 mb-2">
               Training Type
             </Text>
@@ -392,6 +429,7 @@ const PersonalInfoForm = () => {
             )}
           </View>
 
+          {/* Prefilled non-editables */}
           {[
             { key: "teamMemberName", label: "Team Member Name" },
             { key: "employeeId", label: "Employee ID" },
@@ -401,7 +439,7 @@ const PersonalInfoForm = () => {
             <View key={key} className="mb-5">
               <FormField
                 title={label}
-                value={formData[key as keyof typeof formData]}
+                value={formData[key]}
                 placeholder={label}
                 handleChangeText={() => {}}
                 error={errors[key]}
@@ -411,6 +449,7 @@ const PersonalInfoForm = () => {
             </View>
           ))}
 
+          {/* Job Title */}
           <SelectInput
             searchable
             title="Job Title"
@@ -435,6 +474,7 @@ const PersonalInfoForm = () => {
             </Text>
           )}
 
+          {/* Supervisor */}
           <SelectInput
             searchable
             title="Supervisor"
@@ -472,9 +512,9 @@ const PersonalInfoForm = () => {
             <View key={key} className="mb-5">
               <FormField
                 title={label}
-                value={formData[key as keyof typeof formData]}
+                value={formData[key]}
                 placeholder={label}
-                handleChangeText={(t: any) => handleChange(key as any, t)}
+                handleChangeText={(t: any) => handleChange(key, t)}
                 error={errors[key]}
                 keyboardType={
                   /Date|Hours|ID|Number|Phone/.test(key) ? "numeric" : "default"
@@ -492,7 +532,7 @@ const PersonalInfoForm = () => {
           />
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 
