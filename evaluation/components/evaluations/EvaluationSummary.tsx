@@ -18,7 +18,7 @@ type Props = {
   onClose: () => void;
   onEdit?: () => void; // should switch parent sheetView to step1
   onOpenStep2?: (args: { week: number }) => void; // should switch parent sheetView to step2 + set week
-  inSheet?: boolean; // ✅ if rendered inside BottomSheetScrollView in parent, keep false
+  inSheet?: boolean; //
 };
 
 const EvaluationSummary = ({
@@ -154,19 +154,28 @@ const EvaluationSummary = ({
 
   const info = evaluation.personalInfo || {};
 
-  const rows = [
+  const rows: Array<{ label: string; value: any }> = [
     { label: "Training Type", value: info.trainingType },
     { label: "Team Member Name", value: info.teamMemberName },
     { label: "Employee Id", value: info.employeeId },
     { label: "Hire Date", value: info.hireDate },
-    { label: "Training Position", value: evaluation?.position },
-    { label: "Department", value: evaluation?.department ?? info.department },
-    { label: "Supervisor", value: evaluation?.supervisor?.name ?? "-" },
     { label: "Locker Number", value: info.lockerNumber },
     { label: "Phone Number", value: info.phoneNumber || "-" },
+
+    { label: "Training Position", value: evaluation?.position },
+    { label: "Department", value: evaluation.department },
+    {
+      label: "Supervisor",
+      value: evaluation?.supervisor?.name,
+    },
     { label: "Job Start Date", value: info.jobStartDate },
     { label: "Projected Training Hours", value: info.projectedTrainingHours },
-    { label: "Projected Qualifying Date", value: info.projectedQualifyingDate },
+    { label: "Current Position", value: info.position },
+    { label: "Current Supervisor", value: info?.supervisor?.name },
+    {
+      label: "Projected Qualifying Date",
+      value: info.projectedQualifyingDate,
+    },
   ];
 
   const Content = inSheet ? View : BottomSheetScrollView;

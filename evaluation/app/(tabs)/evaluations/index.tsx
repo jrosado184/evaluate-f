@@ -31,6 +31,8 @@ import SinglePressTouchable from "@/app/utils/SinglePress";
 import EvaluationSummary from "@/components/evaluations/EvaluationSummary";
 import PersonalInfoForm from "@/app/evaluations/[evaluationId]/edit/step1";
 import Step2Form from "../../evaluations/[evaluationId]/edit/step2";
+import AppBottomSheet from "@/components/ui/AppBottomSheet";
+import EvaluationSheet from "@/components/ui/sheets/EvaluationSheet";
 
 const Evaluations = () => {
   const insets = useSafeAreaInsets();
@@ -179,65 +181,32 @@ const Evaluations = () => {
         )}
       </SafeAreaView>
 
-      <BottomSheetModal
+      <AppBottomSheet
         ref={sheetRef}
         snapPoints={snapPoints}
         enablePanDownToClose={sheetView === "summary"}
-        backdropComponent={renderBackdrop}
-        topInset={insets.top}
+        title={headerTitle}
+        iconName={headerIcon}
+        onHeaderPress={handleHeaderPress}
         onDismiss={() => {
           setSelectedEvaluationId(null);
           setSheetView("summary");
           setStep2Week(1);
         }}
-        backgroundStyle={styles.sheetBg}
-        handleIndicatorStyle={styles.handle}
-        handleStyle={{ paddingTop: 6 }}
       >
-        <ScrollView
-          style={{ flex: 1 }}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ flexGrow: 1 }}
-        >
-          <View style={styles.sheetHeader}>
-            <SinglePressTouchable onPress={handleHeaderPress} className="mr-4">
-              <Icon name={headerIcon} size={26} color="#1a237e" />
-            </SinglePressTouchable>
-
-            <Text style={styles.sheetTitle}>{headerTitle}</Text>
-          </View>
-
-          <View style={{ flex: 1 }}>
-            {selectedEvaluationId ? (
-              sheetView === "summary" ? (
-                <EvaluationSummary
-                  evaluationId={selectedEvaluationId}
-                  onClose={closeSheet}
-                  onEdit={() => setSheetView("step1")}
-                  onOpenStep2={({ week }: any) => {
-                    setStep2Week(Number(week) || 1);
-                    setSheetView("step2");
-                  }}
-                />
-              ) : sheetView === "step1" ? (
-                <PersonalInfoForm
-                  evaluationId={selectedEvaluationId}
-                  id={""}
-                  onBack={() => setSheetView("summary")}
-                  onDone={() => setSheetView("summary")}
-                />
-              ) : (
-                <Step2Form
-                  evaluationId={selectedEvaluationId}
-                  week={step2Week}
-                  onBack={() => setSheetView("summary")}
-                  onDone={() => setSheetView("summary")}
-                />
-              )
-            ) : null}
-          </View>
-        </ScrollView>
-      </BottomSheetModal>
+        <EvaluationSheet
+          sheetView={sheetView}
+          setSheetView={setSheetView}
+          evaluationId={selectedEvaluationId}
+          setEvaluationId={setSelectedEvaluationId}
+          step2Week={step2Week}
+          setStep2Week={setStep2Week}
+          onClose={closeSheet}
+          onRefresh={() => {
+            // optional: re-fetch list if needed
+          }}
+        />
+      </AppBottomSheet>
     </View>
   );
 };

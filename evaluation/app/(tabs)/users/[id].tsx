@@ -36,6 +36,8 @@ import {
 import EvaluationSummary from "@/components/evaluations/EvaluationSummary";
 import PersonalInfoForm from "@/app/evaluations/[evaluationId]/edit/step1";
 import Step2Form from "@/app/evaluations/[evaluationId]/edit/step2";
+import AppBottomSheet from "@/components/ui/AppBottomSheet";
+import EvaluationSheet from "@/components/ui/sheets/EvaluationSheet";
 
 const User = () => {
   const insets = useSafeAreaInsets();
@@ -305,100 +307,34 @@ const User = () => {
           </View>
         </View>
 
-        <BottomSheetModal
+        <AppBottomSheet
           ref={sheetRef}
           snapPoints={snapPoints}
           enablePanDownToClose={sheetView === "summary"}
-          backdropComponent={renderBackdrop}
-          topInset={insets.top}
+          title={headerTitle}
+          iconName={headerIcon}
+          onHeaderPress={handleHeaderPress}
           onDismiss={() => {
             createdEvalIdRef.current = null;
             setSelectedEvaluationId(null);
             setSheetView("summary");
             setStep2Week(1);
           }}
-          backgroundStyle={styles.sheetBg}
-          handleIndicatorStyle={styles.handle}
-          handleStyle={{ paddingTop: 6 }}
         >
-          <View style={{ flex: 1 }}>
-            <View style={styles.sheetHeader}>
-              <SinglePressTouchable
-                onPress={handleHeaderPress}
-                className="mr-4"
-              >
-                <Icon name={headerIcon} size={26} color="#1a237e" />
-              </SinglePressTouchable>
-              <Text style={styles.sheetTitle}>{headerTitle}</Text>
-            </View>
-
-            <BottomSheetScrollView
-              style={{ flex: 1 }}
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{
-                flexGrow: 1,
-              }}
-            >
-              {sheetView === "summary" ? (
-                selectedEvaluationId ? (
-                  <EvaluationSummary
-                    evaluationId={selectedEvaluationId}
-                    onClose={closeSheet}
-                    onEdit={() => setSheetView("step1")}
-                    onOpenStep2={({ week }: any) => {
-                      setStep2Week(Number(week) || 1);
-                      setSheetView("step2");
-                    }}
-                  />
-                ) : null
-              ) : sheetView === "step1" ? (
-                <PersonalInfoForm
-                  // create mode => undefined until Step1 creates on Save & Continue
-                  evaluationId={selectedEvaluationId ?? undefined}
-                  id={String(id)}
-                  createdBy={currentUser?.name || ""}
-                  inSheet
-                  onCreated={(newEvalId: string) => {
-                    createdEvalIdRef.current = newEvalId;
-                    setSelectedEvaluationId(newEvalId);
-                    fetchEmployee(); // show new eval in list after closing
-                  }}
-                  onBack={() => {
-                    // if not saved yet, close instead of empty summary
-                    if (!selectedEvaluationId && !createdEvalIdRef.current)
-                      closeSheet();
-                    else setSheetView("summary");
-                  }}
-                  onDone={() => {
-                    // After Step1 save, stay in-sheet and go back to summary (or step2 if you want)
-                    const evalId =
-                      createdEvalIdRef.current || selectedEvaluationId;
-                    if (evalId) {
-                      setSelectedEvaluationId(evalId);
-                      setSheetView("summary");
-                    } else {
-                      closeSheet();
-                    }
-                  }}
-                />
-              ) : // step2
-              selectedEvaluationId ? (
-                <Step2Form
-                  evaluationId={selectedEvaluationId}
-                  week={step2Week}
-                  inSheet
-                  onBack={() => setSheetView("summary")}
-                  onDone={async () => {
-                    await fetchEmployee();
-
-                    // return to summary
-                    setSheetView("summary");
-                  }}
-                />
-              ) : null}
-            </BottomSheetScrollView>
-          </View>
-        </BottomSheetModal>
+          <EvaluationSheet
+            sheetView={sheetView}
+            setSheetView={setSheetView}
+            evaluationId={selectedEvaluationId}
+            setEvaluationId={setSelectedEvaluationId}
+            step2Week={step2Week}
+            setStep2Week={setStep2Week}
+            createdEvalIdRef={createdEvalIdRef}
+            employeeId={String(id)}
+            createdBy={currentUser?.name || ""}
+            onClose={closeSheet}
+            onRefresh={fetchEmployee}
+          />
+        </AppBottomSheet>
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
