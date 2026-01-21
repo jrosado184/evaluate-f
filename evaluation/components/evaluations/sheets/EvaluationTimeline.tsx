@@ -19,9 +19,9 @@ type EvalWeek = {
   handStretchCompleted?: boolean;
   hasPain?: boolean;
   comments?: string;
-  trainerSignature?: string; // can be absolute or "/api/..."
-  teamMemberSignature?: string; // same
-  supervisorSignature?: string; // same
+  trainerSignature?: string;
+  teamMemberSignature?: string;
+  supervisorSignature?: string;
 };
 
 type Props = {
@@ -31,9 +31,10 @@ type Props = {
     personalInfo: { projectedTrainingHours: number | string };
     evaluations: EvalWeek[];
   };
+  onOpenStep2?: (weekNumber: number) => void;
 };
 
-const EvaluationTimeline = ({ fileData }: Props) => {
+const EvaluationTimeline = ({ fileData, onOpenStep2 }: Props) => {
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [apiBase, setApiBase] = useState<string>("");
@@ -42,12 +43,11 @@ const EvaluationTimeline = ({ fileData }: Props) => {
     (async () => setApiBase((await getServerIP()) || ""))();
   }, []);
 
-  // Turn "/api/signatures/..." into "https://host/api/signatures/..."
   const toAbs = (u?: string) => {
     if (!u) return "";
-    if (/^https?:\/\//i.test(u)) return u; // already absolute
-    if (!apiBase) return u; // will re-render once apiBase is loaded
-    const origin = apiBase.replace(/\/api\/?$/, ""); // strip trailing /api
+    if (/^https?:\/\//i.test(u)) return u;
+    if (!apiBase) return u;
+    const origin = apiBase.replace(/\/api\/?$/, "");
     return u.startsWith("/") ? `${origin}${u}` : `${origin}/${u}`;
   };
 
@@ -63,6 +63,10 @@ const EvaluationTimeline = ({ fileData }: Props) => {
     : 0;
 
   const handleEdit = (weekNumber: number) => {
+    if (onOpenStep2) {
+      onOpenStep2(weekNumber);
+      return;
+    }
     router.push({
       pathname: `/evaluations/[id]/step2`,
       params: { id: fileData?._id, week: String(weekNumber) },
@@ -70,6 +74,10 @@ const EvaluationTimeline = ({ fileData }: Props) => {
   };
 
   const handleStart = (weekNumber: number) => {
+    if (onOpenStep2) {
+      onOpenStep2(weekNumber);
+      return;
+    }
     router.push(`/evaluations/${fileData?._id}/step2?week=${weekNumber}`);
   };
 
@@ -94,7 +102,6 @@ const EvaluationTimeline = ({ fileData }: Props) => {
     );
   };
 
-  // Totals across all saved weeks
   const totalHoursOnJob = fileData.evaluations?.reduce(
     (sum, e) => sum + (e.totalHoursOnJob || 0),
     0
@@ -115,7 +122,6 @@ const EvaluationTimeline = ({ fileData }: Props) => {
     if (!currentEval) return false;
 
     const hours = Number(currentEval.totalHoursOnJob) || 0;
-
     const raw = currentEval.percentQualified;
     const actual =
       Number(typeof raw === "string" ? raw.replace("%", "") : raw ?? 0) || 0;
@@ -125,7 +131,6 @@ const EvaluationTimeline = ({ fileData }: Props) => {
     return actual >= expected;
   }, [projectedTrainingHours, completedWeeks]);
 
-  // how many cards to show
   const listLength = (() => {
     if (fileData.status === "complete") return fileData.evaluations.length;
     const hasRoom =
@@ -155,7 +160,6 @@ const EvaluationTimeline = ({ fileData }: Props) => {
 
             {isComplete && evaluation && (
               <>
-                {/* Key Metrics */}
                 <View className="flex-row flex-wrap gap-y-2">
                   <View className="w-1/2">
                     <Text className="text-sm text-gray-700">
@@ -251,7 +255,6 @@ const EvaluationTimeline = ({ fileData }: Props) => {
                   </View>
                 </View>
 
-                {/* Comments */}
                 <Text className="text-sm text-gray-500 mt-2">
                   Comments:{" "}
                   <Text className="font-medium text-gray-700">
@@ -259,8 +262,7 @@ const EvaluationTimeline = ({ fileData }: Props) => {
                   </Text>
                 </Text>
 
-                {/* Signatures */}
-                <View className="mt-3 flex-row justify-between gap-4">
+                <View className="mt-3 flex-row justify-between xs:gap-8 proMax:gap-4">
                   {evaluation.trainerSignature &&
                     renderSignature("Trainer", evaluation.trainerSignature)}
                   {evaluation.teamMemberSignature &&
@@ -275,7 +277,6 @@ const EvaluationTimeline = ({ fileData }: Props) => {
                     )}
                 </View>
 
-                {/* Edit button (only if next week does not exist) */}
                 {!nextWeekExists && fileData?.status !== "complete" && (
                   <SinglePressTouchable
                     onPress={() => handleEdit(week)}
@@ -309,7 +310,6 @@ const EvaluationTimeline = ({ fileData }: Props) => {
         );
       })}
 
-      {/* Summary */}
       <View className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200 w-[90%] self-center">
         <Text className="text-base font-semibold mb-2">Summary</Text>
         <View className="flex-row flex-wrap">
@@ -350,7 +350,6 @@ const EvaluationTimeline = ({ fileData }: Props) => {
         </View>
       </View>
 
-      {/* Signature Preview Modal */}
       <Modal visible={!!selectedImage} transparent animationType="fade">
         <Pressable
           className="flex-1 bg-black bg-opacity-90 justify-center items-center"

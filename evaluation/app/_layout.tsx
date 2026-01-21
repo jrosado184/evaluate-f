@@ -1,4 +1,4 @@
-import { Slot, Stack } from "expo-router"; // ✅ Add Stack here
+import { Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -11,6 +11,7 @@ import * as SplashScreen from "expo-splash-screen";
 import * as Font from "expo-font";
 import "@/global.css";
 import useAxios401Interceptor from "@/hooks/useAxios401Interceptor";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -36,9 +37,7 @@ export default function RootLayout() {
     loadFonts();
   }, []);
 
-  if (!fontsLoaded) {
-    return null;
-  }
+  if (!fontsLoaded) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -48,15 +47,18 @@ export default function RootLayout() {
             <EmployeeProvider>
               <JobsProvider>
                 <ActionsProvider>
-                  <Stack
-                    screenOptions={{
-                      animation: "slide_from_right", // animation style
-                      gestureEnabled: true, // allows swipe-back gesture (optional)
-                      headerShown: false,
-                    }}
-                  >
-                    <Slot /> {/* The Slot will render your screens */}
-                  </Stack>
+                  <BottomSheetModalProvider>
+                    <Stack
+                      screenOptions={{
+                        animation: "slide_from_right",
+                        gestureEnabled: true,
+                        headerShown: false,
+                      }}
+                    >
+                      <Stack.Screen name="(tabs)" />
+                      <Stack.Screen name="evaluations" />
+                    </Stack>
+                  </BottomSheetModalProvider>
                 </ActionsProvider>
               </JobsProvider>
             </EmployeeProvider>

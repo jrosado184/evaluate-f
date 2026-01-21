@@ -6,7 +6,6 @@ import { useLocalSearchParams, router } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
 import { useTabBar } from "@/app/(tabs)/_layout";
-import useEmployeeContext from "@/app/context/EmployeeContext";
 import * as FileSystem from "expo-file-system";
 import { WebView } from "react-native-webview";
 import * as Sharing from "expo-sharing";
