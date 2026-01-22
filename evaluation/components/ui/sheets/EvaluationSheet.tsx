@@ -1,12 +1,13 @@
-// app/components/evaluations/EvaluationSheet.tsx
+// components/ui/sheets/EvaluationSheet.tsx
 // @ts-nocheck
 import React from "react";
 import EvaluationSummary from "@/components/evaluations/EvaluationSummary";
 import PersonalInfoForm from "@/app/evaluations/[evaluationId]/edit/step1";
 import Step2Form from "@/app/evaluations/[evaluationId]/edit/step2";
+import QualifyForm from "@/components/evaluations/sheets/QualifyForm";
 
 type Props = {
-  sheetView: "summary" | "step1" | "step2";
+  sheetView: "summary" | "step1" | "step2" | "qualify";
   setSheetView: (v: any) => void;
 
   evaluationId: string | null;
@@ -15,14 +16,16 @@ type Props = {
   step2Week: number;
   setStep2Week: (n: number) => void;
 
-  // create mode tracking
+  qualifyPayload?: any;
+  setQualifyPayload?: (p: any) => void;
+
   createdEvalIdRef?: React.MutableRefObject<string | null>;
 
-  employeeId?: string; // used by Step1 in User screen
-  createdBy?: string; // used by Step1 in User screen
+  employeeId?: string;
+  createdBy?: string;
 
   onClose: () => void;
-  onRefresh?: () => Promise<any> | void; // refresh list after updates/creates
+  onRefresh?: () => Promise<any> | void;
 };
 
 export default function EvaluationSheet({
@@ -32,6 +35,8 @@ export default function EvaluationSheet({
   setEvaluationId,
   step2Week,
   setStep2Week,
+  qualifyPayload,
+  setQualifyPayload,
   createdEvalIdRef,
   employeeId,
   createdBy,
@@ -43,6 +48,28 @@ export default function EvaluationSheet({
 
   if (!hasEvalId && sheetView === "summary") return null;
   if (!hasEvalId && sheetView === "step2") return null;
+  if (!hasEvalId && sheetView === "qualify") return null;
+
+  if (sheetView === "qualify") {
+    return (
+      <QualifyForm
+        inSheet
+        evaluationId={qualifyPayload?.evaluationId || evaluationId!}
+        employee_name={qualifyPayload?.employee_name}
+        department={qualifyPayload?.department}
+        position={qualifyPayload?.position}
+        onBack={() => {
+          setQualifyPayload?.(null);
+          setSheetView("summary");
+        }}
+        onDone={async () => {
+          await onRefresh?.();
+          setQualifyPayload?.(null);
+          setSheetView("summary"); // or onClose()
+        }}
+      />
+    );
+  }
 
   if (sheetView === "summary") {
     return (
@@ -54,6 +81,11 @@ export default function EvaluationSheet({
           setStep2Week(Number(week) || 1);
           setSheetView("step2");
         }}
+        onOpenQualify={(payload: any) => {
+          setQualifyPayload?.(payload);
+          setSheetView("qualify");
+        }}
+        inSheet
       />
     );
   }
@@ -61,8 +93,8 @@ export default function EvaluationSheet({
   if (sheetView === "step1") {
     return (
       <PersonalInfoForm
-        evaluationId={evaluationId ?? undefined} // undefined => create mode
-        id={employeeId || ""} // your Step1 prop naming
+        evaluationId={evaluationId ?? undefined}
+        id={employeeId || ""}
         createdBy={createdBy || ""}
         inSheet
         onCreated={(newEvalId: string) => {
@@ -71,7 +103,6 @@ export default function EvaluationSheet({
           onRefresh?.();
         }}
         onBack={() => {
-          // if user never saved, close (so you don't land on blank summary)
           if (!evaluationId && !createdId) onClose();
           else setSheetView("summary");
         }}
@@ -79,7 +110,7 @@ export default function EvaluationSheet({
           const idToUse = createdId || evaluationId;
           if (idToUse) {
             setEvaluationId(idToUse);
-            setSheetView("summary"); // or step2 if you prefer
+            setSheetView("summary");
           } else {
             onClose();
           }
@@ -88,7 +119,6 @@ export default function EvaluationSheet({
     );
   }
 
-  // step2
   return (
     <Step2Form
       evaluationId={evaluationId!}

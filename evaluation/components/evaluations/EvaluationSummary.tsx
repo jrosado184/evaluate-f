@@ -16,9 +16,15 @@ import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 type Props = {
   evaluationId: string;
   onClose: () => void;
-  onEdit?: () => void; // should switch parent sheetView to step1
-  onOpenStep2?: (args: { week: number }) => void; // should switch parent sheetView to step2 + set week
-  inSheet?: boolean; //
+  onEdit?: () => void;
+  onOpenStep2?: (args: { week: number }) => void;
+  onOpenQualify?: (args: {
+    evaluationId: string;
+    employee_name?: string;
+    department?: string;
+    position?: string;
+  }) => void;
+  inSheet?: boolean;
 };
 
 const EvaluationSummary = ({
@@ -26,6 +32,7 @@ const EvaluationSummary = ({
   onClose,
   onEdit,
   onOpenStep2,
+  onOpenQualify,
   inSheet = false,
 }: Props) => {
   const [evaluation, setEvaluation] = useState<any>(null);
@@ -75,26 +82,23 @@ const EvaluationSummary = ({
     }
 
     if (evaluation.status === "in_progress") {
-      // after 3 weeks -> qualify
       if (weeksDone >= 3) {
-        setSubmitting(true);
-
-        const nextRoute = {
-          pathname: "/evaluations/[evaluationId]/qualify",
-          params: {
-            evaluationId,
-            employee_name: evaluation?.personalInfo?.teamMemberName,
-            department: evaluation?.personalInfo?.department,
-            position: evaluation?.position,
-          },
+        const payload = {
+          evaluationId,
+          employee_name: evaluation?.personalInfo?.teamMemberName,
+          department: evaluation?.personalInfo?.department,
+          position: evaluation?.position,
         };
 
-        navigateAfterClose(nextRoute);
-        setTimeout(() => setSubmitting(false), 300);
+        if (onOpenQualify) {
+          onOpenQualify(payload);
+          return;
+        }
+
+        Alert.alert("Error", "Qualify view not available in this screen.");
         return;
       }
 
-      // open Step2 week N+1
       if (onOpenStep2) {
         onOpenStep2({ week: weeksDone + 1 });
         return;
@@ -111,7 +115,6 @@ const EvaluationSummary = ({
     Alert.alert("Error", "Can't continue from here.");
   };
 
-  // ---------- states ----------
   if (loading) {
     return (
       <View
@@ -142,11 +145,9 @@ const EvaluationSummary = ({
     );
   }
 
-  // ---------- derived ----------
   const weeksDone = evaluation.evaluations?.length || 0;
   const canQualify = weeksDone >= 3;
 
-  // safer pdf preview parsing
   const pdfpreview =
     typeof evaluation?.fileUrl === "string"
       ? evaluation.fileUrl.split("/").filter(Boolean).pop()
@@ -161,21 +162,14 @@ const EvaluationSummary = ({
     { label: "Hire Date", value: info.hireDate },
     { label: "Locker Number", value: info.lockerNumber },
     { label: "Phone Number", value: info.phoneNumber || "-" },
-
     { label: "Training Position", value: evaluation?.position },
     { label: "Department", value: evaluation.department },
-    {
-      label: "Supervisor",
-      value: evaluation?.supervisor?.name,
-    },
+    { label: "Supervisor", value: evaluation?.supervisor?.name },
     { label: "Job Start Date", value: info.jobStartDate },
     { label: "Projected Training Hours", value: info.projectedTrainingHours },
     { label: "Current Position", value: info.position },
     { label: "Current Supervisor", value: info?.supervisor?.name },
-    {
-      label: "Projected Qualifying Date",
-      value: info.projectedQualifyingDate,
-    },
+    { label: "Projected Qualifying Date", value: info.projectedQualifyingDate },
   ];
 
   const Content = inSheet ? View : BottomSheetScrollView;
@@ -192,7 +186,6 @@ const EvaluationSummary = ({
           : {})}
         style={{ flex: 1 }}
       >
-        {/* Personal info block */}
         <View className="mb-6 pl-7 pt-6 pr-4">
           <View className="flex-row justify-between items-center mb-4">
             <Text className="text-lg font-bold text-gray-900">
@@ -221,7 +214,6 @@ const EvaluationSummary = ({
           ))}
         </View>
 
-        {/* Timeline or empty */}
         {weeksDone > 0 ? (
           <EvaluationTimeline
             fileData={evaluation}
@@ -245,7 +237,6 @@ const EvaluationSummary = ({
           </View>
         )}
 
-        {/* Continue / Qualify button */}
         {evaluation.status !== "complete" && weeksDone > 0 && (
           <View className="px-4 mt-8 mb-8">
             <EvaluationButton
@@ -257,9 +248,8 @@ const EvaluationSummary = ({
           </View>
         )}
 
-        {/* PDF link */}
         {weeksDone > 0 ? (
-          <View className="w-full items-center bg-white">
+          <View className="w-full items-center bg-white pb-20">
             <SinglePressTouchable
               onPress={() =>
                 navigateAfterClose({

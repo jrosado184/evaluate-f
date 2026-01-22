@@ -22,15 +22,7 @@ import getServerIP from "@/app/requests/NetworkAddress";
 import axios from "axios";
 import { ActivityIndicator } from "react-native-paper";
 import { useLocalSearchParams } from "expo-router";
-
 import { BottomSheetModal, BottomSheetBackdrop } from "@gorhom/bottom-sheet";
-import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
-
-import Icon from "react-native-vector-icons/Feather";
-import SinglePressTouchable from "@/app/utils/SinglePress";
-import EvaluationSummary from "@/components/evaluations/EvaluationSummary";
-import PersonalInfoForm from "@/app/evaluations/[evaluationId]/edit/step1";
-import Step2Form from "../../evaluations/[evaluationId]/edit/step2";
 import AppBottomSheet from "@/components/ui/AppBottomSheet";
 import EvaluationSheet from "@/components/ui/sheets/EvaluationSheet";
 
@@ -49,15 +41,21 @@ const Evaluations = () => {
     string | null
   >(null);
 
-  const [sheetView, setSheetView] = useState<"summary" | "step1" | "step2">(
-    "summary",
-  );
+  // ✅ add "qualify"
+  const [sheetView, setSheetView] = useState<
+    "summary" | "step1" | "step2" | "qualify"
+  >("summary");
 
   const [step2Week, setStep2Week] = useState<number>(1);
+
+  // ✅ payload used by qualify screen inside modal
+  const [qualifyPayload, setQualifyPayload] = useState<any>(null);
 
   const openSheet = useCallback((evaluationId: string) => {
     setSelectedEvaluationId(evaluationId);
     setSheetView("summary");
+    setStep2Week(1);
+    setQualifyPayload(null);
     requestAnimationFrame(() => sheetRef.current?.present());
   }, []);
 
@@ -77,28 +75,34 @@ const Evaluations = () => {
     [],
   );
 
+  const GetEvaluations = useCallback(async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const baseUrl = await getServerIP();
+
+      const res = await axios.get(`${baseUrl}/evaluations`, {
+        headers: { Authorization: token },
+      });
+
+      setEvaluations(res?.data ?? []);
+    } catch (err) {
+      console.log(err);
+    }
+  }, []);
+
   useEffect(() => {
     setLoading(true);
 
-    const GetEvaluations = async () => {
+    const run = async () => {
       try {
-        const token = await AsyncStorage.getItem("token");
-        const baseUrl = await getServerIP();
-
-        const res = await axios.get(`${baseUrl}/evaluations`, {
-          headers: { Authorization: token },
-        });
-
-        setEvaluations(res?.data ?? []);
-      } catch (err) {
-        console.log(err);
+        await GetEvaluations();
       } finally {
         setLoading(false);
       }
     };
 
-    GetEvaluations();
-  }, [status]);
+    run();
+  }, [status, GetEvaluations]);
 
   const filtered = evaluations.filter((eva: any) => {
     if (status === "in_progress" && eva.status === "incomplete") return true;
@@ -110,11 +114,14 @@ const Evaluations = () => {
       ? "Personal Information"
       : sheetView === "step2"
         ? `Weekly Evaluation`
-        : "Evaluation Summary";
+        : sheetView === "qualify"
+          ? "Final Qualification"
+          : "Evaluation Summary";
 
   const headerIcon = sheetView === "summary" ? "x" : ("chevron-left" as any);
 
   const handleHeaderPress = () => {
+    // ✅ for qualify, back should go to summary (same behavior as step1/step2)
     if (sheetView === "summary") closeSheet();
     else setSheetView("summary");
   };
@@ -192,6 +199,7 @@ const Evaluations = () => {
           setSelectedEvaluationId(null);
           setSheetView("summary");
           setStep2Week(1);
+          setQualifyPayload(null);
         }}
       >
         <EvaluationSheet
@@ -201,9 +209,12 @@ const Evaluations = () => {
           setEvaluationId={setSelectedEvaluationId}
           step2Week={step2Week}
           setStep2Week={setStep2Week}
+          qualifyPayload={qualifyPayload}
+          setQualifyPayload={setQualifyPayload}
           onClose={closeSheet}
-          onRefresh={() => {
-            // optional: re-fetch list if needed
+          onRefresh={async () => {
+            // re-fetch list so it updates after Step2 / Qualify without reload
+            await GetEvaluations();
           }}
         />
       </AppBottomSheet>
