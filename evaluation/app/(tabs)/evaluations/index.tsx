@@ -27,8 +27,6 @@ import AppBottomSheet from "@/components/ui/AppBottomSheet";
 import EvaluationSheet from "@/components/ui/sheets/EvaluationSheet";
 
 const Evaluations = () => {
-  const insets = useSafeAreaInsets();
-
   const { complete } = useLocalSearchParams();
   const [status, setStatus] = useState<any>(complete || "in_progress");
   const [evaluations, setEvaluations] = useState<any>([]);
@@ -41,14 +39,12 @@ const Evaluations = () => {
     string | null
   >(null);
 
-  // ✅ add "qualify"
   const [sheetView, setSheetView] = useState<
     "summary" | "step1" | "step2" | "qualify"
   >("summary");
 
   const [step2Week, setStep2Week] = useState<number>(1);
 
-  // ✅ payload used by qualify screen inside modal
   const [qualifyPayload, setQualifyPayload] = useState<any>(null);
 
   const openSheet = useCallback((evaluationId: string) => {
@@ -62,18 +58,6 @@ const Evaluations = () => {
   const closeSheet = useCallback(() => {
     sheetRef.current?.dismiss();
   }, []);
-
-  const renderBackdrop = useCallback(
-    (props: any) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        pressBehavior="close"
-      />
-    ),
-    [],
-  );
 
   const GetEvaluations = useCallback(async () => {
     try {
@@ -102,7 +86,7 @@ const Evaluations = () => {
     };
 
     run();
-  }, [status, GetEvaluations]);
+  }, [status, sheetView, GetEvaluations]);
 
   const filtered = evaluations.filter((eva: any) => {
     if (status === "in_progress" && eva.status === "incomplete") return true;
@@ -121,7 +105,6 @@ const Evaluations = () => {
   const headerIcon = sheetView === "summary" ? "x" : ("chevron-left" as any);
 
   const handleHeaderPress = () => {
-    // ✅ for qualify, back should go to summary (same behavior as step1/step2)
     if (sheetView === "summary") closeSheet();
     else setSheetView("summary");
   };

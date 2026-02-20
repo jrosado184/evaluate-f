@@ -78,7 +78,6 @@ const useAddUser = () => {
   };
 
   useEffect(() => {
-    //sets the positions structure
     if (jobs && jobs.length > 0) {
       setOptions(
         jobs.map((job: any) => ({
@@ -89,7 +88,7 @@ const useAddUser = () => {
             value: position,
             department: job.name,
           })),
-        }))
+        })),
       );
     }
   }, [jobs]);

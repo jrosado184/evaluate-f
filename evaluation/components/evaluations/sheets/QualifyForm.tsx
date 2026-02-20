@@ -191,9 +191,6 @@ const QualifyForm = ({
           <Text className="font-semibold">Name:</Text> {employee_name}
         </Text>
         <Text className="text-base text-gray-700">
-          <Text className="font-semibold">Department:</Text> {department}
-        </Text>
-        <Text className="text-base text-gray-700">
           <Text className="font-semibold">Job Title:</Text> {position}
         </Text>
       </View>

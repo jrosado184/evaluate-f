@@ -32,8 +32,8 @@ export const loadJobOptions = async ({
   const filteredResults = (resp.data.results || []).filter(
     (job: any) =>
       !job?.children?.matching_task_codes?.some((task: any) =>
-        EXCLUDED_CODES.has(String(task))
-      )
+        EXCLUDED_CODES.has(String(task)),
+      ),
   );
 
   return {

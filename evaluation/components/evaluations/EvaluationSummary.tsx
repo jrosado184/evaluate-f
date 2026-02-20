@@ -237,8 +237,8 @@ const EvaluationSummary = ({
           </View>
         )}
 
-        {evaluation.status !== "complete" && weeksDone > 0 && (
-          <View className="px-4 mt-8 mb-8">
+        {evaluation.status !== "complete" && weeksDone > 0 ? (
+          <View className="px-4 mt-8 mb-4">
             <EvaluationButton
               status={evaluation?.status}
               canQualify={canQualify}
@@ -246,6 +246,8 @@ const EvaluationSummary = ({
               isLoading={submitting}
             />
           </View>
+        ) : (
+          <View className="px-4 mt-2 mb-8"></View>
         )}
 
         {weeksDone > 0 ? (

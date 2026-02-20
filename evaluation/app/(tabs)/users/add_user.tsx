@@ -89,7 +89,7 @@ const AddUser = () => {
               handleChangeText={(value: any) =>
                 handleEmployeeInfo(
                   "employee_id",
-                  typeof value === "number" ? value : parseInt(value, 10)
+                  typeof value === "number" ? value : parseInt(value, 10),
                 )
               }
             />
@@ -102,7 +102,6 @@ const AddUser = () => {
               title="Position"
               placeholder="Select Position"
               searchable
-              options={options}
               loadData={(args) =>
                 loadJobOptions({
                   ...args,
@@ -168,7 +167,7 @@ const AddUser = () => {
                 } else {
                   formatted = `${cleaned.slice(0, 2)}/${cleaned.slice(
                     2,
-                    4
+                    4,
                   )}/${cleaned.slice(4)}`;
                 }
                 handleEmployeeInfo("date_of_hire", formatted);
@@ -248,7 +247,7 @@ const AddUser = () => {
       <SlideUpModal
         mode="assignLocker"
         filter={encodeURIComponent(
-          addEmployeeInfo?.location || addEmployeeInfo?.locker_info?.location
+          addEmployeeInfo?.location || addEmployeeInfo?.locker_info?.location,
         )}
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
