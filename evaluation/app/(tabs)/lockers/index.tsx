@@ -1,26 +1,36 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Text, View, Animated, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { router, useFocusEffect, useGlobalSearchParams } from "expo-router";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
+import { ActivityIndicator } from "react-native-paper";
+import { Swipeable } from "react-native-gesture-handler";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import debounce from "lodash.debounce";
+
 import Search from "@/components/Search";
 import LockerCard from "@/components/LockerCard";
+import UserCardSkeleton from "@/app/skeletons/CardSkeleton";
+import Fab from "@/components/Fab";
+import SinglePressTouchable from "@/app/utils/SinglePress";
+import SuccessModal from "@/components/SuccessModal";
+import AppBottomSheet from "@/components/ui/AppBottomSheet";
+import SelectionSheet from "@/components/ui/sheets/SelectionSheet";
+
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
-import UserCardSkeleton from "@/app/skeletons/CardSkeleton";
 import usePagination from "@/hooks/usePagination";
 import useGetLockers from "@/app/requests/useGetLockers";
 import useScrollHandler from "@/hooks/useScrollHandler";
-import Fab from "@/components/Fab";
-import debounce from "lodash.debounce";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
 import getServerIP from "@/app/requests/NetworkAddress";
-import { ActivityIndicator } from "react-native-paper";
-import SinglePressTouchable from "@/app/utils/SinglePress";
-import SlideUpModal from "@/components/SlideUpModal";
-import SuccessModal from "@/components/SuccessModal";
-import { Swipeable } from "react-native-gesture-handler";
 
 const Lockers = () => {
   const {
@@ -33,11 +43,16 @@ const Lockers = () => {
   } = useEmployeeContext();
 
   const { getLockers } = useGetLockers();
+
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedLockerId, setSelectedLockerId] = useState<string>("");
   const [showToast, setShowToast] = useState(false);
+
+  const sheetRef = useRef<BottomSheetModal>(null);
+  const snapPoints = useMemo(() => ["90%"], []);
+
   const swipeableRefs = useRef<Map<string, Swipeable>>(new Map());
-  const { toast } = useGlobalSearchParams(); // <-- GET QUERY PARAM
+  const { toast } = useGlobalSearchParams();
 
   const { getMoreData, setIsSearching, fetchingMoreUsers, resetPagination } =
     usePagination(
@@ -46,7 +61,7 @@ const Lockers = () => {
       setLockers,
       setLockerDetails,
       lockerDetails,
-      4
+      4,
     );
 
   const { onScrollHandler } = useScrollHandler();
@@ -60,19 +75,20 @@ const Lockers = () => {
 
         const res = await axios.get(
           `${baseUrl}/lockers?page=1&limit=8&search=${encodeURIComponent(
-            searchTerm
+            searchTerm,
           )}`,
           {
             headers: { Authorization: token! },
-          }
+          },
         );
+
         setLockers(res.data.results);
         setIsSearching(true);
       } catch (err) {
         console.error("Search error:", err);
       }
     }, 300),
-    []
+    [],
   );
 
   const handleSearchChange = async (value: string) => {
@@ -81,6 +97,7 @@ const Lockers = () => {
     if (value.trim() === "") {
       debouncedFetch.cancel();
       resetPagination();
+
       const data = await getLockers(1, 4);
       if (data) {
         setLockers(data.results);
@@ -90,6 +107,7 @@ const Lockers = () => {
           totalPages: data.totalPages,
         }));
       }
+
       setIsSearching(false);
       return;
     }
@@ -99,8 +117,10 @@ const Lockers = () => {
 
   useEffect(() => {
     setLoading(true);
+
     const loadInitialLockers = async () => {
       const data = await getLockers(1, 4);
+
       if (data) {
         setLockers(data.results);
         setLockerDetails({
@@ -109,16 +129,20 @@ const Lockers = () => {
           totalLockers: data.totalLockers,
         });
       }
+
       setLoading(false);
     };
+
     loadInitialLockers();
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       setIsSearching(false);
+
       const reloadLockers = async () => {
         const data = await getLockers(1, 4);
+
         if (data) {
           setLockers(data.results);
           setLockerDetails({
@@ -128,16 +152,37 @@ const Lockers = () => {
           });
         }
       };
+
       reloadLockers();
-    }, [toast])
+    }, [toast]),
   );
 
   useEffect(() => {
     if (toast === "unassigned") {
-      setShowToast(true); // open SuccessModal
+      setShowToast(true);
       router.replace("/(tabs)/lockers");
     }
   }, [toast]);
+
+  useEffect(() => {
+    if (!modalVisible) return;
+
+    const id = setTimeout(() => {
+      sheetRef.current?.present();
+    }, 40);
+
+    return () => clearTimeout(id);
+  }, [modalVisible]);
+
+  const closeAssignSheet = () => {
+    sheetRef.current?.dismiss();
+  };
+
+  const resetAssignSheet = () => {
+    setModalVisible(false);
+    setSelectedLockerId("");
+    setQuery("");
+  };
 
   const handleAssignPress = (vacant: boolean, lockerId: string) => {
     if (vacant) {
@@ -149,6 +194,7 @@ const Lockers = () => {
 
   const handleAssignmentComplete = async () => {
     const data = await getLockers(1, 4);
+
     if (data) {
       setLockers(data.results);
       setLockerDetails({
@@ -164,6 +210,7 @@ const Lockers = () => {
     try {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
+
       await axios.delete(`${baseUrl}/lockers/${lockerId}`, {
         headers: { Authorization: token! },
       });
@@ -177,7 +224,7 @@ const Lockers = () => {
 
   const renderRightActions = (
     progress: Animated.AnimatedInterpolation<number>,
-    lockerId: string
+    lockerId: string,
   ) => {
     const translateX = progress.interpolate({
       inputRange: [0, 1],
@@ -214,7 +261,7 @@ const Lockers = () => {
                   style: "destructive",
                   onPress: () => handleDeleteLocker(lockerId),
                 },
-              ]
+              ],
             );
           }}
           style={{
@@ -273,80 +320,93 @@ const Lockers = () => {
         </Swipeable>
       );
     },
-    [lockers]
+    [lockers],
   );
 
   return (
-    <SafeAreaView className="p-6 h-[104vh] bg-white">
-      <View className="flex-row h-7 justify-between items-center w-full">
-        <Text className="pl-2 font-inter-regular text-[1.6rem]">Lockers</Text>
-      </View>
-
-      <Fab icon="unlock" route="lockers/add_locker" />
-      <Search total="lockers" query={query} setQuery={handleSearchChange} />
-
-      {lockers?.length === 0 && !loading ? (
-        <View className="h-[50vh] justify-center items-center">
-          <Text className="font-inter-regular text-neutral-500">
-            No Lockers
-          </Text>
+    <>
+      <SafeAreaView className="p-6 h-[104vh] bg-white">
+        <View className="flex-row h-7 justify-between items-center w-full">
+          <Text className="pl-2 font-inter-regular text-[1.6rem]">Lockers</Text>
         </View>
-      ) : !loading ? (
-        <Animated.FlatList
-          onScroll={onScrollHandler}
-          scrollEventThrottle={16}
-          data={lockers}
-          keyExtractor={(item) => item._id.toString()}
-          renderItem={renderLockerCard}
-          onEndReached={getMoreData}
-          onEndReachedThreshold={0.5}
-          ListFooterComponent={
-            fetchingMoreUsers ? (
-              <ActivityIndicator size="small" color="#0000ff" />
-            ) : null
+
+        <Fab icon="unlock" route="lockers/add_locker" />
+
+        <Search total="lockers" query={query} setQuery={handleSearchChange} />
+
+        {lockers?.length === 0 && !loading ? (
+          <View className="h-[50vh] justify-center items-center">
+            <Text className="font-inter-regular text-neutral-500">
+              No Lockers
+            </Text>
+          </View>
+        ) : !loading ? (
+          <Animated.FlatList
+            onScroll={onScrollHandler}
+            scrollEventThrottle={16}
+            data={lockers}
+            keyExtractor={(item) => item._id.toString()}
+            renderItem={renderLockerCard}
+            onEndReached={getMoreData}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+              fetchingMoreUsers ? (
+                <ActivityIndicator size="small" color="#0000ff" />
+              ) : null
+            }
+            contentContainerStyle={{ gap: 4, paddingBottom: 85 }}
+          />
+        ) : (
+          <UserCardSkeleton amount={5} width="w-full" height="h-40" />
+        )}
+
+        {lockers && lockers.length > 4 && (
+          <LinearGradient
+            colors={["transparent", "white"]}
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 53,
+              pointerEvents: "none",
+            }}
+          />
+        )}
+
+        <SuccessModal
+          show={showToast}
+          setShow={setShowToast}
+          message={
+            toast === "unassigned"
+              ? "Locker unassigned successfully"
+              : "Locker assigned successfully"
           }
-          contentContainerStyle={{ gap: 14, paddingBottom: 85 }}
         />
-      ) : (
-        <UserCardSkeleton amount={5} width="w-full" height="h-40" />
-      )}
+      </SafeAreaView>
 
-      {lockers && lockers.length > 4 && (
-        <LinearGradient
-          colors={["transparent", "white"]}
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 53,
-            pointerEvents: "none",
-          }}
-        />
-      )}
-
-      <SlideUpModal
-        mode="assignEmployee"
-        onAssignmentComplete={handleAssignmentComplete}
-        visible={modalVisible}
-        lockerId={selectedLockerId}
-        onClose={() => {
-          setModalVisible(false);
-          setSelectedLockerId("");
-          setQuery("");
-        }}
-      />
-
-      <SuccessModal
-        show={showToast}
-        setShow={setShowToast}
-        message={
-          toast === "unassigned"
-            ? "Locker unassigned successfully"
-            : "Locker assigned successfully"
-        }
-      />
-    </SafeAreaView>
+      {modalVisible ? (
+        <AppBottomSheet
+          ref={sheetRef}
+          snapPoints={snapPoints}
+          enablePanDownToClose
+          title="Assign Employee"
+          iconName="x"
+          onHeaderPress={closeAssignSheet}
+          onDismiss={resetAssignSheet}
+          scroll={false}
+        >
+          <SelectionSheet
+            mode="employees"
+            lockerId={selectedLockerId}
+            onEmployeeAssigned={async () => {
+              await handleAssignmentComplete();
+              closeAssignSheet();
+            }}
+          />
+        </AppBottomSheet>
+      ) : null}
+    </>
   );
 };
 

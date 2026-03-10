@@ -1,5 +1,5 @@
-import { View, Text } from "react-native";
 import React from "react";
+import { View, Text } from "react-native";
 import FormField from "./FormField";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import Sort from "./Sort";
@@ -7,8 +7,8 @@ import Sort from "./Sort";
 interface SearchProps {
   noFilter?: boolean;
   total: string;
-  setQuery: any;
-  query: any;
+  setQuery: (value: string) => void;
+  query: string;
 }
 
 const Search: React.FC<SearchProps> = ({
@@ -16,28 +16,33 @@ const Search: React.FC<SearchProps> = ({
   query,
   setQuery,
   noFilter,
-}: any) => {
+}) => {
   const { userDetails, lockerDetails } = useEmployeeContext();
 
+  const totalCount =
+    total === "lockers"
+      ? (lockerDetails?.totalLockers ?? 0)
+      : (userDetails?.totalUsers ?? 0);
+
+  const label = total === "lockers" ? "Lockers" : "Employees";
+
   return (
-    <View className="w-full items-center justify-start">
+    <View className="w-full -center">
       <FormField
         value={query}
-        placeholder="Search..."
+        placeholder={`Search ${label.toLowerCase()}...`}
         handleChangeText={setQuery}
       />
-      <View
-        className={`${
-          noFilter && "hidden"
-        } flex justify-between items-center w-[100%] flex-row my-4`}
-      >
-        <Text className="pl-2 text-neutral-500">{`Total ${total}: ${
-          total === "lockers"
-            ? lockerDetails.totalLockers
-            : userDetails.totalUsers
-        }`}</Text>
-        <Sort />
-      </View>
+
+      {!noFilter && (
+        <View className="mt-3 pl-1 flex-row items-center justify-between px-1 py-2">
+          <View>
+            <Text className="mt-0.5 text-[15px] font-bold text-gray-800">
+              {totalCount} {label}
+            </Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 };

@@ -28,7 +28,7 @@ const FormField: React.FC<FormFieldProps> = ({
   keyboardType = "default",
   styles = "",
   placeholder,
-  rounded = "rounded-md",
+  rounded = "rounded-lg",
   inputStyles = "",
   icon,
   optional,
@@ -41,10 +41,7 @@ const FormField: React.FC<FormFieldProps> = ({
 
   return (
     <View className={`space-y-2 ${styles}`}>
-      <Text className="text-base font-semibold text-gray-800">
-        {title}{" "}
-        {optional && <Text className="text-neutral-400">(Optional)</Text>}
-      </Text>
+      <Text className="text-base font-semibold text-gray-800">{title} </Text>
       <View
         className={`w-full h-14 flex-row items-center px-4 ${
           error ? "border border-red-500" : "border border-gray-300"

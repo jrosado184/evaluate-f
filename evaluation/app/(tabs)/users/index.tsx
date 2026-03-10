@@ -43,7 +43,7 @@ const Users = () => {
       (page: any) => getUsers(page, computeSort()),
       setEmployees,
       setUserDetails,
-      userDetails
+      userDetails,
     );
 
   const [query, setQuery] = useState("");
@@ -76,7 +76,7 @@ const Users = () => {
             headers: {
               Authorization: token,
             },
-          }
+          },
         );
 
         setEmployees(res.data?.users);
@@ -89,7 +89,7 @@ const Users = () => {
         console.error("Search error:", err);
       }
     }, 300),
-    []
+    [],
   );
 
   const handleSearchChange = async (value: string) => {
@@ -141,7 +141,7 @@ const Users = () => {
       fetchAndSetUsers(1, sort);
 
       setSuccessfullyAddedEmployee(false);
-    }, [])
+    }, []),
   );
 
   const deleteUser = async (userId: string) => {
@@ -155,11 +155,11 @@ const Users = () => {
           headers: {
             Authorization: token,
           },
-        }
+        },
       );
 
       setEmployees((prev: any) =>
-        prev.filter((user: any) => user._id !== userId)
+        prev.filter((user: any) => user._id !== userId),
       );
       setUserDetails({
         totalUsers: response?.data?.totalUsers,
@@ -181,7 +181,7 @@ const Users = () => {
 
   const renderRightActions = (
     progress: Animated.AnimatedInterpolation<number>,
-    userId: string
+    userId: string,
   ) => {
     const translateX = progress.interpolate({
       inputRange: [0, 1],
@@ -222,7 +222,7 @@ const Users = () => {
                   style: "destructive",
                   onPress: () => deleteUser(userId),
                 },
-              ]
+              ],
             );
           }}
           style={{
@@ -239,7 +239,6 @@ const Users = () => {
       </Animated.View>
     );
   };
-
 
   const renderUserCard = useCallback(({ item }: any) => {
     return (
@@ -310,7 +309,7 @@ const Users = () => {
               <View style={{ height: `${employees.length < 5 ? 80 : 40}` }} />
             </>
           )}
-          contentContainerStyle={{ gap: 14 }}
+          contentContainerStyle={{ gap: 4 }}
         />
       ) : (
         <UserCardSkeleton amount={5} width="w-full" height="h-40" />

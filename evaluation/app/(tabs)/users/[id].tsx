@@ -126,10 +126,6 @@ const User = () => {
     }, [fetchEmployee]),
   );
 
-  /**
-   * ✅ Create button: open Step1 in "create mode"
-   * - Do NOT create here. Step1 creates only when user taps Save & Continue.
-   */
   const handleStartEvaluation = useCallback(() => {
     createdEvalIdRef.current = null;
     setSelectedEvaluationId(null); // create mode => undefined eval id

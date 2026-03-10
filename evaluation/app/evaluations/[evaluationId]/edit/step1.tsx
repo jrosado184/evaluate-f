@@ -47,7 +47,7 @@ const PersonalInfoForm = (props: Props) => {
   const params: any = useLocalSearchParams();
 
   const initialEvalId = String(
-    props?.evaluationId ?? params?.evaluationId ?? ""
+    props?.evaluationId ?? params?.evaluationId ?? "",
   );
   const employeeId = String(props?.id ?? params?.id ?? "");
 
@@ -84,14 +84,11 @@ const PersonalInfoForm = (props: Props) => {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
 
-      // Always try to have employee data for prefills
       let fullEmployee = employee;
       if (
         !fullEmployee ||
         String(fullEmployee?._id || fullEmployee?.id || "") !== employeeId
       ) {
-        // If your employeeId param is the employee document id:
-        // this endpoint matches your User.tsx usage: /employees/${id}
         const empRes = await axios.get(`${baseUrl}/employees/${employeeId}`, {
           headers: { Authorization: token! },
         });
@@ -108,7 +105,7 @@ const PersonalInfoForm = (props: Props) => {
           `${baseUrl}/evaluations/${evaluationId}`,
           {
             headers: { Authorization: token! },
-          }
+          },
         );
         info = evalRes?.data?.personalInfo || {};
         evalSupervisor = evalRes?.data?.supervisor || null;
@@ -165,7 +162,7 @@ const PersonalInfoForm = (props: Props) => {
     useCallback(() => {
       setLoading(true);
       loadPrefills();
-    }, [loadPrefills])
+    }, [loadPrefills]),
   );
 
   const validateForm = () => {
@@ -265,7 +262,7 @@ const PersonalInfoForm = (props: Props) => {
         position: "Untitled",
         createdBy: props?.createdBy || "",
       },
-      { headers: { Authorization: token! } }
+      { headers: { Authorization: token! } },
     );
 
     const newId = res.data?._id;
@@ -336,13 +333,13 @@ const PersonalInfoForm = (props: Props) => {
             },
           },
         },
-        { headers: { Authorization: token! } }
+        { headers: { Authorization: token! } },
       );
 
       await axios.patch(
         `${baseUrl}/evaluations/${evalId}`,
         { action: "update_status", data: { status: "in_progress" } },
-        { headers: { Authorization: token! } }
+        { headers: { Authorization: token! } },
       );
 
       if (!evaluationId) {

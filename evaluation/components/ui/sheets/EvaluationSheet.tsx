@@ -43,8 +43,9 @@ export default function EvaluationSheet({
   onClose,
   onRefresh,
 }: Props) {
-  const hasEvalId = !!evaluationId;
-  const createdId = createdEvalIdRef?.current;
+  const createdId = createdEvalIdRef?.current ?? null;
+  const effectiveEvaluationId = createdId || evaluationId;
+  const hasEvalId = !!effectiveEvaluationId;
 
   if (!hasEvalId && sheetView === "summary") return null;
   if (!hasEvalId && sheetView === "step2") return null;
@@ -54,7 +55,7 @@ export default function EvaluationSheet({
     return (
       <QualifyForm
         inSheet
-        evaluationId={qualifyPayload?.evaluationId || evaluationId!}
+        evaluationId={qualifyPayload?.evaluationId || effectiveEvaluationId!}
         employee_name={qualifyPayload?.employee_name}
         department={qualifyPayload?.department}
         position={qualifyPayload?.position}
@@ -65,7 +66,7 @@ export default function EvaluationSheet({
         onDone={async () => {
           await onRefresh?.();
           setQualifyPayload?.(null);
-          setSheetView("summary"); // or onClose()
+          setSheetView("summary");
         }}
       />
     );
@@ -74,7 +75,7 @@ export default function EvaluationSheet({
   if (sheetView === "summary") {
     return (
       <EvaluationSummary
-        evaluationId={evaluationId!}
+        evaluationId={effectiveEvaluationId!}
         onClose={onClose}
         onEdit={() => setSheetView("step1")}
         onOpenStep2={({ week }: any) => {
@@ -93,21 +94,24 @@ export default function EvaluationSheet({
   if (sheetView === "step1") {
     return (
       <PersonalInfoForm
-        evaluationId={evaluationId ?? undefined}
+        evaluationId={effectiveEvaluationId ?? undefined}
         id={employeeId || ""}
         createdBy={createdBy || ""}
         inSheet
         onCreated={(newEvalId: string) => {
-          if (createdEvalIdRef) createdEvalIdRef.current = newEvalId;
+          if (createdEvalIdRef) {
+            createdEvalIdRef.current = newEvalId;
+          }
           setEvaluationId(newEvalId);
           onRefresh?.();
         }}
         onBack={() => {
-          if (!evaluationId && !createdId) onClose();
+          if (!effectiveEvaluationId) onClose();
           else setSheetView("summary");
         }}
         onDone={() => {
-          const idToUse = createdId || evaluationId;
+          const idToUse = createdEvalIdRef?.current || evaluationId;
+
           if (idToUse) {
             setEvaluationId(idToUse);
             setSheetView("summary");
@@ -121,7 +125,7 @@ export default function EvaluationSheet({
 
   return (
     <Step2Form
-      evaluationId={evaluationId!}
+      evaluationId={effectiveEvaluationId!}
       week={step2Week}
       inSheet
       onBack={() => setSheetView("summary")}

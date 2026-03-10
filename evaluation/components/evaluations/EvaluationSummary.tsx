@@ -1,7 +1,7 @@
 // components/evaluations/EvaluationSummary.tsx
 // @ts-nocheck
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, Alert } from "react-native";
+import { View, Text, Alert, ScrollView } from "react-native";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "@/app/requests/NetworkAddress";
@@ -172,22 +172,130 @@ const EvaluationSummary = ({
     { label: "Projected Qualifying Date", value: info.projectedQualifyingDate },
   ];
 
-  const Content = inSheet ? View : BottomSheetScrollView;
+  if (inSheet) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#fff" }}>
+        <BottomSheetScrollView
+          style={{ flex: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 140 }}
+        >
+          <View className="mb-6 pl-7 pt-6 pr-4">
+            <View className="mb-4 flex-row items-center justify-between">
+              <Text className="text-lg font-bold text-gray-900">
+                Personal Information
+              </Text>
+
+              <SinglePressTouchable
+                onPress={() => {
+                  if (onEdit) onEdit();
+                  else
+                    navigateAfterClose(
+                      `/evaluations/${evaluationId}/edit/step1`,
+                    );
+                }}
+                className="rounded-md border border-gray-300 px-3 py-1"
+              >
+                <Text className="text-sm font-medium text-[#1a237e]">Edit</Text>
+              </SinglePressTouchable>
+            </View>
+
+            {rows.map((r) => (
+              <View key={r.label} className="mb-3">
+                <Text className="text-base text-gray-700">{r.label}:</Text>
+                <Text className="text-lg font-semibold text-gray-900">
+                  {String(r.value ?? "-")}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          {weeksDone > 0 ? (
+            <EvaluationTimeline
+              fileData={evaluation}
+              onOpenStep2={(weekNumber: number) =>
+                onOpenStep2?.({ week: weekNumber })
+              }
+            />
+          ) : (
+            <View className="flex-1 items-center justify-center py-20">
+              <Icon name="clipboard" size={40} color="#9ca3af" />
+              <Text className="mt-3 text-center text-gray-600">
+                No Evaluations Added Yet{"\n"}Tap below to start.
+              </Text>
+              <SinglePressTouchable
+                onPress={handleContinue}
+                disabled={submitting}
+                className="mt-4 flex h-12 items-center justify-center rounded-md bg-[#1a237e] px-6"
+              >
+                <Text className="font-semibold text-white">
+                  Start Evaluation
+                </Text>
+              </SinglePressTouchable>
+            </View>
+          )}
+
+          {evaluation.status !== "complete" && weeksDone > 0 ? (
+            <View className="mt-8 mb-4 px-4">
+              <EvaluationButton
+                status={evaluation?.status}
+                canQualify={canQualify}
+                onPress={handleContinue}
+                isLoading={submitting}
+              />
+            </View>
+          ) : (
+            <View className="mt-2 mb-8 px-4" />
+          )}
+
+          {weeksDone > 0 ? (
+            <View className="w-full items-center bg-white pb-20">
+              <SinglePressTouchable
+                onPress={() =>
+                  navigateAfterClose({
+                    pathname: `/evaluations/${evaluationId}/[pdfpreview]`,
+                    params: {
+                      filename: String(pdfpreview),
+                      employeeId: evaluation?.employeeId,
+                    },
+                  })
+                }
+                className="w-[90vw] rounded-lg border border-gray-300 bg-white px-4 py-3"
+              >
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-1 pr-2">
+                    <Text className="text-base font-inter-medium">
+                      Evaluation Summary
+                    </Text>
+                    <Text className="text-sm text-neutral-500">
+                      View as PDF document
+                    </Text>
+                  </View>
+                  <View className="rounded-full bg-blue-100 px-3 py-1">
+                    <Text className="text-xs font-inter-semibold text-blue-700">
+                      View PDF
+                    </Text>
+                  </View>
+                </View>
+              </SinglePressTouchable>
+            </View>
+          ) : null}
+        </BottomSheetScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
-      <Content
-        {...(!inSheet
-          ? {
-              keyboardShouldPersistTaps: "handled",
-              showsVerticalScrollIndicator: false,
-              contentContainerStyle: { paddingBottom: 140 },
-            }
-          : {})}
+      <ScrollView
         style={{ flex: 1 }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 140 }}
       >
         <View className="mb-6 pl-7 pt-6 pr-4">
-          <View className="flex-row justify-between items-center mb-4">
+          <View className="mb-4 flex-row items-center justify-between">
             <Text className="text-lg font-bold text-gray-900">
               Personal Information
             </Text>
@@ -198,16 +306,16 @@ const EvaluationSummary = ({
                 else
                   navigateAfterClose(`/evaluations/${evaluationId}/edit/step1`);
               }}
-              className="px-3 py-1 border border-gray-300 rounded-md"
+              className="rounded-md border border-gray-300 px-3 py-1"
             >
-              <Text className="text-sm text-[#1a237e] font-medium">Edit</Text>
+              <Text className="text-sm font-medium text-[#1a237e]">Edit</Text>
             </SinglePressTouchable>
           </View>
 
           {rows.map((r) => (
             <View key={r.label} className="mb-3">
               <Text className="text-base text-gray-700">{r.label}:</Text>
-              <Text className="text-lg text-gray-900 font-semibold">
+              <Text className="text-lg font-semibold text-gray-900">
                 {String(r.value ?? "-")}
               </Text>
             </View>
@@ -222,7 +330,7 @@ const EvaluationSummary = ({
             }
           />
         ) : (
-          <View className="flex-1 justify-center items-center py-20">
+          <View className="flex-1 items-center justify-center py-20">
             <Icon name="clipboard" size={40} color="#9ca3af" />
             <Text className="mt-3 text-center text-gray-600">
               No Evaluations Added Yet{"\n"}Tap below to start.
@@ -230,15 +338,15 @@ const EvaluationSummary = ({
             <SinglePressTouchable
               onPress={handleContinue}
               disabled={submitting}
-              className="mt-4 h-12 flex items-center justify-center bg-[#1a237e] px-6 rounded-md"
+              className="mt-4 flex h-12 items-center justify-center rounded-md bg-[#1a237e] px-6"
             >
-              <Text className="text-white font-semibold">Start Evaluation</Text>
+              <Text className="font-semibold text-white">Start Evaluation</Text>
             </SinglePressTouchable>
           </View>
         )}
 
         {evaluation.status !== "complete" && weeksDone > 0 ? (
-          <View className="px-4 mt-8 mb-4">
+          <View className="mt-8 mb-4 px-4">
             <EvaluationButton
               status={evaluation?.status}
               canQualify={canQualify}
@@ -247,7 +355,7 @@ const EvaluationSummary = ({
             />
           </View>
         ) : (
-          <View className="px-4 mt-2 mb-8"></View>
+          <View className="mt-2 mb-8 px-4" />
         )}
 
         {weeksDone > 0 ? (
@@ -262,9 +370,9 @@ const EvaluationSummary = ({
                   },
                 })
               }
-              className="w-[90vw] border border-gray-300 rounded-lg bg-white px-4 py-3"
+              className="w-[90vw] rounded-lg border border-gray-300 bg-white px-4 py-3"
             >
-              <View className="flex-row justify-between items-center">
+              <View className="flex-row items-center justify-between">
                 <View className="flex-1 pr-2">
                   <Text className="text-base font-inter-medium">
                     Evaluation Summary
@@ -273,7 +381,7 @@ const EvaluationSummary = ({
                     View as PDF document
                   </Text>
                 </View>
-                <View className="px-3 py-1 rounded-full bg-blue-100">
+                <View className="rounded-full bg-blue-100 px-3 py-1">
                   <Text className="text-xs font-inter-semibold text-blue-700">
                     View PDF
                   </Text>
@@ -282,7 +390,7 @@ const EvaluationSummary = ({
             </SinglePressTouchable>
           </View>
         ) : null}
-      </Content>
+      </ScrollView>
     </View>
   );
 };
