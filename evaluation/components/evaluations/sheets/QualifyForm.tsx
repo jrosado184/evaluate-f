@@ -175,16 +175,6 @@ const QualifyForm = ({
       contentContainerStyle={{ paddingBottom: 160 }}
       className="px-5 pt-5"
     >
-      {/* Back Button */}
-      <View className="flex-row items-center mb-6">
-        <SinglePressTouchable onPress={() => onBack?.()} className="mr-3">
-          <Icon name="chevron-left" size={28} color="#1a237e" />
-        </SinglePressTouchable>
-        <Text className="text-2xl font-semibold text-gray-900">
-          Final Qualification
-        </Text>
-      </View>
-
       {/* Info */}
       <View className="mb-8 space-y-2">
         <Text className="text-base text-gray-700">

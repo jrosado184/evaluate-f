@@ -12,7 +12,6 @@ import {
   Image,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import Icon from "react-native-vector-icons/Feather";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import getServerIP from "@/app/requests/NetworkAddress";
@@ -28,7 +27,6 @@ import {
   toRelativeSignaturePath,
   uploadSignaturesMultipart,
 } from "@/app/helpers/signatureHelpers";
-import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import { ScrollView } from "react-native-gesture-handler";
 
 /* ---------------- helpers ---------------- */
@@ -42,17 +40,21 @@ const NUMERIC = new Set([
   "hoursWednesday",
   "hoursThursday",
   "hoursFriday",
+  "hoursSaturday",
   "hoursOffJobMonday",
   "hoursOffJobTuesday",
   "hoursOffJobWednesday",
   "hoursOffJobThursday",
   "hoursOffJobFriday",
+  "hoursOffJobSaturday",
   "hoursWithTraineeMonday",
   "hoursWithTraineeTuesday",
   "hoursWithTraineeWednesday",
   "hoursWithTraineeThursday",
   "hoursWithTraineeFriday",
+  "hoursWithTraineeSaturday",
 ]);
+
 const DATE_KEYS = new Set(["yieldAuditDate", "knifeSkillsAuditDate"]);
 
 const fmtDateLong = (d: Date) =>
@@ -61,33 +63,58 @@ const fmtDateLong = (d: Date) =>
     day: "numeric",
     year: "numeric",
   }).format(d);
+
 const stripTime = (d: Date) =>
   new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
 const getMonday = (date: Date) => {
   const d = stripTime(new Date(date));
   const day = d.getDay();
   d.setDate(d.getDate() + (day === 0 ? 1 : 1 - day));
   return d;
 };
+
 const fmtMMDDYYYY = (s: string) =>
   s
     .replace(/\D/g, "")
     .slice(0, 8)
     .replace(/(\d{2})(\d{0,2})(\d{0,4})/, (_, a, b, c) =>
-      [a, b, c].filter(Boolean).join("/")
+      [a, b, c].filter(Boolean).join("/"),
     );
+
 const intOnly = (s: string) => s.replace(/\D/g, "");
+
+// FIXED: allow digits + one decimal point, but do not convert to number while typing
 const knifeSanitize = (s: string) => {
-  const c = s.replace(/[^0-9.]/g, "");
-  const p = c.split(".");
-  return (p.length > 1 ? `${p[0]}.${p.slice(1).join("")}` : c).slice(0, 3);
+  let cleaned = s.replace(/[^0-9.]/g, "");
+
+  const firstDot = cleaned.indexOf(".");
+  if (firstDot !== -1) {
+    cleaned =
+      cleaned.slice(0, firstDot + 1) +
+      cleaned.slice(firstDot + 1).replace(/\./g, "");
+  }
+
+  // Optional limits:
+  // - max 3 digits before decimal
+  // - max 2 digits after decimal
+  const [whole = "", decimal] = cleaned.split(".");
+  const limitedWhole = whole.slice(0, 3);
+
+  if (cleaned.includes(".")) {
+    return `${limitedWhole}.${(decimal || "").slice(0, 2)}`;
+  }
+
+  return limitedWhole;
 };
+
 const toNumSafe = (s: string) =>
   s === "" ? null : Number.isNaN(+s) ? null : +s;
 
 async function dataUrlToTempFile(dataUrl: string, opts?: { name?: string }) {
   const match = dataUrl.match(/^data:(.+?);base64,(.*)$/);
   if (!match) throw new Error("Invalid data URL");
+
   const mime = match[1] || "image/png";
   const base64 = match[2];
 
@@ -95,22 +122,25 @@ async function dataUrlToTempFile(dataUrl: string, opts?: { name?: string }) {
     mime === "image/png"
       ? "png"
       : mime === "image/jpeg"
-      ? "jpg"
-      : mime === "image/webp"
-      ? "webp"
-      : "bin";
+        ? "jpg"
+        : mime === "image/webp"
+          ? "webp"
+          : "bin";
 
   const name = opts?.name || `signature_${Date.now()}.${ext}`;
   const fileUri = `${FileSystem.cacheDirectory}${name}`;
+
   await FileSystem.writeAsStringAsync(fileUri, base64, {
     encoding: FileSystem.EncodingType.Base64,
   });
+
   return { uri: fileUri, mime, name };
 }
 
 function absFromRelative(rel: string, baseUrl: string) {
   if (!rel) return "";
   if (!rel.startsWith("/")) return rel;
+
   try {
     const u = new URL(baseUrl);
     return `${u.origin}${rel}`;
@@ -174,7 +204,7 @@ export default function Step2Form(props: Props) {
     percentQualified: null,
     expectedQualified: null,
     reTimeAchieved: null,
-    knifeScore: null,
+    knifeScore: "",
     yieldAuditDate: "",
     knifeSkillsAuditDate: "",
     handStretchCompleted: false,
@@ -215,32 +245,42 @@ export default function Step2Form(props: Props) {
 
         const { data } = await axios.get(
           `${baseUrl}/evaluations/${evaluationId}`,
-          { headers: { Authorization: token! } }
+          { headers: { Authorization: token! } },
         );
 
         setJobStartDate(data.personalInfo?.jobStartDate);
         setTraineeName(data.personalInfo?.teamMemberName || "Trainee");
         setProjectedTrainingHours(
-          Number(data.personalInfo?.projectedTrainingHours) || 200
+          Number(data.personalInfo?.projectedTrainingHours) || 200,
         );
 
         const cumulative = (data.evaluations || [])
           .filter((e: any) => e.weekNumber < currentWeek)
           .reduce((sum: number, e: any) => sum + (e.totalHoursOnJob || 0), 0);
+
         setPrevHoursOnJob(cumulative);
 
         const weekData = (data.evaluations || []).find(
-          (e: any) => e.weekNumber === currentWeek
+          (e: any) => e.weekNumber === currentWeek,
         );
+
         if (weekData) {
           const next: Record<string, any> = {};
+
           Object.entries(weekData).forEach(([k, v]) => {
-            if (NUMERIC.has(k)) next[k] = v == null ? null : Number(v);
-            else if (DATE_KEYS.has(k)) next[k] = typeof v === "string" ? v : "";
-            else if (typeof v === "string" && /\/signatures\//.test(v)) {
+            if (k === "knifeScore") {
+              next[k] = v == null ? "" : String(v);
+            } else if (NUMERIC.has(k)) {
+              next[k] = v == null ? null : Number(v);
+            } else if (DATE_KEYS.has(k)) {
+              next[k] = typeof v === "string" ? v : "";
+            } else if (typeof v === "string" && /\/signatures\//.test(v)) {
               next[k] = toRelativeSignaturePath(v, baseUrl) || v;
-            } else next[k] = v;
+            } else {
+              next[k] = v;
+            }
           });
+
           setFormData((f) => ({ ...f, ...next }));
         }
       } catch {
@@ -255,6 +295,7 @@ export default function Step2Form(props: Props) {
     const n = Number(v);
     return Number.isFinite(n) ? n : 0;
   };
+
   const clamp = (n: number, lo = 0, hi = 100) => Math.min(hi, Math.max(lo, n));
   const roundToQuarter = (n: number) => Math.round(n * 4) / 4;
 
@@ -269,7 +310,6 @@ export default function Step2Form(props: Props) {
     ].reduce((s, k) => s + toNum(formData[k]), 0);
 
     const total = toNum(prevHoursOnJob) + weekSum;
-
     const rawPct =
       projectedTrainingHours > 0 ? (total / projectedTrainingHours) * 100 : 0;
 
@@ -290,38 +330,38 @@ export default function Step2Form(props: Props) {
 
   const handleChange = (key: string, raw: string, index?: number) => {
     let next: string | number | null = raw;
-    let len = raw.length;
 
     if (DATE_KEYS.has(key)) {
       next = fmtMMDDYYYY(raw);
     } else if (key === "knifeScore") {
-      const s = knifeSanitize(raw);
-      next = s === "" ? "" : toNumSafe(s);
-      len = s.length;
+      next = knifeSanitize(raw);
     } else if (NUMERIC.has(key)) {
       const s = intOnly(raw);
       next = s === "" ? "" : toNumSafe(s);
-      len = s.length;
     }
 
-    setFormData((prev) => {
-      const prevLen = prev[key] == null ? 0 : String(prev[key]).length;
-      const updated = { ...prev, [key]: next };
-      if (typeof index === "number" && prevLen === 0 && len === 1) {
-        requestAnimationFrame(() => {
-          inputRefs.current[index + 1]?.focus();
-        });
+    setFormData((prev: any) => {
+      if (typeof index === "number") {
+        const list = Array.isArray(prev[key]) ? [...prev[key]] : [];
+        list[index] = next;
+        return {
+          ...prev,
+          [key]: list,
+        };
       }
-      return updated;
+
+      return {
+        ...prev,
+        [key]: next,
+      };
     });
 
-    if (errors[key]) {
-      setErrors((e) => {
-        const c = { ...e };
-        delete c[key];
-        return c;
-      });
-    }
+    setErrors((prev: any) => {
+      if (!prev[key]) return prev;
+      const copy = { ...prev };
+      delete copy[key];
+      return copy;
+    });
   };
 
   const sum = (keys: string[]) =>
@@ -336,6 +376,7 @@ export default function Step2Form(props: Props) {
       const weekNumber = Number(currentWeek);
 
       let nextFormData = { ...formData };
+
       const hasAnyPending =
         !!pendingSigs.trainerSignature ||
         !!pendingSigs.teamMemberSignature ||
@@ -343,22 +384,25 @@ export default function Step2Form(props: Props) {
 
       if (hasAnyPending) {
         const files: any = {};
+
         if (pendingSigs.trainerSignature) {
           files.trainer = await dataUrlToTempFile(
             pendingSigs.trainerSignature,
-            { name: `trainer_${Date.now()}.png` }
+            { name: `trainer_${Date.now()}.png` },
           );
         }
+
         if (pendingSigs.teamMemberSignature) {
           files.employee = await dataUrlToTempFile(
             pendingSigs.teamMemberSignature,
-            { name: `employee_${Date.now()}.png` }
+            { name: `employee_${Date.now()}.png` },
           );
         }
+
         if (pendingSigs.supervisorSignature) {
           files.supervisor = await dataUrlToTempFile(
             pendingSigs.supervisorSignature,
-            { name: `supervisor_${Date.now()}.png` }
+            { name: `supervisor_${Date.now()}.png` },
           );
         }
 
@@ -378,16 +422,21 @@ export default function Step2Form(props: Props) {
 
         for (const role of Object.keys(roleToKey)) {
           if (!files[role]) continue;
+
           const uiKey = roleToKey[role];
           const absOrRel = pickSigUrlFromResponse(role, resp);
           const rel = toRelativeSignaturePath(absOrRel, baseUrl);
-          if (rel) nextFormData[uiKey] = rel;
-          else {
+
+          if (rel) {
+            nextFormData[uiKey] = rel;
+          } else {
             const id =
               resp?.files?.[role]?.gridfsId ||
               resp?.finalSignatures?.[role]?.gridfsId ||
               resp?.gridfsId;
+
             if (!id) throw new Error("Upload did not return a valid URL.");
+
             nextFormData[uiKey] = `/api/signatures/${id}`;
           }
         }
@@ -404,6 +453,7 @@ export default function Step2Form(props: Props) {
         "hoursFriday",
         "hoursSaturday",
       ]);
+
       const totalHoursOffJob = sum([
         "hoursOffJobMonday",
         "hoursOffJobTuesday",
@@ -412,6 +462,7 @@ export default function Step2Form(props: Props) {
         "hoursOffJobFriday",
         "hoursOffJobSaturday",
       ]);
+
       const totalHoursWithTrainee = sum([
         "hoursWithTraineeMonday",
         "hoursWithTraineeTuesday",
@@ -420,7 +471,13 @@ export default function Step2Form(props: Props) {
         "hoursWithTraineeFriday",
         "hoursWithTraineeSaturday",
       ]);
+
       const totalHours = totalHoursOnJob + totalHoursOffJob;
+
+      const knifeScoreValue =
+        nextFormData.knifeScore === "" || nextFormData.knifeScore == null
+          ? null
+          : Number(nextFormData.knifeScore);
 
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
@@ -429,6 +486,10 @@ export default function Step2Form(props: Props) {
           data: {
             weekData: {
               ...nextFormData,
+              knifeScore:
+                knifeScoreValue == null || Number.isNaN(knifeScoreValue)
+                  ? null
+                  : knifeScoreValue,
               expectedQualified,
               weekNumber: currentWeek,
               totalHours,
@@ -438,13 +499,13 @@ export default function Step2Form(props: Props) {
             },
           },
         },
-        { headers: { Authorization: token! } }
+        { headers: { Authorization: token! } },
       );
 
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
         { action: "update_status", data: { status: "in_progress" } },
-        { headers: { Authorization: token! } }
+        { headers: { Authorization: token! } },
       );
 
       if (props?.onDone) {
@@ -479,7 +540,7 @@ export default function Step2Form(props: Props) {
       ? new Date(
           baseMon.getFullYear(),
           baseMon.getMonth(),
-          baseMon.getDate() + weekIndex * 7
+          baseMon.getDate() + weekIndex * 7,
         )
       : null;
     const isFirstWeek = weekIndex === 0;
@@ -490,6 +551,7 @@ export default function Step2Form(props: Props) {
         <Text className="text-lg font-semibold text-gray-800 mb-3">
           {title}
         </Text>
+
         {[
           "Monday",
           "Tuesday",
@@ -503,7 +565,7 @@ export default function Step2Form(props: Props) {
           const d = new Date(
             base.getFullYear(),
             base.getMonth(),
-            base.getDate() + i
+            base.getDate() + i,
           );
           const isDisabled =
             isFirstWeek && jsOnly && stripTime(d).getTime() < jsOnly.getTime();
@@ -515,6 +577,7 @@ export default function Step2Form(props: Props) {
               <Text className="text-[.8rem] text-gray-500 mb-2">
                 {fmtDateLong(d)}
               </Text>
+
               <TextInput
                 ref={(r) => (inputRefs.current[startIndex + i] = r)}
                 value={val}
@@ -533,11 +596,12 @@ export default function Step2Form(props: Props) {
                   isDisabled
                     ? "bg-gray-100 border-gray-200 text-gray-400"
                     : errors[k]
-                    ? "border-red-500 border text-gray-900"
-                    : "border border-gray-300 text-gray-900"
+                      ? "border-red-500 border text-gray-900"
+                      : "border border-gray-300 text-gray-900"
                 }`}
                 maxLength={2}
               />
+
               {errors[k] && !isDisabled && (
                 <Text className="text-sm text-red-500 mt-1">{errors[k]}</Text>
               )}
@@ -579,7 +643,8 @@ export default function Step2Form(props: Props) {
     {
       label: "Knife Score (%)",
       key: "knifeScore",
-      keyboardType: "decimal-pad" as const,
+      keyboardType:
+        Platform.OS === "ios" ? ("decimal-pad" as const) : ("numeric" as const),
     },
     { label: "Comments", key: "comments", multiline: true },
   ];
@@ -598,6 +663,7 @@ export default function Step2Form(props: Props) {
   return (
     <SafeAreaView edges={["bottom"]} className="flex-1 bg-white">
       <StatusBar barStyle="dark-content" />
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -623,6 +689,7 @@ export default function Step2Form(props: Props) {
             startIndex={0}
             weekIndex={currentWeek - 1}
           />
+
           <FieldGroup
             title="Hours Off Job"
             keys={[
@@ -636,6 +703,7 @@ export default function Step2Form(props: Props) {
             startIndex={6}
             weekIndex={currentWeek - 1}
           />
+
           <FieldGroup
             title="Hours with Trainee"
             keys={[
@@ -653,10 +721,11 @@ export default function Step2Form(props: Props) {
           {simpleFields.map((f) => {
             const raw = formData[f.key];
             const val = f.format ? f.format() : raw == null ? "" : String(raw);
+
             return (
               <Labeled key={f.key} label={f.label}>
                 <TextInput
-                  value={val}
+                  value={val == null ? "" : String(val)}
                   onChangeText={(t) => handleChange(f.key, t)}
                   placeholder={f.label}
                   editable={f.editable !== false}
@@ -669,7 +738,16 @@ export default function Step2Form(props: Props) {
                   }`}
                   style={{ textAlignVertical: f.multiline ? "top" : "center" }}
                   numberOfLines={f.multiline ? 4 : 1}
+                  maxLength={
+                    f.key === "knifeScore"
+                      ? 6 // e.g. 100.00
+                      : f.key === "yieldAuditDate" ||
+                          f.key === "knifeSkillsAuditDate"
+                        ? 10
+                        : undefined
+                  }
                 />
+
                 {errors[f.key] && (
                   <Text className="text-sm text-red-500 mt-1">
                     {errors[f.key]}
@@ -686,6 +764,7 @@ export default function Step2Form(props: Props) {
                   ? "Any pain/numbness?"
                   : "Hand Stretch Exercises Completed"}
               </Text>
+
               <SinglePressTouchable
                 onPress={() => setFormData((f) => ({ ...f, [k]: !f[k] }))}
                 className={`py-3 rounded-md items-center ${
@@ -694,8 +773,8 @@ export default function Step2Form(props: Props) {
                       ? "bg-red-600"
                       : "bg-green-600"
                     : formData.handStretchCompleted
-                    ? "bg-green-600"
-                    : "bg-red-600"
+                      ? "bg-green-600"
+                      : "bg-red-600"
                 }`}
               >
                 <Text className="text-white text-lg font-semibold">
@@ -714,6 +793,7 @@ export default function Step2Form(props: Props) {
           ).map((s) => {
             const stored = formData[s.key];
             const previewUri = makePreview(stored);
+
             return (
               <Labeled key={s.key} label={s.label}>
                 <SinglePressTouchable
@@ -734,6 +814,7 @@ export default function Step2Form(props: Props) {
                     <Text className="text-gray-500">Tap to sign</Text>
                   )}
                 </SinglePressTouchable>
+
                 {errors[s.key] && (
                   <Text className="text-sm text-red-500 mt-1">
                     {errors[s.key]}

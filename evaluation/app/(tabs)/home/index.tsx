@@ -15,10 +15,10 @@ import useGetLockers from "@/app/requests/useGetLockers";
 import getServerIP from "@/app/requests/NetworkAddress";
 import useEvaluationStats from "@/hooks/useEvaluationsStats";
 import useAuthContext from "@/app/context/AuthContext";
-
 import AppBottomSheet from "@/components/ui/AppBottomSheet";
 import SelectionSheet from "@/components/ui/sheets/SelectionSheet";
 import EvaluationSheet from "@/components/ui/sheets/EvaluationSheet";
+import { router } from "expo-router";
 
 const StatBlock = ({ label, value, sub, highlightColor, onPress }: any) => (
   <TouchableOpacity
@@ -223,6 +223,7 @@ export default function ModernDashboard() {
               highlightColor="text-emerald-600"
             />
             <StatBlock
+              onPress={() => router.push("/(tabs)/evaluations")}
               label="Evaluations"
               value={`${completedCount} Qualified`}
               sub={`${inProgressCount} In Progress`}

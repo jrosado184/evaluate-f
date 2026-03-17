@@ -66,7 +66,9 @@ const Evaluations = () => {
       console.log("Error fetching evaluations:", err);
       setEvaluations([]);
     } finally {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 300);
     }
   }, []);
 
