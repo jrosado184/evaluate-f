@@ -637,7 +637,7 @@ const EvaluationSummary = ({
     ) : (
       <View className="items-center justify-center px-8 py-14">
         <View className="mb-4 h-[60px] w-[60px] items-center justify-center rounded-[18px] bg-gray-100">
-          <Icon name="clipboard" size={26} color="#9CA3AF" />
+          <Icon name="clipboard" size={50} color="#9CA3AF" />
         </View>
 
         <Text className="mb-1.5 text-base font-bold text-gray-700">

@@ -30,6 +30,7 @@ const Users = () => {
     loading,
     employees,
     setUserDetails,
+    setEmployee,
     setEmployees,
     setLoading,
     userDetails,
@@ -240,6 +241,11 @@ const Users = () => {
     );
   };
 
+  const routeToUser = (item: any) => {
+    setEmployee(item);
+    router.push(`/users/${item?._id}`);
+  };
+
   const renderUserCard = useCallback(({ item }: any) => {
     return (
       <Swipeable
@@ -257,7 +263,7 @@ const Users = () => {
       >
         <SinglePressTouchable
           key={item?._id}
-          onPress={() => router.push(`/users/${item?._id}`)}
+          onPress={() => routeToUser(item)}
           activeOpacity={0.8}
         >
           <UserCard

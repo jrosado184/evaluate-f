@@ -41,7 +41,6 @@ import EvaluationSheet from "@/components/ui/sheets/EvaluationSheet";
 
 const User = () => {
   const insets = useSafeAreaInsets();
-  const { id } = useGlobalSearchParams();
 
   const { employee, setEmployee, setAddEmployeeInfo } = useEmployeeContext();
   const { currentUser } = useAuthContext();
@@ -62,7 +61,6 @@ const User = () => {
   );
   const [step2Week, setStep2Week] = useState<number>(1);
 
-  // Tracks create-mode evaluation id (created inside Step1)
   const createdEvalIdRef = useRef<string | null>(null);
 
   const renderBackdrop = useCallback(
@@ -94,7 +92,7 @@ const User = () => {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
 
-      const empRes = await axios.get(`${baseUrl}/employees/${id}`, {
+      const empRes = await axios.get(`${baseUrl}/employees/${employee._id}`, {
         headers: { Authorization: token! },
       });
 
@@ -102,7 +100,7 @@ const User = () => {
       setAddEmployeeInfo(empRes.data);
 
       const evalRes = await axios.get(
-        `${baseUrl}/employees/${id}/evaluations`,
+        `${baseUrl}/employees/${employee?._id}/evaluations`,
         {
           headers: { Authorization: token! },
         },
@@ -117,7 +115,7 @@ const User = () => {
     } finally {
       setLoading(false);
     }
-  }, [id, setAddEmployeeInfo, setEmployee]);
+  }, [employee?._id, setAddEmployeeInfo, setEmployee]);
 
   useFocusEffect(
     useCallback(() => {
@@ -325,7 +323,7 @@ const User = () => {
             step2Week={step2Week}
             setStep2Week={setStep2Week}
             createdEvalIdRef={createdEvalIdRef}
-            employeeId={String(id)}
+            employeeId={String(employee?.id)}
             createdBy={currentUser?.name || ""}
             onClose={closeSheet}
             onRefresh={fetchEmployee}
