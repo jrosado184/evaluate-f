@@ -13,7 +13,7 @@ const Fab = ({ icon, route }: any) => {
   const router = useRouter();
 
   const bottomPosition = useRef(
-    new Animated.Value(isTabBarVisible ? 150 : 82)
+    new Animated.Value(isTabBarVisible ? 150 : 82),
   ).current;
 
   useEffect(() => {

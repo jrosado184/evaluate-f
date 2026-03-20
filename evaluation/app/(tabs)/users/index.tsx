@@ -21,7 +21,6 @@ import getServerIP from "@/app/requests/NetworkAddress";
 import { ActivityIndicator } from "react-native-paper";
 import { Swipeable } from "react-native-gesture-handler";
 import SinglePressTouchable from "@/app/utils/SinglePress";
-import useResetOnTabFocus from "@/hooks/useResetOnTabFocus";
 
 const Users = () => {
   const { getUsers, fetchAndSetUsers } = useGetUsers(4);

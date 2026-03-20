@@ -74,7 +74,7 @@ export default function ModernDashboard() {
   const { setLockers, setLockerDetails, setLoading, lockerDetails } =
     useEmployeeContext();
 
-  const [evaluations, setEvaluations] = useState<any[]>([]);
+  const [evaluations, setEvaluations] = useState<any>([]);
   const [vacantLockers, setVacantLockers] = useState(0);
 
   const {
@@ -208,7 +208,7 @@ export default function ModernDashboard() {
   return (
     <>
       <ScrollView className="bg-[#F9FAFB]">
-        <SafeAreaView className="p-6">
+        <SafeAreaView className="px-6">
           <Header />
 
           <View className="mb-2">
