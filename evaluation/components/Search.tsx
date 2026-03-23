@@ -27,7 +27,7 @@ const Search: React.FC<SearchProps> = ({
   const label = total === "lockers" ? "Lockers" : "Employees";
 
   return (
-    <View className="w-full -center">
+    <View className="w-full">
       <FormField
         value={query}
         placeholder={`Search ${label.toLowerCase()}...`}

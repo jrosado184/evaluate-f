@@ -208,7 +208,7 @@ export default function ModernDashboard() {
   return (
     <>
       <ScrollView className="bg-[#F9FAFB]">
-        <SafeAreaView className="px-6">
+        <SafeAreaView className="px-6 proMax:p-8">
           <Header />
 
           <View className="mb-2">

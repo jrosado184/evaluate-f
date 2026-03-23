@@ -22,8 +22,8 @@ import getServerIP from "@/app/requests/NetworkAddress";
 
 import SinglePressTouchable from "@/app/utils/SinglePress";
 import Search from "@/components/Search";
-import AssignEmployeeCard from "./employees/AssignEmployeeCard";
-import AssignLockerCard from "./employees/AssignLockerCard";
+import AssignEmployeeCard from "./users/AssignUserCard";
+import AssignLockerCard from "./users/AssignLockerCard";
 import SuccessModal from "./SuccessModal";
 import useAuthContext from "@/app/context/AuthContext";
 import EvaluationSheet from "@/components/ui/sheets/EvaluationSheet";

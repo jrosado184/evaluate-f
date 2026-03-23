@@ -7,7 +7,13 @@ import { useTabBar } from "@/app/(tabs)/_layout";
 import { useRouter } from "expo-router";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 
-const Fab = ({ icon, route }: any) => {
+type FabProps = {
+  icon: string;
+  route?: string;
+  onPress?: () => void;
+};
+
+const Fab = ({ icon, route, onPress }: FabProps) => {
   const { loading } = useEmployeeContext();
   const { isTabBarVisible } = useTabBar();
   const router = useRouter();
@@ -23,24 +29,31 @@ const Fab = ({ icon, route }: any) => {
       easing: Easing.inOut(Easing.ease),
       useNativeDriver: false,
     }).start();
-  }, [isTabBarVisible]);
+  }, [bottomPosition, isTabBarVisible]);
+
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+      return;
+    }
+
+    if (route) {
+      router.push(`/${route}` as any);
+    }
+  };
+
+  if (loading) return null;
 
   return (
-    <>
-      {!loading && (
-        <Animated.View
-          style={[styles.fabContainer, { bottom: bottomPosition }]}
-        >
-          <SinglePressTouchable
-            onPress={() => router.push(`/${route}`)}
-            activeOpacity={0.8}
-            style={styles.fabButton}
-          >
-            <Icon name={icon} size={19} color="white" />
-          </SinglePressTouchable>
-        </Animated.View>
-      )}
-    </>
+    <Animated.View style={[styles.fabContainer, { bottom: bottomPosition }]}>
+      <SinglePressTouchable
+        onPress={handlePress}
+        activeOpacity={0.8}
+        style={styles.fabButton}
+      >
+        <Icon name={icon} size={19} color="white" />
+      </SinglePressTouchable>
+    </Animated.View>
   );
 };
 

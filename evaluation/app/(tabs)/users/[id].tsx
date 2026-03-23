@@ -1,5 +1,4 @@
 // app/screens/User.tsx
-// @ts-nocheck
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   View,
@@ -7,16 +6,17 @@ import {
   Alert,
   TouchableWithoutFeedback,
   StyleSheet,
+  ScrollView,
+  RefreshControl,
 } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
-import { router, useFocusEffect, useGlobalSearchParams } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { router, useFocusEffect } from "expo-router";
 import Icon from "react-native-vector-icons/Feather";
 import { Swipeable } from "react-native-gesture-handler";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ActivityIndicator } from "react-native-paper";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 
 import getServerIP from "@/app/requests/NetworkAddress";
 import UserCard from "@/components/UserCard";
@@ -24,33 +24,23 @@ import useEmployeeContext from "@/app/context/EmployeeContext";
 import useAuthContext from "@/app/context/AuthContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import EvaluationRow from "@/app/(tabs)/evaluations/EvaluationRow";
-import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
-
-import {
-  BottomSheetModal,
-  BottomSheetBackdrop,
-  BottomSheetScrollView,
-} from "@gorhom/bottom-sheet";
-
-import EvaluationSummary from "@/components/evaluations/EvaluationSummary";
-import PersonalInfoForm from "@/app/evaluations/[evaluationId]/edit/step1";
-import Step2Form from "@/app/evaluations/[evaluationId]/edit/step2";
 import AppBottomSheet from "@/components/ui/AppBottomSheet";
 import EvaluationSheet from "@/components/ui/sheets/EvaluationSheet";
 
 const User = () => {
-  const insets = useSafeAreaInsets();
-
   const { employee, setEmployee, setAddEmployeeInfo } = useEmployeeContext();
   const { currentUser } = useAuthContext();
 
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [evaluationFiles, setEvaluationFiles] = useState<any[]>([]);
-  const openSwipeableRef = useRef<Swipeable | null>(null);
 
-  // Bottom sheet
+  const openSwipeableRef = useRef<Swipeable | null>(null);
   const sheetRef = useRef<BottomSheetModal>(null);
+  const createdEvalIdRef = useRef<string | null>(null);
+  const hasLoadedOnceRef = useRef(false);
+
   const snapPoints = useMemo(() => ["94%"], []);
 
   const [selectedEvaluationId, setSelectedEvaluationId] = useState<
@@ -61,19 +51,19 @@ const User = () => {
   );
   const [step2Week, setStep2Week] = useState<number>(1);
 
-  const createdEvalIdRef = useRef<string | null>(null);
+  const closeOpenSwipeable = useCallback(() => {
+    if (openSwipeableRef.current) {
+      openSwipeableRef.current.close?.();
+      openSwipeableRef.current = null;
+    }
+  }, []);
 
-  const renderBackdrop = useCallback(
-    (props: any) => (
-      <BottomSheetBackdrop
-        {...props}
-        appearsOnIndex={0}
-        disappearsOnIndex={-1}
-        pressBehavior="close"
-      />
-    ),
-    [],
-  );
+  const resetSheetState = useCallback(() => {
+    createdEvalIdRef.current = null;
+    setSelectedEvaluationId(null);
+    setSheetView("summary");
+    setStep2Week(1);
+  }, []);
 
   const closeSheet = useCallback(() => {
     sheetRef.current?.dismiss();
@@ -87,86 +77,90 @@ const User = () => {
     requestAnimationFrame(() => sheetRef.current?.present());
   }, []);
 
-  const fetchEmployee = useCallback(async () => {
-    try {
-      const token = await AsyncStorage.getItem("token");
-      const baseUrl = await getServerIP();
+  const fetchEmployee = useCallback(
+    async (showFullLoader = false) => {
+      if (!employee?._id) return;
 
-      const empRes = await axios.get(`${baseUrl}/employees/${employee._id}`, {
-        headers: { Authorization: token! },
-      });
+      try {
+        if (showFullLoader && !hasLoadedOnceRef.current) {
+          setLoading(true);
+        } else {
+          setRefreshing(true);
+        }
 
-      setEmployee(empRes.data);
-      setAddEmployeeInfo(empRes.data);
+        const token = await AsyncStorage.getItem("token");
+        const baseUrl = await getServerIP();
 
-      const evalRes = await axios.get(
-        `${baseUrl}/employees/${employee?._id}/evaluations`,
-        {
-          headers: { Authorization: token! },
-        },
-      );
+        const [empRes, evalRes] = await Promise.all([
+          axios.get(`${baseUrl}/employees/${employee._id}`, {
+            headers: { Authorization: token! },
+          }),
+          axios.get(`${baseUrl}/employees/${employee._id}/evaluations`, {
+            headers: { Authorization: token! },
+          }),
+        ]);
 
-      if (evalRes.status === 200 && evalRes.data) {
-        setEvaluationFiles(evalRes.data);
+        setEmployee(empRes.data);
+        setAddEmployeeInfo(empRes.data);
+        setEvaluationFiles(Array.isArray(evalRes.data) ? evalRes.data : []);
+
+        hasLoadedOnceRef.current = true;
+      } catch (err) {
+        console.error(err);
+        Alert.alert("Error", "Could not load employee or evaluations.");
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "Could not load employee or evaluations.");
-    } finally {
-      setLoading(false);
-    }
-  }, [employee?._id, setAddEmployeeInfo, setEmployee]);
+    },
+    [employee?._id, setAddEmployeeInfo, setEmployee],
+  );
 
   useFocusEffect(
     useCallback(() => {
-      setLoading(true);
-      fetchEmployee();
+      fetchEmployee(!hasLoadedOnceRef.current);
     }, [fetchEmployee]),
   );
 
   const handleStartEvaluation = useCallback(() => {
     createdEvalIdRef.current = null;
-    setSelectedEvaluationId(null); // create mode => undefined eval id
+    setSelectedEvaluationId(null);
     setSheetView("step1");
     setStep2Week(1);
-
-    // Close any open swipe row so it doesn't intercept touches/gestures
-    if (openSwipeableRef.current) {
-      openSwipeableRef.current.close?.();
-      openSwipeableRef.current = null;
-    }
-
+    closeOpenSwipeable();
     requestAnimationFrame(() => sheetRef.current?.present());
-  }, []);
+  }, [closeOpenSwipeable]);
 
-  const handleDeleteEvaluation = useCallback(
-    (evaluationId: string) => {
-      Alert.alert(
-        "Delete Evaluation",
-        "Are you sure you want to delete this evaluation?",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Delete",
-            style: "destructive",
-            onPress: async () => {
-              try {
-                const token = await AsyncStorage.getItem("token");
-                const baseUrl = await getServerIP();
-                await axios.delete(`${baseUrl}/evaluations/${evaluationId}`, {
-                  headers: { Authorization: token! },
-                });
-                fetchEmployee();
-              } catch {
-                Alert.alert("Error", "Failed to delete evaluation.");
-              }
-            },
+  const handleDeleteEvaluation = useCallback((evaluationId: string) => {
+    Alert.alert(
+      "Delete Evaluation",
+      "Are you sure you want to delete this evaluation?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem("token");
+              const baseUrl = await getServerIP();
+
+              await axios.delete(`${baseUrl}/evaluations/${evaluationId}`, {
+                headers: { Authorization: token! },
+              });
+
+              setEvaluationFiles((prev) =>
+                prev.filter((file) => file._id !== evaluationId),
+              );
+            } catch (err) {
+              console.error(err);
+              Alert.alert("Error", "Failed to delete evaluation.");
+            }
           },
-        ],
-      );
-    },
-    [fetchEmployee],
-  );
+        },
+      ],
+    );
+  }, []);
 
   const handleSwipeableWillOpen = useCallback((ref: Swipeable | null) => {
     if (openSwipeableRef.current && openSwipeableRef.current !== ref) {
@@ -176,11 +170,12 @@ const User = () => {
   }, []);
 
   const handleTapOutside = useCallback(() => {
-    if (openSwipeableRef.current) {
-      openSwipeableRef.current.close?.();
-      openSwipeableRef.current = null;
-    }
-  }, []);
+    closeOpenSwipeable();
+  }, [closeOpenSwipeable]);
+
+  const handleRefresh = useCallback(() => {
+    fetchEmployee(false);
+  }, [fetchEmployee]);
 
   const headerTitle =
     sheetView === "step1"
@@ -193,8 +188,6 @@ const User = () => {
     sheetView === "summary" ? ("x" as any) : ("chevron-left" as any);
 
   const handleHeaderPress = useCallback(() => {
-    // If user is creating a new evaluation and hasn't saved Step1 yet,
-    // close the sheet instead of going to "summary" (which would be blank).
     if (
       sheetView === "step1" &&
       !selectedEvaluationId &&
@@ -204,11 +197,15 @@ const User = () => {
       return;
     }
 
-    if (sheetView === "summary") closeSheet();
-    else setSheetView("summary");
+    if (sheetView === "summary") {
+      closeSheet();
+      return;
+    }
+
+    setSheetView("summary");
   }, [closeSheet, sheetView, selectedEvaluationId]);
 
-  if (loading) {
+  if (loading && !hasLoadedOnceRef.current) {
     return (
       <SafeAreaView style={styles.loader}>
         <ActivityIndicator size="large" color="#1a237e" />
@@ -218,88 +215,67 @@ const User = () => {
 
   return (
     <TouchableWithoutFeedback onPress={handleTapOutside}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: "#FFFFFF" }}>
-        <View style={{ flex: 1 }}>
-          <View style={{ padding: 24 }}>
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          contentContainerStyle={styles.contentContainer}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }
+        >
+          <SinglePressTouchable
+            onPress={() => router.back()}
+            style={styles.backRow}
+          >
+            <Icon name="chevron-left" size={28} />
+            <Text style={styles.backText}>Back</Text>
+          </SinglePressTouchable>
+
+          <UserCard
+            name={employee?.employee_name}
+            employee_id={employee?.employee_id}
+            date_of_hire={formatISODate(employee?.date_of_hire)}
+            locker_number={employee?.locker_number}
+            knife_number={employee?.knife_number}
+            position={employee?.position}
+            department={employee?.department}
+            last_update={formatISODate(employee?.last_updated)}
+          />
+
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Evaluations</Text>
+
             <SinglePressTouchable
-              onPress={() => router.replace("/users")}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                marginBottom: 16,
-              }}
+              onPress={handleStartEvaluation}
+              style={styles.createButton}
             >
-              <Icon name="chevron-left" size={28} />
-              <Text style={{ marginLeft: 4, fontSize: 20, fontWeight: "600" }}>
-                Back
-              </Text>
+              <Icon name="plus" size={12} color="#2563EB" />
+              <Text style={styles.createButtonText}>Create</Text>
             </SinglePressTouchable>
-
-            <UserCard
-              name={employee?.employee_name}
-              employee_id={employee?.employee_id}
-              date_of_hire={formatISODate(employee?.date_of_hire)}
-              locker_number={employee?.locker_number}
-              knife_number={employee?.knife_number}
-              position={employee?.position}
-              department={employee?.department}
-              last_update={formatISODate(employee?.last_updated)}
-            />
-
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginTop: 24,
-                marginBottom: 12,
-              }}
-            >
-              <Text style={{ fontSize: 18, fontWeight: "600" }}>
-                Evaluations
-              </Text>
-
-              <SinglePressTouchable
-                onPress={handleStartEvaluation}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  borderColor: "#2563EB",
-                  borderWidth: 1,
-                  borderRadius: 8,
-                  paddingHorizontal: 12,
-                  paddingVertical: 4,
-                }}
-              >
-                <Icon name="plus" size={12} color="#2563EB" />
-                <Text style={{ color: "#2563EB", marginLeft: 4 }}>Create</Text>
-              </SinglePressTouchable>
-            </View>
-
-            {evaluationFiles.length === 0 ? (
-              <View style={{ alignItems: "center", marginTop: 48 }}>
-                <Icon name="clipboard" size={50} color="#9CA3AF" />
-                <Text style={{ color: "#6B7280", marginTop: 16 }}>
-                  No evaluations yet.
-                </Text>
-              </View>
-            ) : (
-              <View>
-                {evaluationFiles.map((file) => (
-                  <EvaluationRow
-                    key={file._id}
-                    file={file}
-                    onPress={() => openSheet(file._id)}
-                    onDelete={handleDeleteEvaluation}
-                    handleSwipeableWillOpen={(ref: Swipeable | null) =>
-                      handleSwipeableWillOpen(ref)
-                    }
-                  />
-                ))}
-              </View>
-            )}
           </View>
-        </View>
+
+          {evaluationFiles.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Icon name="clipboard" size={50} color="#9CA3AF" />
+              <Text style={styles.emptyStateText}>No evaluations yet.</Text>
+            </View>
+          ) : (
+            <View style={styles.evaluationsList}>
+              {evaluationFiles.map((file) => (
+                <EvaluationRow
+                  key={file._id}
+                  file={file}
+                  onPress={() => openSheet(file._id)}
+                  onDelete={handleDeleteEvaluation}
+                  handleSwipeableWillOpen={(ref: Swipeable | null) =>
+                    handleSwipeableWillOpen(ref)
+                  }
+                />
+              ))}
+            </View>
+          )}
+        </ScrollView>
 
         <AppBottomSheet
           ref={sheetRef}
@@ -308,12 +284,7 @@ const User = () => {
           title={headerTitle}
           iconName={headerIcon}
           onHeaderPress={handleHeaderPress}
-          onDismiss={() => {
-            createdEvalIdRef.current = null;
-            setSelectedEvaluationId(null);
-            setSheetView("summary");
-            setStep2Week(1);
-          }}
+          onDismiss={resetSheetState}
         >
           <EvaluationSheet
             sheetView={sheetView}
@@ -323,10 +294,10 @@ const User = () => {
             step2Week={step2Week}
             setStep2Week={setStep2Week}
             createdEvalIdRef={createdEvalIdRef}
-            employeeId={String(employee?.id)}
+            employeeId={String(employee?._id || employee?.id || "")}
             createdBy={currentUser?.name || ""}
             onClose={closeSheet}
-            onRefresh={fetchEmployee}
+            onRefresh={() => fetchEmployee(false)}
           />
         </AppBottomSheet>
       </SafeAreaView>
@@ -335,25 +306,65 @@ const User = () => {
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  contentContainer: {
+    padding: 24,
+    paddingBottom: 120,
+  },
   loader: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
   },
-  sheetBg: {
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-  },
-  handle: { width: 44 },
-  sheetHeader: {
+  backRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 8,
+    marginBottom: 16,
   },
-  sheetTitle: { fontSize: 18, fontWeight: "700" },
+  backText: {
+    marginLeft: 4,
+    fontSize: 20,
+    fontWeight: "600",
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 24,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  createButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderColor: "#2563EB",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  createButtonText: {
+    color: "#2563EB",
+    marginLeft: 4,
+  },
+  evaluationsList: {
+    gap: 8,
+  },
+  emptyState: {
+    alignItems: "center",
+    marginTop: 48,
+  },
+  emptyStateText: {
+    color: "#6B7280",
+    marginTop: 16,
+  },
 });
 
 export default User;

@@ -96,7 +96,7 @@ const AssignEmployeeCard = ({
             )}
           </View>
 
-          {source !== "dashboard" && (
+          {source !== "evaluations" && source !== "dashboard" && (
             <View
               className={`ml-2 flex-row items-center rounded-full px-2.5 py-1 ${
                 assigned ? "bg-emerald-50" : "bg-red-50"

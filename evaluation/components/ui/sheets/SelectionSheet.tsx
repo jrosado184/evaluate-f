@@ -17,8 +17,8 @@ import SinglePressTouchable from "@/app/utils/SinglePress";
 import getServerIP from "@/app/requests/NetworkAddress";
 import useAuthContext from "@/app/context/AuthContext";
 
-import AssignEmployeeCard from "@/components/employees/AssignEmployeeCard";
-import AssignLockerCard from "@/components/employees/AssignLockerCard";
+import AssignEmployeeCard from "@/components/users/AssignUserCard";
+import AssignLockerCard from "@/components/users/AssignLockerCard";
 
 type SelectionMode = "employees" | "lockers";
 
@@ -295,12 +295,7 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
       }
 
       return (
-        <SinglePressTouchable
-          onPress={() => onLockerSelected?.(item)}
-          activeOpacity={0.82}
-        >
-          <AssignLockerCard {...item} />
-        </SinglePressTouchable>
+        <AssignLockerCard {...item} onPress={() => onLockerSelected?.(item)} />
       );
     },
     [isEmployeeMode, handleEmployeePress, onLockerSelected, source],
@@ -335,7 +330,7 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
             }
             renderItem={renderItem}
             showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
+            keyboardShouldPersistTaps="always"
             onEndReached={loadMore}
             onEndReachedThreshold={0.2}
             ListFooterComponent={

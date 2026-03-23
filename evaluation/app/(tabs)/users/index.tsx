@@ -2,17 +2,20 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Text, View, Animated, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import UserCard from "@/components/UserCard";
 import { router, useFocusEffect } from "expo-router";
+import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import Search from "@/components/Search";
+import UserCard from "@/components/UserCard";
+import Fab from "@/components/Fab";
+import SuccessModal from "@/components/SuccessModal";
+import AppBottomSheet from "@/components/ui/AppBottomSheet";
+import AddUserSheetContent from "@/components/ui/sheets/AddUserSheetContent";
 import useEmployeeContext from "@/app/context/EmployeeContext";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import UserCardSkeleton from "@/app/skeletons/CardSkeleton";
 import usePagination from "@/hooks/usePagination";
 import useGetUsers from "@/app/requests/useGetUsers";
 import useScrollHandler from "@/hooks/useScrollHandler";
-import Fab from "@/components/Fab";
-import SuccessModal from "@/components/SuccessModal";
 import useActionContext from "@/app/context/ActionsContext";
 import debounce from "lodash.debounce";
 import axios from "axios";
@@ -37,19 +40,17 @@ const Users = () => {
     setSuccessfullyAddedEmployee,
   } = useEmployeeContext();
 
-  const { getMoreData, setIsSearching, fetchingMoreUsers, resetPagination } =
-    usePagination(
-      employees,
-      (page: any) => getUsers(page, computeSort()),
-      setEmployees,
-      setUserDetails,
-      userDetails,
-    );
-
   const [query, setQuery] = useState("");
+  const [addUserSheetView, setAddUserSheetView] = useState<
+    "form" | "lockerSelection"
+  >("form");
+
   const { onScrollHandler } = useScrollHandler();
   const { actionsMessage, setActionsMessage } = useActionContext();
   const swipeableRefs = useRef(new Map<string, Swipeable | any>());
+
+  const sheetRef = useRef<BottomSheetModal>(null);
+  const snapPoints = ["94%"];
 
   const computeSort = () => {
     switch (sortingBy) {
@@ -63,6 +64,15 @@ const Users = () => {
   };
 
   const sort = computeSort();
+
+  const { getMoreData, setIsSearching, fetchingMoreUsers, resetPagination } =
+    usePagination(
+      employees,
+      (page: any) => getUsers(page, computeSort()),
+      setEmployees,
+      setUserDetails,
+      userDetails,
+    );
 
   const debouncedFetch = useCallback(
     debounce(async (searchTerm: string) => {
@@ -91,6 +101,12 @@ const Users = () => {
     }, 300),
     [],
   );
+
+  useEffect(() => {
+    return () => {
+      debouncedFetch.cancel();
+    };
+  }, [debouncedFetch]);
 
   const handleSearchChange = async (value: string) => {
     setQuery(value);
@@ -143,6 +159,30 @@ const Users = () => {
       setSuccessfullyAddedEmployee(false);
     }, []),
   );
+
+  const openAddUserSheet = useCallback(() => {
+    setAddUserSheetView("form");
+    requestAnimationFrame(() => {
+      sheetRef.current?.present();
+    });
+  }, []);
+
+  const closeAddUserSheet = useCallback(() => {
+    sheetRef.current?.dismiss();
+  }, []);
+
+  const refreshUsersList = useCallback(async () => {
+    try {
+      resetPagination();
+      setQuery("");
+      setIsSearching(false);
+
+      setLoading(true);
+      fetchAndSetUsers(1, sort);
+    } catch (err) {
+      console.error("Refresh users error:", err);
+    }
+  }, [resetPagination, setIsSearching, setLoading, fetchAndSetUsers, sort]);
 
   const deleteUser = async (userId: string) => {
     try {
@@ -240,11 +280,6 @@ const Users = () => {
     );
   };
 
-  const routeToUser = (item: any) => {
-    setEmployee(item);
-    router.push(`/users/${item?._id}`);
-  };
-
   const renderUserCard = useCallback(({ item }: any) => {
     return (
       <Swipeable
@@ -262,7 +297,10 @@ const Users = () => {
       >
         <SinglePressTouchable
           key={item?._id}
-          onPress={() => routeToUser(item)}
+          onPress={() => {
+            setEmployee(item);
+            router.push(`/users/${item?._id}`);
+          }}
           activeOpacity={0.8}
         >
           <UserCard
@@ -287,7 +325,7 @@ const Users = () => {
         <Text className="pl-2 font-inter-regular text-[1.6rem]">Users</Text>
       </View>
 
-      <Fab icon="user-plus" route="users/add_user" />
+      <Fab icon="user-plus" onPress={openAddUserSheet} />
 
       <Search total="users" query={query} setQuery={handleSearchChange} />
 
@@ -338,6 +376,34 @@ const Users = () => {
           }}
         />
       )}
+
+      <AppBottomSheet
+        ref={sheetRef}
+        snapPoints={snapPoints}
+        enablePanDownToClose={addUserSheetView === "form"}
+        title={addUserSheetView === "form" ? "Add User" : "Select Locker"}
+        iconName={addUserSheetView === "form" ? "x" : "arrow-left"}
+        onHeaderPress={() => {
+          if (addUserSheetView === "lockerSelection") {
+            setAddUserSheetView("form");
+            return;
+          }
+
+          closeAddUserSheet();
+        }}
+        onDismiss={() => setAddUserSheetView("form")}
+        scroll={false}
+      >
+        <AddUserSheetContent
+          view={addUserSheetView}
+          setView={setAddUserSheetView}
+          onClose={closeAddUserSheet}
+          onSuccess={async () => {
+            closeAddUserSheet();
+            await refreshUsersList();
+          }}
+        />
+      </AppBottomSheet>
     </SafeAreaView>
   );
 };
