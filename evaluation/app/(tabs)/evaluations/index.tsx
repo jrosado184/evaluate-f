@@ -254,7 +254,7 @@ const Evaluations = () => {
   }, [closeSheet, selectedEvaluationId, sheetMode, sheetView]);
 
   return (
-    <SafeAreaView className="p-6 h-[104vh] bg-white">
+    <SafeAreaView className="p-6 h-[104vh] bg-white pb-20">
       <View className="mb-2 mt-2">
         <Text className="text-3xl font-bold text-black">Evaluations</Text>
         <Text className="mt-1 text-sm text-neutral-500">

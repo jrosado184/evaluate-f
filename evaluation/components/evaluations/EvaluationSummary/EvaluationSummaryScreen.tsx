@@ -192,19 +192,29 @@ const EvaluationSummary = ({
   const info = evaluation.personalInfo || {};
 
   const rows: InfoRowItem[] = [
-    { label: "Training Type", value: info.trainingType },
+    // Team Member
     { label: "Team Member Name", value: info.teamMemberName },
-    { label: "Employee Id", value: info.employeeId },
-    { label: "Hire Date", value: info.hireDate },
-    { label: "Locker Number", value: info.lockerNumber },
+    { label: "Employee ID", value: info.employeeId },
     { label: "Phone Number", value: info.phoneNumber },
+    { label: "Locker Number", value: info.lockerNumber },
+
+    // Employment / baseline
+    { label: "Hire Date", value: info.hireDate },
+    { label: "Training Type", value: info.trainingType },
+
+    // Training Assignment
     { label: "Training Position", value: evaluation?.position },
-    { label: "Department", value: evaluation?.department },
-    { label: "Supervisor", value: evaluation?.supervisor?.name },
+    { label: "Training Department", value: evaluation?.department },
+    { label: "Training Supervisor", value: evaluation?.supervisor?.name },
+
+    // Current Employee Info
+    { label: "Current Position", value: info.position },
+    { label: "Current Department", value: info.department },
+    { label: "Current Supervisor", value: info?.supervisor?.name },
+
+    // Timeline / projections
     { label: "Job Start Date", value: info.jobStartDate },
     { label: "Projected Training Hours", value: info.projectedTrainingHours },
-    { label: "Current Position", value: info.position },
-    { label: "Current Supervisor", value: info?.supervisor?.name },
     { label: "Projected Qualifying Date", value: info.projectedQualifyingDate },
   ];
 

@@ -84,7 +84,6 @@ const fmtMMDDYYYY = (s: string) =>
 
 const intOnly = (s: string) => s.replace(/\D/g, "");
 
-// FIXED: allow digits + one decimal point, but do not convert to number while typing
 const knifeSanitize = (s: string) => {
   let cleaned = s.replace(/[^0-9.]/g, "");
 
@@ -95,9 +94,6 @@ const knifeSanitize = (s: string) => {
       cleaned.slice(firstDot + 1).replace(/\./g, "");
   }
 
-  // Optional limits:
-  // - max 3 digits before decimal
-  // - max 2 digits after decimal
   const [whole = "", decimal] = cleaned.split(".");
   const limitedWhole = whole.slice(0, 3);
 
@@ -108,8 +104,11 @@ const knifeSanitize = (s: string) => {
   return limitedWhole;
 };
 
-const toNumSafe = (s: string) =>
-  s === "" ? null : Number.isNaN(+s) ? null : +s;
+const toNumOrNull = (v: any) => {
+  if (v === "" || v == null) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
 
 async function dataUrlToTempFile(dataUrl: string, opts?: { name?: string }) {
   const match = dataUrl.match(/^data:(.+?);base64,(.*)$/);
@@ -183,27 +182,27 @@ export default function Step2Form(props: Props) {
   const currentWeek = parseInt(String(weekParam || "1"), 10);
 
   const [formData, setFormData] = useState<Record<string, any>>({
-    hoursMonday: null,
-    hoursTuesday: null,
-    hoursWednesday: null,
-    hoursThursday: null,
-    hoursFriday: null,
-    hoursSaturday: null,
-    hoursOffJobMonday: null,
-    hoursOffJobTuesday: null,
-    hoursOffJobWednesday: null,
-    hoursOffJobThursday: null,
-    hoursOffJobFriday: null,
-    hoursOffJobSaturday: null,
-    hoursWithTraineeMonday: null,
-    hoursWithTraineeTuesday: null,
-    hoursWithTraineeWednesday: null,
-    hoursWithTraineeThursday: null,
-    hoursWithTraineeFriday: null,
-    hoursWithTraineeSaturday: null,
-    percentQualified: null,
-    expectedQualified: null,
-    reTimeAchieved: null,
+    hoursMonday: "",
+    hoursTuesday: "",
+    hoursWednesday: "",
+    hoursThursday: "",
+    hoursFriday: "",
+    hoursSaturday: "",
+    hoursOffJobMonday: "",
+    hoursOffJobTuesday: "",
+    hoursOffJobWednesday: "",
+    hoursOffJobThursday: "",
+    hoursOffJobFriday: "",
+    hoursOffJobSaturday: "",
+    hoursWithTraineeMonday: "",
+    hoursWithTraineeTuesday: "",
+    hoursWithTraineeWednesday: "",
+    hoursWithTraineeThursday: "",
+    hoursWithTraineeFriday: "",
+    hoursWithTraineeSaturday: "",
+    percentQualified: "",
+    expectedQualified: "",
+    reTimeAchieved: "",
     knifeScore: "",
     yieldAuditDate: "",
     knifeSkillsAuditDate: "",
@@ -271,7 +270,7 @@ export default function Step2Form(props: Props) {
             if (k === "knifeScore") {
               next[k] = v == null ? "" : String(v);
             } else if (NUMERIC.has(k)) {
-              next[k] = v == null ? null : Number(v);
+              next[k] = v == null ? "" : String(v);
             } else if (DATE_KEYS.has(k)) {
               next[k] = typeof v === "string" ? v : "";
             } else if (typeof v === "string" && /\/signatures\//.test(v)) {
@@ -328,33 +327,21 @@ export default function Step2Form(props: Props) {
     projectedTrainingHours,
   ]);
 
-  const handleChange = (key: string, raw: string, index?: number) => {
-    let next: string | number | null = raw;
+  const handleChange = (key: string, raw: string) => {
+    let next: string | null = raw;
 
     if (DATE_KEYS.has(key)) {
       next = fmtMMDDYYYY(raw);
     } else if (key === "knifeScore") {
       next = knifeSanitize(raw);
     } else if (NUMERIC.has(key)) {
-      const s = intOnly(raw);
-      next = s === "" ? "" : toNumSafe(s);
+      next = intOnly(raw);
     }
 
-    setFormData((prev: any) => {
-      if (typeof index === "number") {
-        const list = Array.isArray(prev[key]) ? [...prev[key]] : [];
-        list[index] = next;
-        return {
-          ...prev,
-          [key]: list,
-        };
-      }
-
-      return {
-        ...prev,
-        [key]: next,
-      };
-    });
+    setFormData((prev: any) => ({
+      ...prev,
+      [key]: next,
+    }));
 
     setErrors((prev: any) => {
       if (!prev[key]) return prev;
@@ -479,13 +466,52 @@ export default function Step2Form(props: Props) {
           ? null
           : Number(nextFormData.knifeScore);
 
+      const numericWeekData = {
+        ...nextFormData,
+        percentQualified: toNumOrNull(nextFormData.percentQualified),
+        reTimeAchieved: toNumOrNull(nextFormData.reTimeAchieved),
+
+        hoursMonday: toNumOrNull(nextFormData.hoursMonday),
+        hoursTuesday: toNumOrNull(nextFormData.hoursTuesday),
+        hoursWednesday: toNumOrNull(nextFormData.hoursWednesday),
+        hoursThursday: toNumOrNull(nextFormData.hoursThursday),
+        hoursFriday: toNumOrNull(nextFormData.hoursFriday),
+        hoursSaturday: toNumOrNull(nextFormData.hoursSaturday),
+
+        hoursOffJobMonday: toNumOrNull(nextFormData.hoursOffJobMonday),
+        hoursOffJobTuesday: toNumOrNull(nextFormData.hoursOffJobTuesday),
+        hoursOffJobWednesday: toNumOrNull(nextFormData.hoursOffJobWednesday),
+        hoursOffJobThursday: toNumOrNull(nextFormData.hoursOffJobThursday),
+        hoursOffJobFriday: toNumOrNull(nextFormData.hoursOffJobFriday),
+        hoursOffJobSaturday: toNumOrNull(nextFormData.hoursOffJobSaturday),
+
+        hoursWithTraineeMonday: toNumOrNull(
+          nextFormData.hoursWithTraineeMonday,
+        ),
+        hoursWithTraineeTuesday: toNumOrNull(
+          nextFormData.hoursWithTraineeTuesday,
+        ),
+        hoursWithTraineeWednesday: toNumOrNull(
+          nextFormData.hoursWithTraineeWednesday,
+        ),
+        hoursWithTraineeThursday: toNumOrNull(
+          nextFormData.hoursWithTraineeThursday,
+        ),
+        hoursWithTraineeFriday: toNumOrNull(
+          nextFormData.hoursWithTraineeFriday,
+        ),
+        hoursWithTraineeSaturday: toNumOrNull(
+          nextFormData.hoursWithTraineeSaturday,
+        ),
+      };
+
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
         {
           action: "add_or_update_week",
           data: {
             weekData: {
-              ...nextFormData,
+              ...numericWeekData,
               knifeScore:
                 knifeScoreValue == null || Number.isNaN(knifeScoreValue)
                   ? null
@@ -581,9 +607,7 @@ export default function Step2Form(props: Props) {
               <TextInput
                 ref={(r) => (inputRefs.current[startIndex + i] = r)}
                 value={val}
-                onChangeText={(t) =>
-                  !isDisabled && handleChange(k, t, startIndex + i)
-                }
+                onChangeText={(t) => !isDisabled && handleChange(k, t)}
                 editable={!isDisabled}
                 placeholder="0"
                 keyboardType="number-pad"
@@ -740,7 +764,7 @@ export default function Step2Form(props: Props) {
                   numberOfLines={f.multiline ? 4 : 1}
                   maxLength={
                     f.key === "knifeScore"
-                      ? 6 // e.g. 100.00
+                      ? 6
                       : f.key === "yieldAuditDate" ||
                           f.key === "knifeSkillsAuditDate"
                         ? 10
