@@ -4,6 +4,7 @@ import Icon from "react-native-vector-icons/Feather";
 import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 import { router } from "expo-router";
+import { getAvatarMeta } from "@/app/helpers/avatar";
 
 interface UserCardTypes {
   position?: string;
@@ -17,27 +18,6 @@ interface UserCardTypes {
   knife_number?: number | string;
 }
 
-const getInitials = (name: string) =>
-  name
-    .split(" ")
-    .filter(Boolean)
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-
-const avatarThemes = [
-  { bg: "bg-violet-100", text: "text-violet-700" },
-  { bg: "bg-blue-100", text: "text-blue-700" },
-  { bg: "bg-emerald-100", text: "text-emerald-700" },
-  { bg: "bg-rose-100", text: "text-rose-700" },
-  { bg: "bg-amber-100", text: "text-amber-700" },
-  { bg: "bg-pink-100", text: "text-pink-700" },
-];
-
-const getAvatarTheme = (name: string) =>
-  avatarThemes[(name?.charCodeAt(0) || 65) % avatarThemes.length];
-
 const UserCard: React.FC<UserCardTypes> = ({
   position,
   name,
@@ -48,7 +28,7 @@ const UserCard: React.FC<UserCardTypes> = ({
   date_of_hire,
   button,
 }) => {
-  const avatarTheme = getAvatarTheme(name || "");
+  const { initials, bg, text } = getAvatarMeta(name);
 
   return (
     <View className="w-full mb-3.5">
@@ -56,12 +36,10 @@ const UserCard: React.FC<UserCardTypes> = ({
         {/* Top */}
         <View className="flex-row items-center">
           <View
-            className={`h-[46px] w-[46px] items-center justify-center rounded-[14px] ${avatarTheme.bg}`}
+            className={`h-[46px] w-[46px] items-center justify-center rounded-[14px] ${bg}`}
           >
-            <Text
-              className={`text-[14px] font-bold tracking-[0.4px] ${avatarTheme.text}`}
-            >
-              {getInitials(name || "?")}
+            <Text className={`text-[14px] font-bold tracking-[0.4px] ${text}`}>
+              {initials || "?"}
             </Text>
           </View>
 

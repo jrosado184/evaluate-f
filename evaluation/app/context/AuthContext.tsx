@@ -1,4 +1,11 @@
-import React, { createContext, useState, useContext, ReactNode } from "react";
+import React, {
+  createContext,
+  useState,
+  useContext,
+  ReactNode,
+  useEffect,
+} from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type User = {
   _id: string;
@@ -9,35 +16,60 @@ type User = {
   createdBy: string;
   createdAt: string;
   updatedAt: any;
+  token?: string;
 };
 
-// Define the context type
 type AuthContextType = {
-  currentUser: any;
-  setCurrentUser: (currentUser: any) => void;
+  currentUser: User | null;
+  setCurrentUser: (currentUser: User | null) => void;
+  isAuthLoading: boolean;
+  logout: () => Promise<void>;
 };
 
-// Create the context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Provider component
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>({
-    _id: "",
-    name: "",
-    employee_id: "",
-    email: "",
-    role: "",
-    createdBy: "",
-    createdAt: "",
-    updatedAt: "",
-  });
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  useEffect(() => {
+    const loadStoredUser = async () => {
+      try {
+        const storedUser = await AsyncStorage.getItem("currentUser");
+
+        if (storedUser) {
+          setCurrentUser(JSON.parse(storedUser));
+        } else {
+          setCurrentUser(null);
+        }
+      } catch (error) {
+        console.error("Failed to load current user:", error);
+        setCurrentUser(null);
+      } finally {
+        setIsAuthLoading(false);
+      }
+    };
+
+    loadStoredUser();
+  }, []);
+
+  const logout = async () => {
+    try {
+      await AsyncStorage.removeItem("currentUser");
+      await AsyncStorage.removeItem("token");
+      setCurrentUser(null);
+    } catch (error) {
+      console.error("Failed to logout:", error);
+    }
+  };
 
   return (
     <AuthContext.Provider
       value={{
         currentUser,
         setCurrentUser,
+        isAuthLoading,
+        logout,
       }}
     >
       {children}
@@ -45,11 +77,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Hook to use the context
 const useAuthContext = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuthContext must be used within an AuthContext");
+    throw new Error("useAuthContext must be used within an AuthProvider");
   }
   return context;
 };

@@ -27,6 +27,7 @@ const SignIn = () => {
 
   const submit = async () => {
     setIsSigningIn(true);
+
     try {
       const baseUrl = await getServerIP();
       const url = `${baseUrl}/auth/login`;
@@ -36,14 +37,19 @@ const SignIn = () => {
         password: form.password,
       });
 
-      const userName = res.data;
-      setCurrentUser(userName);
-      await AsyncStorage.setItem("currentUser", userName.name);
-      await AsyncStorage.setItem("token", res.data.token);
+      const user = res.data;
 
-      if (res.status === 200) router.replace("/home");
+      setCurrentUser(user);
+
+      await AsyncStorage.setItem("currentUser", JSON.stringify(user));
+      await AsyncStorage.setItem("token", user.token);
+
+      if (res.status === 200) {
+        router.replace("/home");
+      }
     } catch (error: any) {
       const { employee_id, password, message } = error.response?.data || {};
+
       setErrors({
         employee_id,
         password,

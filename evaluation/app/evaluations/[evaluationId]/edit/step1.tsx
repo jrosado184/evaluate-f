@@ -436,7 +436,7 @@ const PersonalInfoForm = (props: Props) => {
             <View key={key} className="mb-5">
               <FormField
                 title={label}
-                value={formData[key]}
+                value={String(formData[key])}
                 placeholder={label}
                 handleChangeText={() => {}}
                 error={errors[key]}

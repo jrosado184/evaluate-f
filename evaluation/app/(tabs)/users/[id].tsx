@@ -82,12 +82,6 @@ const User = () => {
       if (!employee?._id) return;
 
       try {
-        if (showFullLoader && !hasLoadedOnceRef.current) {
-          setLoading(true);
-        } else {
-          setRefreshing(true);
-        }
-
         const token = await AsyncStorage.getItem("token");
         const baseUrl = await getServerIP();
 

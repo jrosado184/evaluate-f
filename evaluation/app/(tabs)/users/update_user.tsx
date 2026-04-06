@@ -163,7 +163,7 @@ const UpdateUser = () => {
     if (!hasChanges) {
       setActionsMessage("No changes made");
       setSuccessfullyAddedEmployee(true);
-      router.replace("/(tabs)/users");
+      router.back();
       return;
     }
 

@@ -24,6 +24,9 @@ import getServerIP from "@/app/requests/NetworkAddress";
 import { ActivityIndicator } from "react-native-paper";
 import { Swipeable } from "react-native-gesture-handler";
 import SinglePressTouchable from "@/app/utils/SinglePress";
+import useAuthContext from "@/app/context/AuthContext";
+import { can } from "@/app/helpers/can";
+import { PERMISSIONS } from "@/app/config/permissions";
 
 const Users = () => {
   const { getUsers, fetchAndSetUsers } = useGetUsers(4);
@@ -39,6 +42,8 @@ const Users = () => {
     sortingBy,
     setSuccessfullyAddedEmployee,
   } = useEmployeeContext();
+
+  const { currentUser } = useAuthContext();
 
   const [query, setQuery] = useState("");
   const [addUserSheetView, setAddUserSheetView] = useState<
@@ -325,8 +330,9 @@ const Users = () => {
         <Text className="pl-2 font-inter-regular text-[1.6rem]">Users</Text>
       </View>
 
-      <Fab icon="user-plus" onPress={openAddUserSheet} />
-
+      {can(currentUser, PERMISSIONS.USERS_CREATE) && (
+        <Fab icon="user-plus" onPress={openAddUserSheet} />
+      )}
       <Search total="users" query={query} setQuery={handleSearchChange} />
 
       {employees?.length === 0 && !loading ? (

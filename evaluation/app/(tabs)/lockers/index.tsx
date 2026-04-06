@@ -31,6 +31,8 @@ import usePagination from "@/hooks/usePagination";
 import useGetLockers from "@/app/requests/useGetLockers";
 import useScrollHandler from "@/hooks/useScrollHandler";
 import getServerIP from "@/app/requests/NetworkAddress";
+import { can } from "@/app/helpers/can";
+import { PERMISSIONS } from "@/app/config/permissions";
 
 const Lockers = () => {
   const {
@@ -329,8 +331,6 @@ const Lockers = () => {
         <View className="flex-row h-7 justify-between items-center w-full">
           <Text className="pl-2 font-inter-regular text-[1.6rem]">Lockers</Text>
         </View>
-
-        <Fab icon="unlock" route="lockers/add_locker" />
 
         <Search total="lockers" query={query} setQuery={handleSearchChange} />
 

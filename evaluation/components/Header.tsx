@@ -2,9 +2,15 @@ import { View, Text, Image } from "react-native";
 import React from "react";
 import Notification from "./Notification";
 import { avatar_url } from "@/constants/links";
+import SinglePressTouchable from "@/app/utils/SinglePress";
+import { router } from "expo-router";
+import { getAvatarMeta } from "@/app/helpers/avatar";
+import useAuthContext from "@/app/context/AuthContext";
 
 const Header = () => {
   const amount = 25;
+  const { currentUser } = useAuthContext();
+  const { initials, bg, text } = getAvatarMeta(currentUser?.name);
 
   return (
     <View className="flex-row justify-between items-start w-full">
@@ -21,14 +27,14 @@ const Header = () => {
         }`}
       >
         <Notification amount={amount} />
-        <View className="w-[3rem] h-[3rem] mb-2 border border-black rounded-full">
-          <Image
-            className="w-full h-full rounded-full bg-black"
-            resizeMode="contain"
-            source={{
-              uri: avatar_url,
-            }}
-          />
+        <View
+          className={`w-[3rem] h-[3rem] mb-2 border border-neutral-300 rounded-full justify-center items-center ${bg}`}
+        >
+          <SinglePressTouchable onPress={() => router.push("/profile")}>
+            <Text className={`font-bold tracking-[0.4px] ${text}`}>
+              {initials}
+            </Text>
+          </SinglePressTouchable>
         </View>
       </View>
     </View>
