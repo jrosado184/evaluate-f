@@ -278,18 +278,6 @@ export default function ModernDashboard() {
                   Training health and qualification pace at a glance.
                 </Text>
               </View>
-
-              <View
-                className="rounded-full bg-white px-3 py-1.5"
-                style={{
-                  borderWidth: 1,
-                  borderColor: "#E3E8EF",
-                }}
-              >
-                <Text className="text-[11px] font-medium text-neutral-600">
-                  All evaluations
-                </Text>
-              </View>
             </View>
           </View>
 
