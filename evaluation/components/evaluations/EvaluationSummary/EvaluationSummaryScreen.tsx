@@ -319,24 +319,52 @@ const EvaluationSummary = ({
 
   return (
     <View className="flex-1 bg-[#F7F7F5]">
-      <ScrollComponent
-        style={{ flex: 1 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 32 }}
-      >
-        <PersonalInfoSection
-          rows={rows}
-          evaluation={evaluation}
-          evaluationId={evaluationId}
-          onEdit={onEdit}
-          onNavigateAfterClose={navigateAfterClose}
-        />
+      {inSheet ? (
+        <BottomSheetScrollView
+          style={{ flex: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          nestedScrollEnabled
+          contentContainerStyle={{
+            paddingBottom: 32,
+            flexGrow: 1,
+          }}
+        >
+          <PersonalInfoSection
+            rows={rows}
+            evaluation={evaluation}
+            evaluationId={evaluationId}
+            onEdit={onEdit}
+            onNavigateAfterClose={navigateAfterClose}
+          />
 
-        {weeksSection}
-        {continueSection}
-        {pdfSection}
-      </ScrollComponent>
+          {weeksSection}
+          {continueSection}
+          {pdfSection}
+        </BottomSheetScrollView>
+      ) : (
+        <ScrollView
+          style={{ flex: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingBottom: 32,
+            flexGrow: 1,
+          }}
+        >
+          <PersonalInfoSection
+            rows={rows}
+            evaluation={evaluation}
+            evaluationId={evaluationId}
+            onEdit={onEdit}
+            onNavigateAfterClose={navigateAfterClose}
+          />
+
+          {weeksSection}
+          {continueSection}
+          {pdfSection}
+        </ScrollView>
+      )}
     </View>
   );
 };

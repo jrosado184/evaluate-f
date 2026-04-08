@@ -1,9 +1,10 @@
-import React, { useRef } from "react";
+import React, { useMemo, useRef } from "react";
 import { View, Text, Animated } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import SimpleLineIcons from "@expo/vector-icons/SimpleLineIcons";
 import { formatISODate } from "@/app/conversions/ConvertIsoDate";
 import SinglePressTouchable from "@/app/utils/SinglePress";
+import { getAvatarMeta } from "@/app/helpers/avatar";
 
 type Props = {
   file: any;
@@ -40,6 +41,36 @@ const getStatusConfig = (status?: string) => {
   };
 };
 
+const getTrainerName = (file: any) => {
+  const raw =
+    file?.createdByName ||
+    file?.createdBy ||
+    file?.trainerName ||
+    file?.startedBy ||
+    file?.trainer?.name ||
+    file?.createdByUser?.name ||
+    "";
+
+  if (typeof raw === "string") return raw;
+  if (typeof raw === "number") return String(raw);
+  if (raw && typeof raw === "object") {
+    return raw?.name || raw?.fullName || raw?.label || "";
+  }
+
+  return "";
+};
+
+const getInitials = (name?: string) => {
+  if (!name || typeof name !== "string") return "";
+
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) return "";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+};
+
 const EvaluationRow = ({
   file,
   onDelete,
@@ -53,6 +84,22 @@ const EvaluationRow = ({
   const createdAt = file?.uploadedAt ? formatISODate(file.uploadedAt) : "—";
   const position = file?.position || "Evaluation";
   const teamMemberName = file?.personalInfo?.teamMemberName || "";
+
+  const trainerName = useMemo(() => getTrainerName(file), [file]);
+  const trainerInitials = useMemo(
+    () => getInitials(trainerName),
+    [trainerName],
+  );
+
+  const safeAvatarName =
+    typeof trainerName === "string" && trainerName.trim().length > 0
+      ? trainerName
+      : trainerInitials || "TR";
+
+  const { bg, text } = useMemo(
+    () => getAvatarMeta(safeAvatarName),
+    [safeAvatarName],
+  );
 
   const renderRightActions = (
     progress: Animated.AnimatedInterpolation<number>,
@@ -103,7 +150,6 @@ const EvaluationRow = ({
         activeOpacity={0.82}
         className="mb-3.5 w-full rounded-[22px] border border-gray-200 bg-white px-4 py-4"
       >
-        {/* Top row */}
         <View className="flex-row items-start justify-between">
           <View className="flex-1 pr-3">
             <Text
@@ -133,7 +179,6 @@ const EvaluationRow = ({
           </View>
         </View>
 
-        {/* Bottom row */}
         <View className="mt-4 flex-row items-center justify-between">
           <View className="flex-1 pr-3">
             <Text className="text-[13px] text-gray-400">
@@ -143,6 +188,16 @@ const EvaluationRow = ({
           </View>
 
           <View className="flex-row items-center">
+            {trainerInitials ? (
+              <View
+                className={`mr-3 h-8 w-8 items-center justify-center rounded-full border border-[#DDE3EA] ${bg}`}
+              >
+                <Text className={`text-[11px] font-bold ${text}`}>
+                  {trainerInitials}
+                </Text>
+              </View>
+            ) : null}
+
             <SimpleLineIcons name="arrow-right" size={14} color="#9CA3AF" />
           </View>
         </View>

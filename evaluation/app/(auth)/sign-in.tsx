@@ -1,11 +1,17 @@
-import { View, ScrollView, Image, Alert } from "react-native";
 import React, { useState } from "react";
+import {
+  View,
+  ScrollView,
+  Image,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useWindowDimensions,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import FormField from "@/components/FormField";
-import Button from "@/components/Button";
 import { router } from "expo-router";
 import axios from "axios";
-import Error from "@/components/ErrorText";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import getServerIP from "../requests/NetworkAddress";
 import useAuthContext from "../context/AuthContext";
@@ -17,16 +23,27 @@ const SignIn = () => {
   });
 
   const [errors, setErrors] = useState({
-    employee_id: null,
-    password: null,
-    invalidCreddential: "",
+    employee_id: "",
+    password: "",
+    invalidCredential: "",
   });
 
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const { currentUser, setCurrentUser } = useAuthContext();
+  const { setCurrentUser } = useAuthContext();
+  const { width } = useWindowDimensions();
+
+  const isTablet = width >= 768;
+  const isLargeTablet = width >= 1100;
+
+  const contentWidth = isLargeTablet ? 540 : isTablet ? 500 : width * 0.9;
 
   const submit = async () => {
     setIsSigningIn(true);
+    setErrors({
+      employee_id: "",
+      password: "",
+      invalidCredential: "",
+    });
 
     try {
       const baseUrl = await getServerIP();
@@ -40,7 +57,6 @@ const SignIn = () => {
       const user = res.data;
 
       setCurrentUser(user);
-
       await AsyncStorage.setItem("currentUser", JSON.stringify(user));
       await AsyncStorage.setItem("token", user.token);
 
@@ -48,12 +64,12 @@ const SignIn = () => {
         router.replace("/home");
       }
     } catch (error: any) {
-      const { employee_id, password, message } = error.response?.data || {};
+      const { employee_id, password, message } = error?.response?.data || {};
 
       setErrors({
-        employee_id,
-        password,
-        invalidCreddential:
+        employee_id: employee_id || "",
+        password: password || "",
+        invalidCredential:
           !employee_id && !password ? message || "Login failed" : "",
       });
     } finally {
@@ -62,63 +78,142 @@ const SignIn = () => {
   };
 
   return (
-    <SafeAreaView className="h-full bg-neutral-50">
-      <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
-        <View className="w-full min-h-[85vh] justify-center">
-          <Image
-            resizeMode="contain"
-            className="w-[14rem] h-20 ml-8"
-            source={require("../../constants/icons/logo.png")}
-          />
-          <View className="justify-center items-center w-full">
-            {/* Employee ID */}
-            <FormField
-              title="Employee ID"
-              value={form.employee_id}
-              handleChangeText={(e: string) =>
-                setForm({ ...form, employee_id: e })
-              }
-              styles="mt-7 w-[90%]"
-              placeholder="Enter your ID"
-              rounded="rounded-[0.625rem]"
-            />
-            <Error
-              hidden={!errors.employee_id}
-              title={errors.employee_id}
-              styles="w-[90%]"
+    <SafeAreaView className="flex-1 bg-[#F3F5F8]">
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingHorizontal: 20,
+          paddingTop: 24,
+          paddingBottom: 40,
+        }}
+      >
+        <View className="flex-1 items-center justify-center">
+          <View style={{ width: contentWidth }} className="items-center">
+            <Image
+              resizeMode="contain"
+              source={require("../../constants/icons/logo.png")}
+              style={{
+                width: isTablet ? 240 : 180,
+                height: isTablet ? 72 : 56,
+                marginBottom: isTablet ? 22 : 24,
+              }}
             />
 
-            {/* Password */}
-            <FormField
-              title="Password"
-              value={form.password}
-              handleChangeText={(e: string) =>
-                setForm({ ...form, password: e })
-              }
-              styles="mt-7 w-[90%]"
-              placeholder="Enter your password"
-              rounded="rounded-[0.625rem]"
-            />
-            <Error
-              hidden={!errors.password}
-              title={errors.password}
-              styles="w-[90%]"
-            />
+            <View
+              className="w-full rounded-[28px] bg-white px-5 py-7"
+              style={{
+                borderWidth: 1,
+                borderColor: "#DDE3EA",
+                shadowColor: "#0F172A",
+                shadowOpacity: 0.035,
+                shadowRadius: 14,
+                shadowOffset: { width: 0, height: 4 },
+                elevation: 1,
+              }}
+            >
+              <View className="mb-6 items-center">
+                <View
+                  className="rounded-full bg-[#F5F9FF] px-3 py-1.5"
+                  style={{
+                    borderWidth: 1,
+                    borderColor: "#D7E6FF",
+                  }}
+                >
+                  <View className="flex-row items-center">
+                    <View className="mr-2 h-2 w-2 rounded-full bg-[#2563EB]" />
+                    <Text className="text-[11px] font-medium text-[#2563EB]">
+                      Secure Access
+                    </Text>
+                  </View>
+                </View>
 
-            {/* Invalid Credentials */}
-            <Error
-              hidden={!errors.invalidCreddential}
-              title="Employee ID and password are incorrect"
-              styles="w-[90%]"
-            />
+                <Text className="mt-4 text-[24px] font-semibold tracking-[-0.5px] text-[#111827]">
+                  Sign in
+                </Text>
+                <Text className="mt-2 text-center text-[13px] leading-5 text-neutral-500">
+                  Enter your employee ID and password to access your training
+                  dashboard.
+                </Text>
+              </View>
 
-            <Button
-              handlePress={submit}
-              isLoading={isSigningIn}
-              title="Sign in"
-              styles="my-12 w-full rounded-[0.625rem]"
-              inputStyles="w-[90%]"
-            />
+              <View className="mb-4">
+                <Text className="mb-2 text-[12px] font-medium text-neutral-600">
+                  Employee ID
+                </Text>
+                <TextInput
+                  value={form.employee_id}
+                  onChangeText={(text) =>
+                    setForm((prev) => ({ ...prev, employee_id: text }))
+                  }
+                  placeholder="Enter your ID"
+                  placeholderTextColor="#9CA3AF"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  className="rounded-[14px] bg-[#FAFBFC] px-4 py-4 text-[15px] font-semibold text-neutral-900"
+                  style={{
+                    borderWidth: 1,
+                    borderColor: "#DDE3EA",
+                  }}
+                />
+                {!!errors.employee_id && (
+                  <Text className="mt-2 text-[12px] text-red-500">
+                    {errors.employee_id}
+                  </Text>
+                )}
+              </View>
+
+              <View>
+                <Text className="mb-2 text-[12px] font-medium text-neutral-600">
+                  Password
+                </Text>
+                <TextInput
+                  value={form.password}
+                  onChangeText={(text) =>
+                    setForm((prev) => ({ ...prev, password: text }))
+                  }
+                  placeholder="Enter your password"
+                  placeholderTextColor="#9CA3AF"
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  className="rounded-[14px] bg-[#FAFBFC] px-4 py-4 text-[15px] font-semibold text-neutral-900"
+                  style={{
+                    borderWidth: 1,
+                    borderColor: "#DDE3EA",
+                  }}
+                />
+                {!!errors.password && (
+                  <Text className="mt-2 text-[12px] text-red-500">
+                    {errors.password}
+                  </Text>
+                )}
+              </View>
+
+              {!!errors.invalidCredential && (
+                <Text className="mt-4 text-[12px] text-red-500">
+                  {errors.invalidCredential}
+                </Text>
+              )}
+
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={submit}
+                disabled={isSigningIn}
+                className="mt-6 items-center justify-center rounded-[16px] bg-neutral-900"
+                style={{
+                  minHeight: 54,
+                }}
+              >
+                {isSigningIn ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text className="text-[15px] font-semibold text-white">
+                    Sign in
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </ScrollView>
