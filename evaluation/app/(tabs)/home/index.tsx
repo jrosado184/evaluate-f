@@ -1,55 +1,47 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ScrollView, View, Text, TouchableOpacity } from "react-native";
+import { ScrollView, Text, View, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { BottomSheetModal } from "@gorhom/bottom-sheet";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { router } from "expo-router";
 
 import Header from "@/components/Header";
-import SinglePressTouchable from "@/app/utils/SinglePress";
 import Greeting from "@/components/Greeting";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 import useGetUsers from "@/app/requests/useGetUsers";
-import useEmployeeContext from "@/app/context/EmployeeContext";
-import useGetLockers from "@/app/requests/useGetLockers";
 import getServerIP from "@/app/requests/NetworkAddress";
-import useEvaluationStats from "@/hooks/useEvaluationsStats";
 import useAuthContext from "@/app/context/AuthContext";
 import AppBottomSheet from "@/components/ui/AppBottomSheet";
 import SelectionSheet from "@/components/ui/sheets/SelectionSheet";
 import EvaluationSheet from "@/components/ui/sheets/EvaluationSheet";
-import { router } from "expo-router";
 
-const StatBlock = ({ label, value, sub, highlightColor, onPress }: any) => (
-  <TouchableOpacity
-    onPress={onPress}
-    className="flex-1 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
-  >
-    <Text className="mb-1 text-xs text-neutral-500">{label}</Text>
-    <Text className="text-2xl font-bold text-black">{value}</Text>
-    {sub ? (
-      <Text className={`mt-1 text-xs ${highlightColor}`}>{sub}</Text>
-    ) : null}
-  </TouchableOpacity>
-);
+import KpiCard from "@/components/dashboard/KpiCard";
+import SectionCard from "@/components/dashboard/SectionCard";
+import DonutChartCard from "@/components/dashboard/DonutChartCard";
+import MiniBarChart from "@/components/dashboard/MiniBarChart";
+import RiskPill from "@/components/dashboard/RiskPill";
 
-const PerformanceBar = ({ name, percent, color }: any) => (
-  <View className="mb-5">
-    <Text className="mb-1 text-sm font-medium text-neutral-700">{name}</Text>
-    <View className="h-3 rounded-full bg-neutral-200">
-      <View
-        className="h-3 rounded-full"
-        style={{ width: `${percent}%`, backgroundColor: color }}
-      />
-    </View>
-    <Text className="mt-1 text-xs text-neutral-500">{percent}%</Text>
-  </View>
-);
-
-type DashboardSheetMode = "selectEmployee" | "evaluation";
-type EvalSheetView = "summary" | "step1" | "step2" | "qualify";
+import {
+  DashboardSheetMode,
+  EvalSheetView,
+} from "@/components/dashboard/dashboard.types";
+import {
+  buildHealthSegments,
+  daysBetween,
+  getCompletedDate,
+  getCreatedDate,
+  getRiskStatus,
+  isInProgress,
+  isQualified,
+} from "@/components/dashboard/dashboard.utils";
 
 export default function ModernDashboard() {
+  const { width } = useWindowDimensions();
+  const isTablet = width >= 768;
+  const isLargeTablet = width >= 1100;
+
   const sheetRef = useRef<BottomSheetModal>(null);
   const createdEvalIdRef = useRef<string | null>(null);
 
@@ -62,27 +54,20 @@ export default function ModernDashboard() {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(
     null,
   );
-
   const [sheetView, setSheetView] = useState<EvalSheetView>("step1");
   const [evaluationId, setEvaluationId] = useState<string | null>(null);
   const [step2Week, setStep2Week] = useState(1);
   const [qualifyPayload, setQualifyPayload] = useState<any>(null);
+  const [evaluations, setEvaluations] = useState<any[]>([]);
 
   const { currentUser } = useAuthContext();
 
-  const { getLockers } = useGetLockers();
-  const { setLockers, setLockerDetails, setLoading, lockerDetails } =
-    useEmployeeContext();
-
-  const [evaluations, setEvaluations] = useState<any>([]);
-  const [vacantLockers, setVacantLockers] = useState(0);
-
-  const {
-    completedCount,
-    inProgressCount,
-    percentComplete,
-    percentInProgress,
-  } = useEvaluationStats(evaluations);
+  const maxWidth = isLargeTablet ? 1280 : isTablet ? 1040 : 680;
+  const donutSize = isTablet ? 198 : 148;
+  const chartHeight = isTablet ? 170 : 118;
+  const barWidth = isTablet ? 24 : 18;
+  const kpiWidth = isTablet ? "24%" : "48.5%";
+  const chartCardHeight = isTablet ? 365 : undefined;
 
   const fetchAllEvaluations = async () => {
     try {
@@ -100,32 +85,7 @@ export default function ModernDashboard() {
   };
 
   useEffect(() => {
-    const fetchLockersForHome = async () => {
-      setLoading(true);
-
-      try {
-        const data = await getLockers(1, 4);
-
-        if (data) {
-          setVacantLockers(data?.vacantLockers ?? 0);
-          setLockers(data.results ?? []);
-          setLockerDetails({
-            totalPages: data.totalPages,
-            currentPage: 1,
-            totalLockers: data.totalLockers,
-          });
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const run = async () => {
-      await fetchLockersForHome();
-      await fetchAllEvaluations();
-    };
-
-    run();
+    fetchAllEvaluations();
   }, []);
 
   useGetUsers(8);
@@ -205,96 +165,345 @@ export default function ModernDashboard() {
   const sheetIconName =
     dashboardSheetMode === "selectEmployee" ? "x" : "arrow-left";
 
+  const dashboardData = useMemo(() => {
+    const active = evaluations.filter(isInProgress);
+    const completed = evaluations.filter(isQualified);
+
+    const completedThisMonth = completed.filter((evaluation) => {
+      const completedDate = new Date(getCompletedDate(evaluation));
+      if (Number.isNaN(completedDate.getTime())) return false;
+
+      const now = new Date();
+      return (
+        completedDate.getMonth() === now.getMonth() &&
+        completedDate.getFullYear() === now.getFullYear()
+      );
+    });
+
+    const onTrack = active.filter((e) => getRiskStatus(e) === "onTrack");
+    const watchList = active.filter((e) => getRiskStatus(e) === "watch");
+    const atRisk = active.filter((e) => getRiskStatus(e) === "atRisk");
+    const critical = active.filter((e) => getRiskStatus(e) === "critical");
+    const readyToQualify = active.filter((e) => getRiskStatus(e) === "ready");
+
+    const avgDaysToQualifyValues = completed
+      .map((evaluation) =>
+        daysBetween(getCreatedDate(evaluation), getCompletedDate(evaluation)),
+      )
+      .filter((value): value is number => typeof value === "number");
+
+    const avgDaysToQualify =
+      avgDaysToQualifyValues.length > 0
+        ? Math.round(
+            avgDaysToQualifyValues.reduce((sum, value) => sum + value, 0) /
+              avgDaysToQualifyValues.length,
+          )
+        : 0;
+
+    const onTrackRate =
+      active.length > 0
+        ? Math.round((onTrack.length / active.length) * 100)
+        : 0;
+
+    const healthSegments = buildHealthSegments(
+      onTrack,
+      watchList,
+      atRisk,
+      critical,
+    );
+
+    const now = new Date();
+    const weeklyPaceData = Array.from({ length: 8 }).map((_, i) => {
+      const weekOffset = 7 - i;
+      const start = new Date(now);
+      start.setDate(now.getDate() - weekOffset * 7);
+      start.setHours(0, 0, 0, 0);
+
+      const end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+
+      const actualQualified = completed.filter((evaluation) => {
+        const completedDate = new Date(getCompletedDate(evaluation) || "");
+        if (Number.isNaN(completedDate.getTime())) return false;
+        return completedDate >= start && completedDate <= end;
+      }).length;
+
+      return {
+        label: `W${i + 1}`,
+        value: actualQualified,
+        target: Math.max(1, Math.ceil(active.length / 8)),
+      };
+    });
+
+    return {
+      active,
+      completedThisMonth,
+      onTrack,
+      watchList,
+      atRisk,
+      critical,
+      readyToQualify,
+      avgDaysToQualify,
+      onTrackRate,
+      healthSegments,
+      weeklyPaceData,
+    };
+  }, [evaluations]);
+
   return (
     <>
-      <ScrollView className="bg-[#F9FAFB]">
-        <SafeAreaView className="px-6 proMax:p-8">
+      <ScrollView
+        className="bg-[#F3F5F8]"
+        contentContainerStyle={{ paddingBottom: 36 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <SafeAreaView className="self-center w-full px-5" style={{ maxWidth }}>
           <Header />
 
-          <View className="mb-2">
+          <View className="mb-6">
             <Greeting />
-          </View>
 
-          <View className="mb-6 flex-row gap-4">
-            <StatBlock
-              label="Total Lockers"
-              value={lockerDetails?.totalLockers ?? 0}
-              sub={`${vacantLockers} Vacant`}
-              highlightColor="text-emerald-600"
-            />
-            <StatBlock
-              onPress={() => router.push("/(tabs)/evaluations")}
-              label="Evaluations"
-              value={`${completedCount} Qualified`}
-              sub={`${inProgressCount} In Progress`}
-              highlightColor="text-yellow-600"
-            />
-          </View>
-
-          <View className="mb-6 rounded-2xl border border-gray-200 bg-white p-4">
-            <Text className="mb-4 text-sm font-semibold text-black">
-              Evaluation Performance
-            </Text>
-            <PerformanceBar
-              name="Evaluations Complete"
-              percent={percentComplete}
-              color="#10B981"
-            />
-            <PerformanceBar
-              name="In Progress"
-              percent={percentInProgress}
-              color="#FBBF24"
-            />
-          </View>
-
-          <View className="mb-6 rounded-2xl border border-gray-200 bg-white p-4">
-            <Text className="mb-4 text-sm font-semibold text-black">
-              Terminations
-            </Text>
-            <View className="flex-row justify-between">
-              <View>
-                <Text className="text-xl font-bold text-black">0</Text>
-                <Text className="text-xs text-neutral-500">Under 90 days</Text>
-              </View>
-              <View>
-                <Text className="text-xl font-bold text-black">0</Text>
-                <Text className="text-xs text-neutral-500">Over 90 days</Text>
-              </View>
-            </View>
-          </View>
-
-          <View className="mb-10 rounded-2xl border border-gray-200 bg-white p-4">
-            <Text className="mb-4 text-sm font-semibold text-black">
-              Quick Actions
-            </Text>
-
-            <View className="flex-row justify-between gap-4">
-              <SinglePressTouchable className="flex-1 items-center">
-                <View className="mb-1 rounded-xl bg-gray-100 p-3">
-                  <MaterialIcons name="person-add-alt" size={20} color="#111" />
-                </View>
-                <Text className="text-xs text-neutral-700">Add Employee</Text>
-              </SinglePressTouchable>
-
-              <SinglePressTouchable
-                onPress={openEvaluationPicker}
-                className="flex-1 items-center"
-              >
-                <View className="mb-1 rounded-xl bg-gray-100 p-3">
-                  <MaterialIcons name="assignment" size={20} color="#111" />
-                </View>
-                <Text className="text-xs text-neutral-700">
-                  Start Evaluation
+            <View className="mt-3 flex-row items-start justify-between">
+              <View className="flex-1 pr-3">
+                <Text className="text-[11px] font-medium uppercase tracking-[1px] text-neutral-400">
+                  Overview
                 </Text>
-              </SinglePressTouchable>
 
-              <SinglePressTouchable className="flex-1 items-center">
-                <View className="mb-1 rounded-xl bg-gray-100 p-3">
-                  <MaterialIcons name="vpn-key" size={20} color="#111" />
-                </View>
-                <Text className="text-xs text-neutral-700">Assign Locker</Text>
-              </SinglePressTouchable>
+                <Text className="mt-1 text-[20px] font-semibold tracking-[-0.4px] text-[#111827]">
+                  Training Dashboard
+                </Text>
+
+                <Text className="mt-1 text-[13px] leading-5 text-neutral-500">
+                  Training health and qualification pace at a glance.
+                </Text>
+              </View>
+
+              <View
+                className="rounded-full bg-white px-3 py-1.5"
+                style={{
+                  borderWidth: 1,
+                  borderColor: "#E3E8EF",
+                }}
+              >
+                <Text className="text-[11px] font-medium text-neutral-600">
+                  All evaluations
+                </Text>
+              </View>
             </View>
+          </View>
+
+          <View
+            className="mb-5 flex-row flex-wrap justify-between"
+            style={{ rowGap: 12 }}
+          >
+            <View style={{ width: kpiWidth }}>
+              <KpiCard
+                label="Active Trainees"
+                value={dashboardData.active.length}
+                sub={`${dashboardData.readyToQualify.length} ready to qualify`}
+                icon="groups"
+                accent="neutral"
+                onPress={() => router.push("/(tabs)/evaluations")}
+              />
+            </View>
+
+            <View style={{ width: kpiWidth }}>
+              <KpiCard
+                label="On-Track Rate"
+                value={`${dashboardData.onTrackRate}%`}
+                sub={`${dashboardData.onTrack.length} on pace`}
+                icon="trending-up"
+                accent="success"
+                onPress={() => router.push("/(tabs)/evaluations")}
+              />
+            </View>
+
+            <View style={{ width: kpiWidth }}>
+              <KpiCard
+                label="At Risk"
+                value={
+                  dashboardData.atRisk.length + dashboardData.critical.length
+                }
+                sub={`${dashboardData.critical.length} critical`}
+                icon="warning-amber"
+                accent="danger"
+                onPress={() => router.push("/(tabs)/evaluations")}
+              />
+            </View>
+
+            <View style={{ width: kpiWidth }}>
+              <KpiCard
+                label="Qualified This Month"
+                value={dashboardData.completedThisMonth.length}
+                sub={`Avg ${dashboardData.avgDaysToQualify} days`}
+                icon="task-alt"
+                accent="primary"
+                onPress={() => router.push("/(tabs)/evaluations")}
+              />
+            </View>
+          </View>
+
+          <View
+            className="mb-5"
+            style={{
+              flexDirection: isTablet ? "row" : "column",
+              gap: 12,
+            }}
+          >
+            <View
+              style={{
+                flex: 1,
+                minHeight: chartCardHeight,
+              }}
+            >
+              <DonutChartCard
+                title="Training Health"
+                subtitle="Hours invested versus qualification progress"
+                centerValue={`${dashboardData.onTrackRate}%`}
+                centerLabel="on track"
+                segments={dashboardData.healthSegments}
+                size={donutSize}
+                topStatLabel="Active evaluations"
+                topStatValue={dashboardData.active.length}
+                matchHeight={isTablet}
+              />
+            </View>
+
+            <View
+              style={{
+                flex: 1,
+                minHeight: chartCardHeight,
+              }}
+            >
+              <SectionCard
+                title="Qualification Pace"
+                subtitle="Actual completions vs target, last 8 weeks"
+                containerStyle={
+                  isTablet ? { minHeight: chartCardHeight } : undefined
+                }
+                contentStyle={isTablet ? { flex: 1 } : undefined}
+              >
+                <View
+                  style={{
+                    flex: isTablet ? 1 : undefined,
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <MiniBarChart
+                    data={dashboardData.weeklyPaceData}
+                    maxValue={Math.max(
+                      ...dashboardData.weeklyPaceData.map((d) =>
+                        Math.max(d.value, d.target || 0),
+                      ),
+                      1,
+                    )}
+                    chartHeight={chartHeight}
+                    barWidth={barWidth}
+                  />
+
+                  <View className="mt-4 flex-row items-center justify-between">
+                    <View className="flex-row items-center">
+                      <View className="mr-2 h-2.5 w-2.5 rounded-full bg-blue-600" />
+                      <Text className="text-[12px] text-neutral-500">
+                        Actual qualified
+                      </Text>
+                    </View>
+
+                    <View className="flex-row items-center">
+                      <View className="mr-2 h-[2px] w-4 rounded-full bg-slate-400" />
+                      <Text className="text-[12px] text-neutral-500">
+                        Target
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </SectionCard>
+            </View>
+          </View>
+
+          <View className="mb-5">
+            <SectionCard
+              title="Risk Summary"
+              subtitle="Calculated from hours on job compared to qualification progress"
+            >
+              <View className="flex-row gap-3">
+                <RiskPill
+                  label="Critical"
+                  value={dashboardData.critical.length}
+                  tone="danger"
+                />
+                <RiskPill
+                  label="At Risk"
+                  value={dashboardData.atRisk.length}
+                  tone="warning"
+                />
+              </View>
+
+              <View className="mt-2.5 flex-row gap-3">
+                <RiskPill
+                  label="Watch"
+                  value={dashboardData.watchList.length}
+                  tone="primary"
+                />
+                <RiskPill
+                  label="Ready"
+                  value={dashboardData.readyToQualify.length}
+                  tone="success"
+                />
+              </View>
+            </SectionCard>
+          </View>
+
+          <View className="mb-5 pb-10">
+            <SectionCard title="Quick Actions">
+              <View className="flex-row justify-between gap-4">
+                <SinglePressTouchable className="flex-1 items-center">
+                  <View className="mb-2 rounded-2xl bg-gray-100 p-3">
+                    <MaterialIcons
+                      name="person-add-alt"
+                      size={20}
+                      color="#111827"
+                    />
+                  </View>
+                  <Text className="text-center text-[12px] font-medium text-neutral-700">
+                    Add Employee
+                  </Text>
+                </SinglePressTouchable>
+
+                <SinglePressTouchable
+                  onPress={openEvaluationPicker}
+                  className="flex-1 items-center"
+                >
+                  <View className="mb-2 rounded-2xl bg-blue-50 p-3">
+                    <MaterialIcons
+                      name="assignment"
+                      size={20}
+                      color="#2563EB"
+                    />
+                  </View>
+                  <Text className="text-center text-[12px] font-medium text-neutral-700">
+                    Start Evaluation
+                  </Text>
+                </SinglePressTouchable>
+
+                <SinglePressTouchable
+                  onPress={() => router.push("/(tabs)/evaluations")}
+                  className="flex-1 items-center"
+                >
+                  <View className="mb-2 rounded-2xl bg-gray-100 p-3">
+                    <MaterialIcons
+                      name="fact-check"
+                      size={20}
+                      color="#111827"
+                    />
+                  </View>
+                  <Text className="text-center text-[12px] font-medium text-neutral-700">
+                    Evaluations
+                  </Text>
+                </SinglePressTouchable>
+              </View>
+            </SectionCard>
           </View>
         </SafeAreaView>
       </ScrollView>
