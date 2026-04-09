@@ -9,9 +9,9 @@ interface NotificationTypes {
 const Notification: React.FC<NotificationTypes> = ({ amount }) => {
   return (
     <View className="relative">
-      <BellIcon width={28} height={28} fillColor="black" />
+      <BellIcon width={26} height={26} fillColor="black" />
       {amount && (
-        <View className="absolute right-[-1.3rem] top-[-0.5rem] w-10 h-[1.6rem] border border-black bg-red-600 rounded-full justify-center items-center">
+        <View className="absolute right-[-1.3rem] top-[-0.5rem] w-10 h-[1.3rem] border border-black bg-red-600 rounded-full justify-center items-center">
           <Text className="font-inter-semibold text-white">
             {amount < 10 ? amount : <Text>{"9+"}</Text>}
           </Text>

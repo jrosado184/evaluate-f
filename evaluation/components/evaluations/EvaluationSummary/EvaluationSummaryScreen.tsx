@@ -229,8 +229,7 @@ const EvaluationSummary = ({
 
         {(evaluation.evaluations as any[]).map((week, idx) => {
           const isLatest = idx === weeksDone - 1;
-          const canAddAnother =
-            evaluation.status !== "complete" && weeksDone < 3 && isLatest;
+          const canAddAnother = evaluation.status !== "complete";
 
           return (
             <View key={idx}>

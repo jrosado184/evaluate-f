@@ -27,15 +27,10 @@ import {
   DashboardSheetMode,
   EvalSheetView,
 } from "@/components/dashboard/dashboard.types";
-import {
-  buildHealthSegments,
-  daysBetween,
-  getCompletedDate,
-  getCreatedDate,
-  getRiskStatus,
-  isInProgress,
-  isQualified,
-} from "@/components/dashboard/dashboard.utils";
+import { buildDashboardMetrics } from "@/app/helpers/dashboard/dashboardMetrics";
+import AddUserSheetContent from "@/components/ui/sheets/AddUserSheetContent";
+
+type AddUserSheetView = "form" | "lockerSelection";
 
 export default function ModernDashboard() {
   const { width } = useWindowDimensions();
@@ -43,13 +38,19 @@ export default function ModernDashboard() {
   const isLargeTablet = width >= 1100;
 
   const sheetRef = useRef<BottomSheetModal>(null);
+  const addUserSheetRef = useRef<BottomSheetModal>(null);
   const createdEvalIdRef = useRef<string | null>(null);
 
   const snapPoints = useMemo(() => ["94%"], []);
 
   const [showEvaluationSheet, setShowEvaluationSheet] = useState(false);
+  const [showAddUserSheet, setShowAddUserSheet] = useState(false);
+
   const [dashboardSheetMode, setDashboardSheetMode] =
     useState<DashboardSheetMode>("selectEmployee");
+
+  const [addUserSheetView, setAddUserSheetView] =
+    useState<AddUserSheetView>("form");
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(
     null,
@@ -106,6 +107,10 @@ export default function ModernDashboard() {
     setShowEvaluationSheet(true);
   };
 
+  const closeEvaluationPicker = () => {
+    sheetRef.current?.dismiss();
+  };
+
   useEffect(() => {
     if (!showEvaluationSheet) return;
 
@@ -116,9 +121,24 @@ export default function ModernDashboard() {
     return () => clearTimeout(id);
   }, [showEvaluationSheet]);
 
-  const closeEvaluationPicker = () => {
-    sheetRef.current?.dismiss();
+  const openAddUserSheet = () => {
+    setAddUserSheetView("form");
+    setShowAddUserSheet(true);
   };
+
+  const closeAddUserSheet = () => {
+    addUserSheetRef.current?.dismiss();
+  };
+
+  useEffect(() => {
+    if (!showAddUserSheet) return;
+
+    const id = setTimeout(() => {
+      addUserSheetRef.current?.present();
+    }, 40);
+
+    return () => clearTimeout(id);
+  }, [showAddUserSheet]);
 
   const handleSheetHeaderPress = () => {
     const effectiveEvaluationId = createdEvalIdRef.current || evaluationId;
@@ -166,90 +186,21 @@ export default function ModernDashboard() {
     dashboardSheetMode === "selectEmployee" ? "x" : "arrow-left";
 
   const dashboardData = useMemo(() => {
-    const active = evaluations.filter(isInProgress);
-    const completed = evaluations.filter(isQualified);
-
-    const completedThisMonth = completed.filter((evaluation) => {
-      const completedDate = new Date(getCompletedDate(evaluation));
-      if (Number.isNaN(completedDate.getTime())) return false;
-
-      const now = new Date();
-      return (
-        completedDate.getMonth() === now.getMonth() &&
-        completedDate.getFullYear() === now.getFullYear()
-      );
-    });
-
-    const onTrack = active.filter((e) => getRiskStatus(e) === "onTrack");
-    const watchList = active.filter((e) => getRiskStatus(e) === "watch");
-    const atRisk = active.filter((e) => getRiskStatus(e) === "atRisk");
-    const critical = active.filter((e) => getRiskStatus(e) === "critical");
-    const readyToQualify = active.filter((e) => getRiskStatus(e) === "ready");
-
-    const avgDaysToQualifyValues = completed
-      .map((evaluation) =>
-        daysBetween(getCreatedDate(evaluation), getCompletedDate(evaluation)),
-      )
-      .filter((value): value is number => typeof value === "number");
-
-    const avgDaysToQualify =
-      avgDaysToQualifyValues.length > 0
-        ? Math.round(
-            avgDaysToQualifyValues.reduce((sum, value) => sum + value, 0) /
-              avgDaysToQualifyValues.length,
-          )
-        : 0;
-
-    const onTrackRate =
-      active.length > 0
-        ? Math.round((onTrack.length / active.length) * 100)
-        : 0;
-
-    const healthSegments = buildHealthSegments(
-      onTrack,
-      watchList,
-      atRisk,
-      critical,
-    );
-
-    const now = new Date();
-    const weeklyPaceData = Array.from({ length: 8 }).map((_, i) => {
-      const weekOffset = 7 - i;
-      const start = new Date(now);
-      start.setDate(now.getDate() - weekOffset * 7);
-      start.setHours(0, 0, 0, 0);
-
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-      end.setHours(23, 59, 59, 999);
-
-      const actualQualified = completed.filter((evaluation) => {
-        const completedDate = new Date(getCompletedDate(evaluation) || "");
-        if (Number.isNaN(completedDate.getTime())) return false;
-        return completedDate >= start && completedDate <= end;
-      }).length;
-
-      return {
-        label: `W${i + 1}`,
-        value: actualQualified,
-        target: Math.max(1, Math.ceil(active.length / 8)),
-      };
-    });
-
-    return {
-      active,
-      completedThisMonth,
-      onTrack,
-      watchList,
-      atRisk,
-      critical,
-      readyToQualify,
-      avgDaysToQualify,
-      onTrackRate,
-      healthSegments,
-      weeklyPaceData,
-    };
+    return buildDashboardMetrics(evaluations);
   }, [evaluations]);
+
+  const donutSegments = useMemo(() => {
+    return dashboardData.healthSegments.map((segment: any) => ({
+      ...segment,
+      value: segment.count,
+      percentage: segment.percent,
+      pct: segment.percent,
+    }));
+  }, [dashboardData.healthSegments]);
+
+  const weeklyTarget =
+    dashboardData.weeklyPaceData?.[dashboardData.weeklyPaceData.length - 1]
+      ?.target ?? 0;
 
   return (
     <>
@@ -292,7 +243,6 @@ export default function ModernDashboard() {
                 sub={`${dashboardData.readyToQualify.length} ready to qualify`}
                 icon="groups"
                 accent="neutral"
-                onPress={() => router.push("/(tabs)/evaluations")}
               />
             </View>
 
@@ -300,7 +250,7 @@ export default function ModernDashboard() {
               <KpiCard
                 label="On-Track Rate"
                 value={`${dashboardData.onTrackRate}%`}
-                sub={`${dashboardData.onTrack.length} on pace`}
+                sub={`${dashboardData.healthy.length} on pace`}
                 icon="trending-up"
                 accent="success"
                 onPress={() => router.push("/(tabs)/evaluations")}
@@ -310,9 +260,7 @@ export default function ModernDashboard() {
             <View style={{ width: kpiWidth }}>
               <KpiCard
                 label="At Risk"
-                value={
-                  dashboardData.atRisk.length + dashboardData.critical.length
-                }
+                value={dashboardData.atRiskTotal}
                 sub={`${dashboardData.critical.length} critical`}
                 icon="warning-amber"
                 accent="danger"
@@ -350,7 +298,7 @@ export default function ModernDashboard() {
                 subtitle="Hours invested versus qualification progress"
                 centerValue={`${dashboardData.onTrackRate}%`}
                 centerLabel="on track"
-                segments={dashboardData.healthSegments}
+                segments={donutSegments}
                 size={donutSize}
                 topStatLabel="Active evaluations"
                 topStatValue={dashboardData.active.length}
@@ -381,7 +329,7 @@ export default function ModernDashboard() {
                   <MiniBarChart
                     data={dashboardData.weeklyPaceData}
                     maxValue={Math.max(
-                      ...dashboardData.weeklyPaceData.map((d) =>
+                      ...dashboardData.weeklyPaceData.map((d: any) =>
                         Math.max(d.value, d.target || 0),
                       ),
                       1,
@@ -399,9 +347,11 @@ export default function ModernDashboard() {
                     </View>
 
                     <View className="flex-row items-center">
-                      <View className="mr-2 h-[2px] w-4 rounded-full bg-slate-400" />
                       <Text className="text-[12px] text-neutral-500">
-                        Target
+                        Weekly target:
+                      </Text>
+                      <Text className="ml-1 text-[12px] text-neutral-800">
+                        {weeklyTarget}
                       </Text>
                     </View>
                   </View>
@@ -446,7 +396,10 @@ export default function ModernDashboard() {
           <View className="mb-5 pb-10">
             <SectionCard title="Quick Actions">
               <View className="flex-row justify-between gap-4">
-                <SinglePressTouchable className="flex-1 items-center">
+                <SinglePressTouchable
+                  onPress={openAddUserSheet}
+                  className="flex-1 items-center"
+                >
                   <View className="mb-2 rounded-2xl bg-gray-100 p-3">
                     <MaterialIcons
                       name="person-add-alt"
@@ -538,6 +491,38 @@ export default function ModernDashboard() {
               onRefresh={fetchAllEvaluations}
             />
           )}
+        </AppBottomSheet>
+      ) : null}
+
+      {showAddUserSheet ? (
+        <AppBottomSheet
+          ref={addUserSheetRef}
+          snapPoints={snapPoints}
+          enablePanDownToClose={addUserSheetView === "form"}
+          title={addUserSheetView === "form" ? "Add User" : "Select Locker"}
+          iconName={addUserSheetView === "form" ? "x" : "arrow-left"}
+          onHeaderPress={() => {
+            if (addUserSheetView === "lockerSelection") {
+              setAddUserSheetView("form");
+              return;
+            }
+
+            closeAddUserSheet();
+          }}
+          onDismiss={() => {
+            setShowAddUserSheet(false);
+            setAddUserSheetView("form");
+          }}
+          scroll={false}
+        >
+          <AddUserSheetContent
+            view={addUserSheetView}
+            setView={setAddUserSheetView}
+            onClose={closeAddUserSheet}
+            onSuccess={async () => {
+              closeAddUserSheet();
+            }}
+          />
         </AppBottomSheet>
       ) : null}
     </>
