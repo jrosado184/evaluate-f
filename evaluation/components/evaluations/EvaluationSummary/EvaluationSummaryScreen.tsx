@@ -85,14 +85,6 @@ const EvaluationSummary = ({
       return;
     }
 
-    if (weeksDone >= 3) {
-      Alert.alert(
-        "Limit reached",
-        "This evaluation already has the maximum number of weeks.",
-      );
-      return;
-    }
-
     openWeekEditor(weeksDone + 1);
   }, [evaluation, submitting, openWeekEditor]);
 
@@ -246,7 +238,7 @@ const EvaluationSummary = ({
                 onDelete={handleDeleteWeek}
               />
 
-              {canAddAnother && (
+              {isLatest && canAddAnother && (
                 <SinglePressTouchable
                   onPress={handleAddWeek}
                   className="mb-4 mt-0.5 flex-row items-center justify-center rounded-xl border border-blue-200 bg-blue-50 py-3"
