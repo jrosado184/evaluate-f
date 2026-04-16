@@ -7,7 +7,7 @@ import Step2Form from "@/app/evaluations/[evaluationId]/edit/step2";
 import QualifyForm from "@/components/evaluations/sheets/QualifyForm";
 
 type Props = {
-  sheetView: "summary" | "step1" | "step2" | "qualify";
+  sheetView: "summary" | "assign_trainers" | "step1" | "step2" | "qualify";
   setSheetView: (v: any) => void;
 
   evaluationId: string | null;
@@ -48,6 +48,7 @@ export default function EvaluationSheet({
   const hasEvalId = !!effectiveEvaluationId;
 
   if (!hasEvalId && sheetView === "summary") return null;
+  if (!hasEvalId && sheetView === "assign_trainers") return null;
   if (!hasEvalId && sheetView === "step2") return null;
   if (!hasEvalId && sheetView === "qualify") return null;
 
@@ -72,7 +73,7 @@ export default function EvaluationSheet({
     );
   }
 
-  if (sheetView === "summary") {
+  if (sheetView === "summary" || sheetView === "assign_trainers") {
     return (
       <EvaluationSummary
         evaluationId={effectiveEvaluationId!}
@@ -87,6 +88,8 @@ export default function EvaluationSheet({
           setSheetView("qualify");
         }}
         inSheet
+        sheetView={sheetView}
+        setSheetView={setSheetView}
       />
     );
   }

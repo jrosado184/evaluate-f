@@ -31,7 +31,12 @@ import useAuthContext from "@/app/context/AuthContext";
 import Fab from "@/components/Fab";
 
 type EvalStatus = "in_progress" | "complete";
-type EvalSheetView = "summary" | "step1" | "step2" | "qualify";
+type EvalSheetView =
+  | "summary"
+  | "assign_trainers"
+  | "step1"
+  | "step2"
+  | "qualify";
 type ScreenSheetMode = "selectEmployee" | "evaluation";
 
 const Evaluations = () => {
@@ -206,20 +211,24 @@ const Evaluations = () => {
   const headerTitle =
     sheetMode === "selectEmployee"
       ? "Select Employee"
-      : sheetView === "step1"
-        ? "Personal Information"
-        : sheetView === "step2"
-          ? "Weekly Evaluation"
-          : sheetView === "qualify"
-            ? "Qualify Evaluation"
-            : "Evaluation Summary";
+      : sheetView === "assign_trainers"
+        ? "Assign Trainers"
+        : sheetView === "step1"
+          ? "Personal Information"
+          : sheetView === "step2"
+            ? "Weekly Evaluation"
+            : sheetView === "qualify"
+              ? "Qualify Evaluation"
+              : "Evaluation Summary";
 
   const headerIcon =
     sheetMode === "selectEmployee"
       ? ("x" as const)
       : sheetView === "summary"
         ? ("x" as const)
-        : ("arrow-left" as const);
+        : sheetView === "assign_trainers"
+          ? ("arrow-left" as const)
+          : ("arrow-left" as const);
 
   const handleHeaderPress = useCallback(() => {
     const effectiveEvaluationId =
@@ -232,6 +241,11 @@ const Evaluations = () => {
 
     if (sheetView === "summary") {
       closeSheet();
+      return;
+    }
+
+    if (sheetView === "assign_trainers") {
+      setSheetView("summary");
       return;
     }
 

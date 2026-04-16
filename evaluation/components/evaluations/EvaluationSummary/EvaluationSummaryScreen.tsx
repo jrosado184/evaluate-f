@@ -1,4 +1,3 @@
-// components/evaluations/EvaluationSummary/EvaluationSummaryScreen.tsx
 // @ts-nocheck
 import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, Alert, ScrollView } from "react-native";
@@ -14,6 +13,7 @@ import { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import PersonalInfoSection from "./PersonalInfoSection";
 import WeekCard from "./WeekCard";
 import EmptyEvaluationsState from "./EmptyEvaluationState";
+import AssignTrainersView from "./AssignTrainersView";
 import { EvaluationSummaryProps, InfoRowItem } from "./types";
 
 const EvaluationSummary = ({
@@ -23,7 +23,12 @@ const EvaluationSummary = ({
   onOpenStep2,
   onOpenQualify,
   inSheet = false,
-}: EvaluationSummaryProps) => {
+  sheetView = "summary",
+  setSheetView,
+}: EvaluationSummaryProps & {
+  sheetView?: "summary" | "assign_trainers";
+  setSheetView?: (v: "summary" | "assign_trainers") => void;
+}) => {
   const [evaluation, setEvaluation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -157,6 +162,38 @@ const EvaluationSummary = ({
     Alert.alert("Error", "Can't continue from here.");
   };
 
+  const handleSaveAssignedTrainers = async (selected: any[]) => {
+    try {
+      setSubmitting(true);
+
+      const token = await AsyncStorage.getItem("token");
+      const baseUrl = apiBase || (await getServerIP());
+
+      const res = await axios.patch(
+        `${baseUrl}/evaluations/${evaluationId}`,
+        {
+          action: "assign_trainers",
+          data: {
+            assignedTrainers: selected,
+          },
+        },
+        {
+          headers: { Authorization: token! },
+        },
+      );
+
+      setSheetView?.("summary");
+    } catch (err: any) {
+      console.error("Failed to assign trainers:", err);
+      Alert.alert(
+        "Error",
+        err?.response?.data?.message || "Failed to save assigned trainers.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <View className="flex-1 items-center justify-center bg-white">
@@ -173,6 +210,49 @@ const EvaluationSummary = ({
     );
   }
 
+  if (sheetView === "assign_trainers") {
+    return (
+      <View className="flex-1 bg-[#F7F7F5]">
+        {inSheet ? (
+          <BottomSheetScrollView
+            style={{ flex: 1 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            nestedScrollEnabled
+            contentContainerStyle={{
+              paddingBottom: 24,
+              flexGrow: 1,
+            }}
+          >
+            <AssignTrainersView
+              evaluation={evaluation}
+              onBack={() => setSheetView?.("summary")}
+              onSave={handleSaveAssignedTrainers}
+              isSaving={submitting}
+            />
+          </BottomSheetScrollView>
+        ) : (
+          <ScrollView
+            style={{ flex: 1 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingBottom: 24,
+              flexGrow: 1,
+            }}
+          >
+            <AssignTrainersView
+              evaluation={evaluation}
+              onBack={() => setSheetView?.("summary")}
+              onSave={handleSaveAssignedTrainers}
+              isSaving={submitting}
+            />
+          </ScrollView>
+        )}
+      </View>
+    );
+  }
+
   const weeksDone = evaluation.evaluations?.length || 0;
   const canQualify = weeksDone >= 3;
 
@@ -184,27 +264,18 @@ const EvaluationSummary = ({
   const info = evaluation.personalInfo || {};
 
   const rows: InfoRowItem[] = [
-    // Team Member
     { label: "Team Member Name", value: info.teamMemberName },
     { label: "Employee ID", value: info.employeeId },
     { label: "Phone Number", value: info.phoneNumber },
     { label: "Locker Number", value: info.lockerNumber },
-
-    // Employment / baseline
     { label: "Hire Date", value: info.hireDate },
     { label: "Training Type", value: info.trainingType },
-
-    // Training Assignment
     { label: "Training Position", value: evaluation?.position },
     { label: "Training Department", value: evaluation?.department },
     { label: "Training Supervisor", value: evaluation?.supervisor?.name },
-
-    // Current Employee Info
     { label: "Current Position", value: info.position },
     { label: "Current Department", value: info.department },
     { label: "Current Supervisor", value: info?.supervisor?.name },
-
-    // Timeline / projections
     { label: "Job Start Date", value: info.jobStartDate },
     { label: "Projected Training Hours", value: info.projectedTrainingHours },
     { label: "Projected Qualifying Date", value: info.projectedQualifyingDate },
@@ -226,6 +297,7 @@ const EvaluationSummary = ({
           return (
             <View key={idx}>
               <WeekCard
+                evaluation={evaluation}
                 lastWeekAdded={isLatest}
                 week={week}
                 weekNumber={idx + 1}
@@ -306,8 +378,6 @@ const EvaluationSummary = ({
       </View>
     ) : null;
 
-  const ScrollComponent = inSheet ? BottomSheetScrollView : ScrollView;
-
   return (
     <View className="flex-1 bg-[#F7F7F5]">
       {inSheet ? (
@@ -327,6 +397,7 @@ const EvaluationSummary = ({
             evaluationId={evaluationId}
             onEdit={onEdit}
             onNavigateAfterClose={navigateAfterClose}
+            onManageTrainers={() => setSheetView?.("assign_trainers")}
           />
 
           {weeksSection}
@@ -349,6 +420,7 @@ const EvaluationSummary = ({
             evaluationId={evaluationId}
             onEdit={onEdit}
             onNavigateAfterClose={navigateAfterClose}
+            onManageTrainers={() => setSheetView?.("assign_trainers")}
           />
 
           {weeksSection}

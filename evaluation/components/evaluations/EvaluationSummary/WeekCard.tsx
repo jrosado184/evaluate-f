@@ -13,6 +13,7 @@ import {
 import { WeekCardProps } from "./types";
 
 export default function WeekCard({
+  evaluation,
   week,
   weekNumber,
   onEdit,
@@ -118,7 +119,7 @@ export default function WeekCard({
               <Icon name="edit-2" size={13} color="#2563EB" />
             </TouchableOpacity>
           )}
-          {lastWeekAdded && (
+          {evaluation.status !== "complete" && lastWeekAdded && (
             <TouchableOpacity
               onPress={() =>
                 Alert.alert(

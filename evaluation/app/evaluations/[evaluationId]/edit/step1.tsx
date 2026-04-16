@@ -1,6 +1,6 @@
 // app/evaluations/[evaluationId]/edit/step1.tsx
 // @ts-nocheck
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -50,7 +50,6 @@ const PersonalInfoForm = (props: Props) => {
     props?.evaluationId ?? params?.evaluationId ?? "",
   );
   const employeeId = String(props?.id ?? params?.id ?? "");
-
   const { employee } = useEmployeeContext();
 
   const [evaluationId, setEvaluationId] = useState<string>(initialEvalId || "");
@@ -74,10 +73,20 @@ const PersonalInfoForm = (props: Props) => {
     projectedQualifyingDate: "",
   });
 
+  const [initialTrainingState, setInitialTrainingState] = useState<any>({
+    trainingPosition: "",
+    department: "",
+    dept_code: "",
+    supervisorId: "",
+    supervisorName: "",
+  });
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [menuVisible, setMenuVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const createdEvalIdRef = useRef<string | null>(null);
 
   const loadPrefills = useCallback(async () => {
     try {
@@ -95,10 +104,11 @@ const PersonalInfoForm = (props: Props) => {
         fullEmployee = empRes.data;
       }
 
-      // If we already have an evaluationId, load its data and merge
       let info: any = {};
       let evalSupervisor: any = null;
-      let evalPosition: string = "";
+      let evalPosition = "";
+      let evalDepartment = "";
+      let evalDeptCode = "";
 
       if (evaluationId) {
         const evalRes = await axios.get(
@@ -107,11 +117,16 @@ const PersonalInfoForm = (props: Props) => {
             headers: { Authorization: token! },
           },
         );
-        info = evalRes?.data?.personalInfo || {};
-        evalSupervisor = evalRes?.data?.supervisor || null;
+
+        const evaluation = evalRes?.data || {};
+        info = evaluation?.personalInfo || {};
+        evalSupervisor = evaluation?.supervisor || null;
         evalPosition =
-          (evalRes?.data?.position !== "Untitled" && evalRes?.data?.position) ||
-          "";
+          evaluation?.position && evaluation?.position !== "Untitled"
+            ? evaluation.position
+            : "";
+        evalDepartment = evaluation?.department || "";
+        evalDeptCode = evaluation?.dept_code || "";
       }
 
       let supervisorObj: any = null;
@@ -126,8 +141,7 @@ const PersonalInfoForm = (props: Props) => {
         }
       }
 
-      setFormData((f: any) => ({
-        ...f,
+      const nextForm = {
         trainingType: info.trainingType || "",
         teamMemberName:
           info.teamMemberName || fullEmployee?.employee_name || "",
@@ -142,14 +156,23 @@ const PersonalInfoForm = (props: Props) => {
         jobStartDate: info.jobStartDate || "",
         projectedTrainingHours: info.projectedTrainingHours || "",
         projectedQualifyingDate: info.projectedQualifyingDate || "",
-        trainingPosition: evalPosition || info.trainingPosition || "",
+        trainingPosition: evalPosition || "",
         supervisor: supervisorObj || info.supervisor || null,
         task_code: info.task_code || "",
         task_snapshot: info.task_snapshot || null,
-        department: info.department || "",
-        dept_code: info.dept_code || "",
+        department: evalDepartment || "",
+        dept_code: evalDeptCode || "",
         dept_snapshot: info.dept_snapshot || null,
-      }));
+      };
+
+      setFormData(nextForm);
+      setInitialTrainingState({
+        trainingPosition: nextForm.trainingPosition || "",
+        department: nextForm.department || "",
+        dept_code: nextForm.dept_code || "",
+        supervisorId: nextForm.supervisor?.id || "",
+        supervisorName: nextForm.supervisor?.name || "",
+      });
     } catch (err) {
       console.error(err);
       Alert.alert("Error", "Could not load personal information.");
@@ -193,6 +216,7 @@ const PersonalInfoForm = (props: Props) => {
         errs[key] = "Invalid date (MM/DD/YYYY)";
       }
     }
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -206,20 +230,22 @@ const PersonalInfoForm = (props: Props) => {
       else if (d.length <= 4) v = `${d.slice(0, 2)}/${d.slice(2)}`;
       else v = `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4, 8)}`;
     }
+
     if (key === "phoneNumber") {
       const d = value.replace(/\D/g, "").slice(0, 10);
       if (d.length <= 3) v = d;
       else if (d.length <= 6) v = `${d.slice(0, 3)}-${d.slice(3)}`;
       else v = `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
     }
+
     if (/(ID|Hours)/.test(key)) v = v.replace(/\D/g, "");
 
     setFormData((f: any) => ({ ...f, [key]: v }));
 
     if (errors[key]) {
-      const e2 = { ...errors };
-      delete e2[key];
-      setErrors(e2);
+      const next = { ...errors };
+      delete next[key];
+      setErrors(next);
     }
   };
 
@@ -231,23 +257,24 @@ const PersonalInfoForm = (props: Props) => {
   const handleJobSelect = (opt: any) => {
     const meta =
       opt?.children && !Array.isArray(opt.children) ? opt.children : null;
+
     setFormData((f: any) => ({
       ...f,
       trainingPosition: opt?.label || "",
       task_code: meta?.task_code || "",
       task_snapshot: meta || null,
-      department: meta?.department_name,
-      dept_code: meta?.department_code,
-      dept_snapshot: null,
+      department:
+        meta?.department_name || meta?.department || f.department || "",
+      dept_code: meta?.department_code || meta?.dept_code || f.dept_code || "",
+      dept_snapshot: f.dept_snapshot || null,
     }));
+
     setErrors((e) => {
       const next = { ...e };
       delete next.trainingPosition;
       return next;
     });
   };
-
-  const createdEvalIdRef = useRef<string | null>(null);
 
   const ensureEvaluationCreated = async (): Promise<string> => {
     const existing = evaluationId || createdEvalIdRef.current;
@@ -269,18 +296,36 @@ const PersonalInfoForm = (props: Props) => {
     if (!newId) throw new Error("Create evaluation did not return _id");
 
     createdEvalIdRef.current = newId;
-
     return newId;
+  };
+
+  const didTrainingFieldsChange = () => {
+    const currentSupervisorId = formData?.supervisor?.id || "";
+    const currentSupervisorName = formData?.supervisor?.name || "";
+
+    return (
+      (formData.trainingPosition || "").trim() !==
+        (initialTrainingState.trainingPosition || "").trim() ||
+      (formData.department || "").trim() !==
+        (initialTrainingState.department || "").trim() ||
+      String(formData.dept_code || "") !==
+        String(initialTrainingState.dept_code || "") ||
+      String(currentSupervisorId) !==
+        String(initialTrainingState.supervisorId || "") ||
+      String(currentSupervisorName).trim() !==
+        String(initialTrainingState.supervisorName || "").trim()
+    );
   };
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
-    if (isSubmitting) return; // extra safety
+    if (isSubmitting) return;
     setIsSubmitting(true);
 
     try {
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
+      const headers = { Authorization: token! };
 
       const evalId = await ensureEvaluationCreated();
 
@@ -297,10 +342,7 @@ const PersonalInfoForm = (props: Props) => {
         trainingPosition,
         department,
         supervisor,
-        task_code,
-        task_snapshot,
         dept_code,
-        dept_snapshot,
       } = formData;
 
       await axios.patch(
@@ -308,13 +350,6 @@ const PersonalInfoForm = (props: Props) => {
         {
           action: "update_personal_info",
           data: {
-            trainingPosition: trainingPosition.trim(),
-            trainingSupervisor: supervisor,
-            department: (department || "").trim(),
-            task_code: task_code || null,
-            dept_code: dept_code || null,
-            task_snapshot: task_snapshot || null,
-            dept_snapshot: dept_snapshot || null,
             personalInfo: {
               trainingType,
               teamMemberName,
@@ -326,26 +361,46 @@ const PersonalInfoForm = (props: Props) => {
               jobStartDate,
               projectedTrainingHours,
               projectedQualifyingDate,
-              task_code: task_code || null,
-              task_snapshot: task_snapshot || null,
-              dept_code: dept_code || null,
-              dept_snapshot: dept_snapshot || null,
             },
           },
         },
-        { headers: { Authorization: token! } },
+        { headers },
       );
+
+      if (didTrainingFieldsChange()) {
+        await axios.patch(
+          `${baseUrl}/evaluations/${evalId}`,
+          {
+            action: "update_training_position",
+            data: {
+              newTrainingPosition: (trainingPosition || "").trim(),
+              department: (department || "").trim(),
+              dept_code: dept_code || null,
+              trainingSupervisor: supervisor,
+            },
+          },
+          { headers },
+        );
+      }
 
       await axios.patch(
         `${baseUrl}/evaluations/${evalId}`,
         { action: "update_status", data: { status: "in_progress" } },
-        { headers: { Authorization: token! } },
+        { headers },
       );
 
       if (!evaluationId) {
-        setEvaluationId?.(evalId);
+        setEvaluationId(evalId);
         props?.onCreated?.(evalId);
       }
+
+      setInitialTrainingState({
+        trainingPosition: (trainingPosition || "").trim(),
+        department: (department || "").trim(),
+        dept_code: dept_code || "",
+        supervisorId: supervisor?.id || "",
+        supervisorName: supervisor?.name || "",
+      });
 
       props?.onDone?.();
     } catch (err) {
@@ -382,7 +437,6 @@ const PersonalInfoForm = (props: Props) => {
             paddingBottom: 120,
           }}
         >
-          {/* Training Type */}
           <View className="mb-5 my-4">
             <Text className="text-base font-medium text-gray-700 mb-2">
               Training Type
@@ -426,7 +480,6 @@ const PersonalInfoForm = (props: Props) => {
             )}
           </View>
 
-          {/* Prefilled non-editables */}
           {[
             { key: "teamMemberName", label: "Team Member Name" },
             { key: "employeeId", label: "Employee ID" },
@@ -436,7 +489,7 @@ const PersonalInfoForm = (props: Props) => {
             <View key={key} className="mb-5">
               <FormField
                 title={label}
-                value={String(formData[key])}
+                value={String(formData[key] ?? "")}
                 placeholder={label}
                 handleChangeText={() => {}}
                 error={errors[key]}
@@ -446,7 +499,6 @@ const PersonalInfoForm = (props: Props) => {
             </View>
           ))}
 
-          {/* Job Title */}
           <SelectInput
             searchable
             title="Job Title"
@@ -471,7 +523,6 @@ const PersonalInfoForm = (props: Props) => {
             </Text>
           )}
 
-          {/* Supervisor */}
           <SelectInput
             searchable
             title="Supervisor"
