@@ -60,6 +60,30 @@ const getTrainerName = (file: any) => {
   return "";
 };
 
+const getAssignedTrainers = (file: any) => {
+  const raw =
+    file?.assignedEditors ||
+    file?.editors ||
+    file?.assignedTrainers ||
+    file?.trainers ||
+    [];
+
+  if (!Array.isArray(raw)) return [];
+
+  return raw
+    .map((item) => {
+      if (typeof item === "string") {
+        return { id: item, name: item };
+      }
+
+      return {
+        id: item?._id || item?.id || item?.employee_id || item?.name,
+        name: item?.name || item?.fullName || item?.trainerName || "",
+      };
+    })
+    .filter((item) => item?.name);
+};
+
 const getInitials = (name?: string) => {
   if (!name || typeof name !== "string") return "";
 
@@ -69,6 +93,82 @@ const getInitials = (name?: string) => {
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
 
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+};
+
+const AvatarCircle = ({
+  name,
+  size = 32,
+  overlap = 0,
+  withWhiteBorder = false,
+  zIndex,
+}: {
+  name: string;
+  size?: number;
+  overlap?: number;
+  withWhiteBorder?: boolean;
+  zIndex?: number;
+}) => {
+  const initials = getInitials(name);
+  const safeName = name?.trim() ? name : initials || "TR";
+  const { bg, text } = getAvatarMeta(safeName);
+
+  return (
+    <View
+      className={`items-center justify-center rounded-full ${bg}`}
+      style={{
+        width: size,
+        height: size,
+        marginLeft: overlap,
+        borderWidth: withWhiteBorder ? 2 : 1,
+        borderColor: withWhiteBorder ? "#FFFFFF" : "#DDE3EA",
+        zIndex,
+      }}
+    >
+      <Text
+        className={`font-bold ${text}`}
+        style={{
+          fontSize: 11,
+          letterSpacing: 0.2,
+        }}
+      >
+        {initials}
+      </Text>
+    </View>
+  );
+};
+
+const OverflowAvatar = ({
+  count,
+  overlap = 0,
+  zIndex,
+}: {
+  count: number;
+  overlap?: number;
+  zIndex?: number;
+}) => {
+  return (
+    <View
+      className="items-center justify-center rounded-full bg-[#1A237E]"
+      style={{
+        width: 32,
+        height: 32,
+        marginLeft: overlap,
+        borderWidth: 2,
+        borderColor: "#FFFFFF",
+        zIndex,
+      }}
+    >
+      <Text
+        className="font-bold text-white"
+        style={{
+          fontSize: 10,
+          letterSpacing: 0.2,
+        }}
+      >
+        +{count}
+      </Text>
+    </View>
+  );
 };
 
 const EvaluationRow = ({
@@ -86,20 +186,26 @@ const EvaluationRow = ({
   const teamMemberName = file?.personalInfo?.teamMemberName || "";
 
   const trainerName = useMemo(() => getTrainerName(file), [file]);
-  const trainerInitials = useMemo(
-    () => getInitials(trainerName),
-    [trainerName],
-  );
+  const assignedTrainers = useMemo(() => getAssignedTrainers(file), [file]);
 
-  const safeAvatarName =
-    typeof trainerName === "string" && trainerName.trim().length > 0
-      ? trainerName
-      : trainerInitials || "TR";
+  const assignedWithoutCreator = useMemo(() => {
+    return assignedTrainers.filter((trainer) => {
+      return (
+        String(trainer?.name || "")
+          .trim()
+          .toLowerCase() !==
+        String(trainerName || "")
+          .trim()
+          .toLowerCase()
+      );
+    });
+  }, [assignedTrainers, trainerName]);
 
-  const { bg, text } = useMemo(
-    () => getAvatarMeta(safeAvatarName),
-    [safeAvatarName],
+  const visibleAssigned = useMemo(
+    () => assignedWithoutCreator.slice(0, 3),
+    [assignedWithoutCreator],
   );
+  const remainingAssigned = Math.max(assignedWithoutCreator.length - 3, 0);
 
   const renderRightActions = (
     progress: Animated.AnimatedInterpolation<number>,
@@ -188,15 +294,38 @@ const EvaluationRow = ({
           </View>
 
           <View className="flex-row items-center">
-            {trainerInitials ? (
-              <View
-                className={`mr-3 h-8 w-8 items-center justify-center rounded-full border border-[#DDE3EA] ${bg}`}
-              >
-                <Text className={`text-[11px] font-bold ${text}`}>
-                  {trainerInitials}
-                </Text>
+            {trainerName ? (
+              <View className="mr-3 flex-row items-center">
+                <AvatarCircle
+                  name={trainerName}
+                  size={32}
+                  overlap={0}
+                  withWhiteBorder
+                  zIndex={99}
+                />
+
+                {visibleAssigned.map((person, index) => (
+                  <AvatarCircle
+                    key={person.id || `${person.name}-${index}`}
+                    name={person.name}
+                    size={32.2}
+                    overlap={-9}
+                    withWhiteBorder
+                    zIndex={98 - index}
+                  />
+                ))}
+
+                {remainingAssigned > 0 ? (
+                  <OverflowAvatar
+                    count={remainingAssigned}
+                    overlap={-9}
+                    zIndex={94}
+                  />
+                ) : null}
               </View>
-            ) : null}
+            ) : (
+              <View className="mr-3" />
+            )}
 
             <SimpleLineIcons name="arrow-right" size={14} color="#9CA3AF" />
           </View>
