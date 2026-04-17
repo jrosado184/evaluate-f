@@ -15,6 +15,8 @@ import WeekCard from "./WeekCard";
 import EmptyEvaluationsState from "./EmptyEvaluationState";
 import AssignTrainersView from "./AssignTrainersView";
 import { EvaluationSummaryProps, InfoRowItem } from "./types";
+import { canEditEvaluation } from "@/app/config/permissions";
+import useAuthContext from "@/app/context/AuthContext";
 
 const EvaluationSummary = ({
   evaluationId,
@@ -33,6 +35,8 @@ const EvaluationSummary = ({
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [apiBase, setApiBase] = useState("");
+
+  const { currentUser } = useAuthContext();
 
   const fetchEvaluation = useCallback(async () => {
     try {
@@ -310,27 +314,36 @@ const EvaluationSummary = ({
                 onDelete={handleDeleteWeek}
               />
 
-              {isLatest && canAddAnother && (
-                <SinglePressTouchable
-                  onPress={handleAddWeek}
-                  className="mb-4 mt-0.5 flex-row items-center justify-center rounded-xl border border-blue-200 bg-blue-50 py-3"
-                >
-                  <Icon name="plus" size={14} color="#2563EB" />
-                  <Text className="ml-1.5 text-sm font-semibold text-blue-600">
-                    Add Week {weeksDone + 1}
-                  </Text>
-                </SinglePressTouchable>
-              )}
+              {canEditEvaluation(evaluation, currentUser) &&
+                isLatest &&
+                canAddAnother && (
+                  <SinglePressTouchable
+                    onPress={handleAddWeek}
+                    className="mb-4 mt-0.5 flex-row items-center justify-center rounded-xl border border-blue-200 bg-blue-50 py-3"
+                  >
+                    <Icon name="plus" size={14} color="#2563EB" />
+                    <Text className="ml-1.5 text-sm font-semibold text-blue-600">
+                      Add Week {weeksDone + 1}
+                    </Text>
+                  </SinglePressTouchable>
+                )}
             </View>
           );
         })}
       </View>
     ) : (
-      <EmptyEvaluationsState onStart={handleContinue} submitting={submitting} />
+      canEditEvaluation(evaluation, currentUser) && (
+        <EmptyEvaluationsState
+          onStart={handleContinue}
+          submitting={submitting}
+        />
+      )
     );
 
   const continueSection =
-    evaluation.status !== "complete" && weeksDone > 0 ? (
+    evaluation.status !== "complete" &&
+    canEditEvaluation(evaluation, currentUser) &&
+    weeksDone > 0 ? (
       <View className="mt-4 mb-2 px-4">
         <EvaluationButton
           status={evaluation?.status}

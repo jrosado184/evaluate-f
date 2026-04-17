@@ -9,6 +9,7 @@ import { getAvatarMeta } from "@/app/helpers/avatar";
 import { InfoRow } from "./SummaryPrimitives";
 import { PersonalInfoSectionProps } from "./types";
 import EvaluationCreator from "../EvaluationCreator";
+import { canEditEvaluation } from "@/app/config/permissions";
 
 export default function PersonalInfoSection({
   rows,
@@ -30,26 +31,28 @@ export default function PersonalInfoSection({
         </Text>
 
         {evaluation?.status !== "complete" ? (
-          <SinglePressTouchable
-            onPress={() => {
-              if (onEdit) onEdit();
-              else
-                onNavigateAfterClose?.(
-                  `/evaluations/${evaluationId}/edit/step1`,
-                );
-            }}
-            className="flex-row items-center rounded-lg bg-blue-50 px-3 py-1.5"
-          >
-            <Icon
-              name="edit-2"
-              size={12}
-              color="#2563EB"
-              style={{ marginRight: 4 }}
-            />
-            <Text className="text-[13px] font-semibold text-blue-600">
-              Edit
-            </Text>
-          </SinglePressTouchable>
+          canEditEvaluation(evaluation, currentUser) && (
+            <SinglePressTouchable
+              onPress={() => {
+                if (onEdit) onEdit();
+                else
+                  onNavigateAfterClose?.(
+                    `/evaluations/${evaluationId}/edit/step1`,
+                  );
+              }}
+              className="flex-row items-center rounded-lg bg-blue-50 px-3 py-1.5"
+            >
+              <Icon
+                name="edit-2"
+                size={12}
+                color="#2563EB"
+                style={{ marginRight: 4 }}
+              />
+              <Text className="text-[13px] font-semibold text-blue-600">
+                Edit
+              </Text>
+            </SinglePressTouchable>
+          )
         ) : (
           <View className="flex-row items-center rounded-full bg-emerald-50 px-4 py-1">
             <Dot name="dot-single" size={20} color="green" />

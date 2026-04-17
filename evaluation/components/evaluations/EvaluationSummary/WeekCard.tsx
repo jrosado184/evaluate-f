@@ -11,6 +11,8 @@ import {
   normalizeBoolLike,
 } from "./SummaryHelpers";
 import { WeekCardProps } from "./types";
+import { canEditEvaluation } from "@/app/config/permissions";
+import useAuthContext from "@/app/context/AuthContext";
 
 export default function WeekCard({
   evaluation,
@@ -93,7 +95,7 @@ export default function WeekCard({
       raw: week?.supervisorSignature,
     },
   ] as const;
-
+  const { currentUser } = useAuthContext();
   return (
     <View className="mb-3.5 overflow-hidden rounded-2xl border border-[#EBEBEB] bg-white">
       <View className="flex-row items-center justify-between px-4 pt-3.5 pb-2">
@@ -110,7 +112,7 @@ export default function WeekCard({
             / {expected}% expected
           </Text>
 
-          {onEdit && (
+          {onEdit && canEditEvaluation(evaluation, currentUser) && (
             <TouchableOpacity
               onPress={onEdit}
               className="ml-2.5 rounded-md bg-blue-50 p-1.5"

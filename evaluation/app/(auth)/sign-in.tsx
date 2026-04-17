@@ -224,7 +224,7 @@ const SignIn = () => {
                       minHeight: isTablet ? 54 : 52,
                       flexDirection: "row",
                       alignItems: "center",
-                      borderRadius: 16,
+                      borderRadius: 10,
                       backgroundColor: COLORS.inputBg,
                       borderWidth: 1,
                       borderColor: getBorderColor(
@@ -288,7 +288,7 @@ const SignIn = () => {
                       minHeight: isTablet ? 54 : 52,
                       flexDirection: "row",
                       alignItems: "center",
-                      borderRadius: 16,
+                      borderRadius: 10,
                       backgroundColor: COLORS.inputBg,
                       borderWidth: 1,
                       borderColor: getBorderColor(
@@ -361,7 +361,7 @@ const SignIn = () => {
                 style={{
                   marginTop: 18,
                   minHeight: isTablet ? 54 : 52,
-                  borderRadius: 16,
+                  borderRadius: 10,
                   alignItems: "center",
                   justifyContent: "center",
                   backgroundColor: COLORS.brand,
