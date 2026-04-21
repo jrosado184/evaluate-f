@@ -6,7 +6,7 @@ import Sort from "./Sort";
 
 interface SearchProps {
   noFilter?: boolean;
-  total: string;
+  total: any;
   setQuery: (value: string) => void;
   query: string;
 }
@@ -19,12 +19,12 @@ const Search: React.FC<SearchProps> = ({
 }) => {
   const { userDetails, lockerDetails } = useEmployeeContext();
 
-  const totalCount =
-    total === "lockers"
-      ? (lockerDetails?.totalLockers ?? 0)
-      : (userDetails?.totalUsers ?? 0);
-
-  const label = total === "lockers" ? "Lockers" : "Employees";
+  const label =
+    typeof total === "number"
+      ? "jsa's"
+      : total === "lockers"
+        ? "Lockers"
+        : "Employees";
 
   return (
     <View className="w-full">
@@ -38,7 +38,7 @@ const Search: React.FC<SearchProps> = ({
         <View className="mt-3 pl-1 flex-row items-center justify-between px-1 py-2">
           <View>
             <Text className="mt-0.5 text-[15px] font-bold text-gray-800">
-              {totalCount} {label}
+              {total} {label}
             </Text>
           </View>
         </View>
