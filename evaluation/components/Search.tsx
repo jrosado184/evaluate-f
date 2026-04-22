@@ -2,29 +2,23 @@ import React from "react";
 import { View, Text } from "react-native";
 import FormField from "./FormField";
 import useEmployeeContext from "@/app/context/EmployeeContext";
-import Sort from "./Sort";
 
 interface SearchProps {
   noFilter?: boolean;
   total: any;
   setQuery: (value: string) => void;
   query: string;
+  label: string;
 }
 
 const Search: React.FC<SearchProps> = ({
   total,
+  label,
   query,
   setQuery,
   noFilter,
 }) => {
   const { userDetails, lockerDetails } = useEmployeeContext();
-
-  const label =
-    typeof total === "number"
-      ? "jsa's"
-      : total === "lockers"
-        ? "Lockers"
-        : "Employees";
 
   return (
     <View className="w-full">

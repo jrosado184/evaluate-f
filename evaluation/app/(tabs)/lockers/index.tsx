@@ -73,7 +73,12 @@ const JsaScreen = () => {
         <Text className="pl-2 font-inter-regular text-[1.6rem]">JSA's</Text>
       </View>
 
-      <Search total={total} query={query} setQuery={handleSearchChange} />
+      <Search
+        label="jsa's"
+        total={total}
+        query={query}
+        setQuery={handleSearchChange}
+      />
 
       {loading ? (
         <View className="flex-1 justify-center items-center">

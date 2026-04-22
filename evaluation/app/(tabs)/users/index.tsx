@@ -333,7 +333,12 @@ const Users = () => {
       {can(currentUser, PERMISSIONS.USERS_CREATE) && (
         <Fab icon="user-plus" onPress={openAddUserSheet} />
       )}
-      <Search total="users" query={query} setQuery={handleSearchChange} />
+      <Search
+        label="users"
+        total={userDetails?.totalUsers}
+        query={query}
+        setQuery={handleSearchChange}
+      />
 
       {employees?.length === 0 && !loading ? (
         <View className="h-[50vh] justify-center items-center">
