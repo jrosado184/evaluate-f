@@ -1,25 +1,22 @@
 import React from "react";
 import { View, Text } from "react-native";
 import FormField from "./FormField";
-import useEmployeeContext from "@/app/context/EmployeeContext";
 
 interface SearchProps {
   noFilter?: boolean;
-  total: any;
+  total?: number | string;
   setQuery: (value: string) => void;
   query: string;
-  label: string;
+  label?: string;
 }
 
 const Search: React.FC<SearchProps> = ({
-  total,
-  label,
+  total = 0,
+  label = "items",
   query,
   setQuery,
-  noFilter,
+  noFilter = false,
 }) => {
-  const { userDetails, lockerDetails } = useEmployeeContext();
-
   return (
     <View className="w-full">
       <FormField
@@ -29,12 +26,10 @@ const Search: React.FC<SearchProps> = ({
       />
 
       {!noFilter && (
-        <View className="mt-3 pl-1 flex-row items-center justify-between px-1 py-2">
-          <View>
-            <Text className="mt-0.5 text-[15px] font-bold text-gray-800">
-              {total} {label}
-            </Text>
-          </View>
+        <View className="mt-3 flex-row items-center justify-between px-1 py-2">
+          <Text className="mt-0.5 text-[15px] font-bold text-gray-800">
+            {total} {label}
+          </Text>
         </View>
       )}
     </View>

@@ -19,9 +19,8 @@ const JsaCard: React.FC<JsaCardProps> = ({
   return (
     <View className="w-full mb-3.5">
       <View className="w-full rounded-[22px] border border-gray-200 bg-white px-4 py-4">
-        {/* Top */}
         <View className="flex-row items-start">
-          <View className="h-[46px] w-[46px] items-center justify-center rounded-[14px] bg-blue-50 border border-blue-100">
+          <View className="h-[46px] w-[46px] items-center justify-center rounded-[14px] border border-blue-100 bg-blue-50">
             <MaterialCommunityIcons
               name="file-document-outline"
               size={22}
@@ -63,10 +62,8 @@ const JsaCard: React.FC<JsaCardProps> = ({
           </View>
         </View>
 
-        {/* Divider */}
         <View className="my-3.5 h-px bg-gray-100" />
 
-        {/* Bottom */}
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center">
             <MaterialCommunityIcons
@@ -75,7 +72,7 @@ const JsaCard: React.FC<JsaCardProps> = ({
               color="#9CA3AF"
             />
             <Text className="ml-1.5 text-[13px] text-gray-400">
-              Safety Analysis
+              Safety assessment
             </Text>
           </View>
 

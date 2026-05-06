@@ -82,7 +82,7 @@ const useJsaList = () => {
           return [...prev, ...deduped];
         });
 
-        setTotal(data.pagination?.total ?? total);
+        setTotal(data.pagination?.total ?? 0);
         pageRef.current = data.pagination?.page ?? nextPage;
         totalPagesRef.current =
           data.pagination?.totalPages ?? totalPagesRef.current;

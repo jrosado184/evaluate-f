@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { View, Text, FlatList, Alert } from "react-native";
+import { View, Text, FlatList } from "react-native";
 import { ActivityIndicator } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
@@ -15,7 +15,6 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Search from "@/components/Search";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 import getServerIP from "@/app/requests/NetworkAddress";
-import useAuthContext from "@/app/context/AuthContext";
 
 import AssignEmployeeCard from "@/components/users/AssignUserCard";
 import AssignLockerCard from "@/components/users/AssignLockerCard";
@@ -24,27 +23,26 @@ type SelectionMode = "employees" | "lockers";
 
 type SelectionSheetProps = {
   mode: SelectionMode;
-  source?: string;
   filter?: string;
-  lockerId?: string;
-  onLockerSelected?: (locker: any) => void;
-  onEmployeeAssigned?: () => void;
-  onEmployeeSelected?: (employeeId: string) => void;
+  onEmployeeSelected?: (employee: any) => Promise<void> | void;
+  onLockerSelected?: (locker: any) => Promise<void> | void;
+  searchPlaceholderLabel?: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
 };
 
 const PAGE_SIZE = 8;
 
 const SelectionSheet: React.FC<SelectionSheetProps> = ({
   mode,
-  source,
   filter,
-  lockerId,
-  onLockerSelected,
-  onEmployeeAssigned,
   onEmployeeSelected,
+  onLockerSelected,
+  searchPlaceholderLabel,
+  emptyTitle,
+  emptyDescription,
 }) => {
   const isEmployeeMode = mode === "employees";
-  const { currentUser } = useAuthContext();
 
   const mountedRef = useRef(true);
 
@@ -97,10 +95,12 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
 
       if (!mountedRef.current) return;
 
-      const nextItems = res.data?.results ?? [];
+      const nextItems = res.data?.results ?? res.data?.data ?? [];
       setItems(nextItems);
-      setCurrentPage(res.data?.currentPage ?? 1);
-      setTotalPages(res.data?.totalPages ?? 1);
+      setCurrentPage(res.data?.currentPage ?? res.data?.pagination?.page ?? 1);
+      setTotalPages(
+        res.data?.totalPages ?? res.data?.pagination?.totalPages ?? 1,
+      );
     } catch (err) {
       console.error("SelectionSheet initial load error:", err);
       if (mountedRef.current) {
@@ -135,10 +135,14 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
 
       if (!mountedRef.current) return;
 
-      const nextItems = res.data?.results ?? [];
+      const nextItems = res.data?.results ?? res.data?.data ?? [];
       setItems((prev) => [...prev, ...nextItems]);
-      setCurrentPage(res.data?.currentPage ?? nextPage);
-      setTotalPages(res.data?.totalPages ?? totalPages);
+      setCurrentPage(
+        res.data?.currentPage ?? res.data?.pagination?.page ?? nextPage,
+      );
+      setTotalPages(
+        res.data?.totalPages ?? res.data?.pagination?.totalPages ?? totalPages,
+      );
     } catch (err) {
       console.error("SelectionSheet loadMore error:", err);
     } finally {
@@ -170,7 +174,9 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
 
         if (!mountedRef.current) return;
 
-        setFilteredItems(res.data?.users || res.data?.results || []);
+        setFilteredItems(
+          res.data?.users || res.data?.results || res.data?.data || [],
+        );
       } catch (err) {
         console.error("SelectionSheet search error:", err);
         if (mountedRef.current) {
@@ -208,69 +214,39 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
   }, []);
 
   const handleEmployeePress = useCallback(
-    async (employeeId: string) => {
-      if (source === "dashboard") {
-        onEmployeeSelected?.(employeeId);
-        return;
-      }
-
-      if (onEmployeeSelected && !lockerId) {
-        onEmployeeSelected(employeeId);
-        return;
-      }
-
-      if (!lockerId) {
-        Alert.alert("Error", "No locker selected.");
-        return;
-      }
+    async (employee: any) => {
+      if (!onEmployeeSelected) return;
 
       try {
         setActionLoading(true);
-
-        const token = await AsyncStorage.getItem("token");
-        const baseUrl = await getServerIP();
-
-        const response = await axios.post(
-          `${baseUrl}/lockers/assign`,
-          {
-            lockerId,
-            employeeId,
-            assigned_by: currentUser?.name,
-          },
-          {
-            headers: {
-              Authorization: token,
-              "Content-Type": "application/json",
-            },
-          },
-        );
-
-        if (response.status === 200) {
-          onEmployeeAssigned?.();
-        }
-      } catch (error: any) {
-        console.error(
-          "Assignment failed:",
-          error?.response?.data || error.message,
-        );
-
-        Alert.alert(
-          "Error",
-          error?.response?.data?.error || "Failed to assign locker",
-        );
+        await onEmployeeSelected(employee);
+      } catch (error) {
+        console.error("SelectionSheet employee action error:", error);
       } finally {
         if (mountedRef.current) {
           setActionLoading(false);
         }
       }
     },
-    [
-      source,
-      lockerId,
-      currentUser?.name,
-      onEmployeeAssigned,
-      onEmployeeSelected,
-    ],
+    [onEmployeeSelected],
+  );
+
+  const handleLockerPress = useCallback(
+    async (locker: any) => {
+      if (!onLockerSelected) return;
+
+      try {
+        setActionLoading(true);
+        await onLockerSelected(locker);
+      } catch (error) {
+        console.error("SelectionSheet locker action error:", error);
+      } finally {
+        if (mountedRef.current) {
+          setActionLoading(false);
+        }
+      }
+    },
+    [onLockerSelected],
   );
 
   const listData = useMemo(() => {
@@ -282,30 +258,29 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
       if (isEmployeeMode) {
         return (
           <SinglePressTouchable
-            onPress={() => handleEmployeePress(item._id)}
+            onPress={() => handleEmployeePress(item)}
             activeOpacity={0.82}
           >
-            <AssignEmployeeCard
-              source={source}
-              {...item}
-              assigned={!!item.locker_id}
-            />
+            <AssignEmployeeCard {...item} assigned={!!item.locker_id} />
           </SinglePressTouchable>
         );
       }
 
       return (
-        <AssignLockerCard {...item} onPress={() => onLockerSelected?.(item)} />
+        <AssignLockerCard {...item} onPress={() => handleLockerPress(item)} />
       );
     },
-    [isEmployeeMode, handleEmployeePress, onLockerSelected, source],
+    [isEmployeeMode, handleEmployeePress, handleLockerPress],
   );
 
   return (
     <View className="flex-1 px-4 pb-4">
       <Search
+        label={isEmployeeMode ? "employees" : "lockers"}
         noFilter
-        total={isEmployeeMode ? "employees" : "lockers"}
+        total={
+          searchPlaceholderLabel || (isEmployeeMode ? "employees" : "lockers")
+        }
         query={query}
         setQuery={setQuery}
       />
@@ -316,7 +291,7 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
             <ActivityIndicator size="large" color="#111827" />
             <Text className="mt-3 text-[14px] font-medium text-gray-500">
               {actionLoading
-                ? "Assigning..."
+                ? "Processing..."
                 : query.trim()
                   ? "Searching..."
                   : "Loading..."}
@@ -351,13 +326,14 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
                 </View>
 
                 <Text className="mt-4 text-[17px] font-semibold text-gray-800">
-                  No results found
+                  {emptyTitle || "No results found"}
                 </Text>
 
                 <Text className="mt-2 text-center text-[14px] leading-5 text-gray-500">
-                  {query.trim()
-                    ? `No ${isEmployeeMode ? "employees" : "lockers"} matched your search.`
-                    : `No ${isEmployeeMode ? "employees" : "lockers"} available right now.`}
+                  {emptyDescription ||
+                    (query.trim()
+                      ? `No ${isEmployeeMode ? "employees" : "lockers"} matched your search.`
+                      : `No ${isEmployeeMode ? "employees" : "lockers"} available right now.`)}
                 </Text>
               </View>
             }

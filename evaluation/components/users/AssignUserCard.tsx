@@ -95,27 +95,6 @@ const AssignEmployeeCard = ({
               </View>
             )}
           </View>
-
-          {source !== "evaluations" && source !== "dashboard" && (
-            <View
-              className={`ml-2 flex-row items-center rounded-full px-2.5 py-1 ${
-                assigned ? "bg-emerald-50" : "bg-red-50"
-              }`}
-            >
-              <View
-                className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
-                  assigned ? "bg-emerald-500" : "bg-red-500"
-                }`}
-              />
-              <Text
-                className={`text-[11px] font-semibold ${
-                  assigned ? "text-emerald-700" : "text-red-600"
-                }`}
-              >
-                {assigned ? "Assigned" : "Unassigned"}
-              </Text>
-            </View>
-          )}
         </View>
 
         {/* Divider */}
