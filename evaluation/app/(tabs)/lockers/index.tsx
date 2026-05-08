@@ -12,7 +12,7 @@ import SinglePressTouchable from "@/app/utils/SinglePress";
 import useJsaList from "@/hooks/useJsaList";
 import useBottomSheetFlow from "@/hooks/bottom sheet/useBottomSheetFlow";
 
-type JsaSheetView = "employeeSelection" | "confirmAssignment";
+type JsaSheetView = "employeeSelection" | "AssignJSA";
 
 type JsaSheetData = {
   jsa: any | null;
@@ -72,8 +72,8 @@ const JsaScreen = () => {
       enablePanDownToClose: true,
       scroll: false,
     },
-    confirmAssignment: {
-      title: "Confirm assignment",
+    AssignJSA: {
+      title: "AssignJSA",
       iconName: "arrow-left" as const,
       enablePanDownToClose: false,
       scroll: false,
@@ -154,7 +154,7 @@ const JsaScreen = () => {
         title={currentSheet.title}
         iconName={currentSheet.iconName}
         onHeaderPress={() => {
-          if (sheetView === "confirmAssignment") {
+          if (sheetView === "Assign JSA") {
             setSheetView("employeeSelection");
             return;
           }
@@ -168,13 +168,6 @@ const JsaScreen = () => {
           view={sheetView}
           setView={setSheetView}
           jsa={selectedJsa}
-          employee={selectedEmployee}
-          setEmployee={(employee) =>
-            setSheetData((prev: JsaSheetData | null) => ({
-              jsa: prev?.jsa ?? selectedJsa,
-              employee,
-            }))
-          }
           onClose={closeAssignSheet}
           onSuccess={() => {
             closeAssignSheet();

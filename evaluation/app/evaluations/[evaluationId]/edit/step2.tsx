@@ -14,22 +14,23 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import * as FileSystem from "expo-file-system";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { ActivityIndicator } from "react-native-paper";
+import { ScrollView } from "react-native-gesture-handler";
+
 import getServerIP from "@/app/requests/NetworkAddress";
 import SignatureModal from "@/components/SignatureModal";
 import useAuthContext from "@/app/context/AuthContext";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { ActivityIndicator } from "react-native-paper";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 import { parseMDY } from "@/app/helpers/dates";
-import * as FileSystem from "expo-file-system";
 import {
-  pickSigUrlFromResponse,
-  toRelativeSignaturePath,
-  uploadSignaturesMultipart,
+  pickUploadedFileUrl,
+  toRelativeApiPath,
+  uploadEvaluationSignatures,
 } from "@/app/helpers/signatureHelpers";
-import { ScrollView } from "react-native-gesture-handler";
 
-/* ---------------- helpers ---------------- */
+/* ---------------- constants ---------------- */
 const NUMERIC = new Set([
   "knifeScore",
   "percentQualified",
@@ -57,6 +58,67 @@ const NUMERIC = new Set([
 
 const DATE_KEYS = new Set(["yieldAuditDate", "knifeSkillsAuditDate"]);
 
+const HOURS_ON_JOB_KEYS = [
+  "hoursMonday",
+  "hoursTuesday",
+  "hoursWednesday",
+  "hoursThursday",
+  "hoursFriday",
+  "hoursSaturday",
+];
+
+const HOURS_OFF_JOB_KEYS = [
+  "hoursOffJobMonday",
+  "hoursOffJobTuesday",
+  "hoursOffJobWednesday",
+  "hoursOffJobThursday",
+  "hoursOffJobFriday",
+  "hoursOffJobSaturday",
+];
+
+const HOURS_WITH_TRAINEE_KEYS = [
+  "hoursWithTraineeMonday",
+  "hoursWithTraineeTuesday",
+  "hoursWithTraineeWednesday",
+  "hoursWithTraineeThursday",
+  "hoursWithTraineeFriday",
+  "hoursWithTraineeSaturday",
+];
+
+const INITIAL_FORM_DATA = {
+  hoursMonday: "",
+  hoursTuesday: "",
+  hoursWednesday: "",
+  hoursThursday: "",
+  hoursFriday: "",
+  hoursSaturday: "",
+  hoursOffJobMonday: "",
+  hoursOffJobTuesday: "",
+  hoursOffJobWednesday: "",
+  hoursOffJobThursday: "",
+  hoursOffJobFriday: "",
+  hoursOffJobSaturday: "",
+  hoursWithTraineeMonday: "",
+  hoursWithTraineeTuesday: "",
+  hoursWithTraineeWednesday: "",
+  hoursWithTraineeThursday: "",
+  hoursWithTraineeFriday: "",
+  hoursWithTraineeSaturday: "",
+  percentQualified: "",
+  expectedQualified: "",
+  reTimeAchieved: "",
+  knifeScore: "",
+  yieldAuditDate: "",
+  knifeSkillsAuditDate: "",
+  handStretchCompleted: false,
+  hasPain: false,
+  comments: "",
+  trainerSignature: "",
+  teamMemberSignature: "",
+  supervisorSignature: "",
+};
+
+/* ---------------- helpers ---------------- */
 const fmtDateLong = (d: Date) =>
   new Intl.DateTimeFormat("en-US", {
     month: "long",
@@ -110,6 +172,14 @@ const toNumOrNull = (v: any) => {
   return Number.isFinite(n) ? n : null;
 };
 
+const toNum = (v: any) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const clamp = (n: number, lo = 0, hi = 100) => Math.min(hi, Math.max(lo, n));
+const roundToQuarter = (n: number) => Math.round(n * 4) / 4;
+
 async function dataUrlToTempFile(dataUrl: string, opts?: { name?: string }) {
   const match = dataUrl.match(/^data:(.+?);base64,(.*)$/);
   if (!match) throw new Error("Invalid data URL");
@@ -133,7 +203,7 @@ async function dataUrlToTempFile(dataUrl: string, opts?: { name?: string }) {
     encoding: FileSystem.EncodingType.Base64,
   });
 
-  return { uri: fileUri, mime, name };
+  return { uri: fileUri, type: mime, name };
 }
 
 function absFromRelative(rel: string, baseUrl: string) {
@@ -149,6 +219,122 @@ function absFromRelative(rel: string, baseUrl: string) {
   }
 }
 
+function sumFields(formData: Record<string, any>, keys: string[]) {
+  return keys.reduce((sum, key) => sum + Number(formData[key] ?? 0), 0);
+}
+
+function formatWeekDataForApi(formData: Record<string, any>) {
+  return {
+    ...formData,
+    percentQualified: toNumOrNull(formData.percentQualified),
+    reTimeAchieved: toNumOrNull(formData.reTimeAchieved),
+
+    hoursMonday: toNumOrNull(formData.hoursMonday),
+    hoursTuesday: toNumOrNull(formData.hoursTuesday),
+    hoursWednesday: toNumOrNull(formData.hoursWednesday),
+    hoursThursday: toNumOrNull(formData.hoursThursday),
+    hoursFriday: toNumOrNull(formData.hoursFriday),
+    hoursSaturday: toNumOrNull(formData.hoursSaturday),
+
+    hoursOffJobMonday: toNumOrNull(formData.hoursOffJobMonday),
+    hoursOffJobTuesday: toNumOrNull(formData.hoursOffJobTuesday),
+    hoursOffJobWednesday: toNumOrNull(formData.hoursOffJobWednesday),
+    hoursOffJobThursday: toNumOrNull(formData.hoursOffJobThursday),
+    hoursOffJobFriday: toNumOrNull(formData.hoursOffJobFriday),
+    hoursOffJobSaturday: toNumOrNull(formData.hoursOffJobSaturday),
+
+    hoursWithTraineeMonday: toNumOrNull(formData.hoursWithTraineeMonday),
+    hoursWithTraineeTuesday: toNumOrNull(formData.hoursWithTraineeTuesday),
+    hoursWithTraineeWednesday: toNumOrNull(formData.hoursWithTraineeWednesday),
+    hoursWithTraineeThursday: toNumOrNull(formData.hoursWithTraineeThursday),
+    hoursWithTraineeFriday: toNumOrNull(formData.hoursWithTraineeFriday),
+    hoursWithTraineeSaturday: toNumOrNull(formData.hoursWithTraineeSaturday),
+  };
+}
+
+async function uploadPendingEvaluationWeekSignatures({
+  pendingSigs,
+  baseUrl,
+  token,
+  evaluationId,
+  weekNumber,
+}: {
+  pendingSigs: Partial<
+    Record<
+      "trainerSignature" | "teamMemberSignature" | "supervisorSignature",
+      string
+    >
+  >;
+  baseUrl: string;
+  token: string;
+  evaluationId: string;
+  weekNumber: number;
+}) {
+  const hasAnyPending =
+    !!pendingSigs.trainerSignature ||
+    !!pendingSigs.teamMemberSignature ||
+    !!pendingSigs.supervisorSignature;
+
+  if (!hasAnyPending) {
+    return null;
+  }
+
+  const files: any = {};
+
+  if (pendingSigs.trainerSignature) {
+    files.trainer = await dataUrlToTempFile(pendingSigs.trainerSignature, {
+      name: `trainer_${Date.now()}.png`,
+    });
+  }
+
+  if (pendingSigs.teamMemberSignature) {
+    files.employee = await dataUrlToTempFile(pendingSigs.teamMemberSignature, {
+      name: `employee_${Date.now()}.png`,
+    });
+  }
+
+  if (pendingSigs.supervisorSignature) {
+    files.supervisor = await dataUrlToTempFile(
+      pendingSigs.supervisorSignature,
+      {
+        name: `supervisor_${Date.now()}.png`,
+      },
+    );
+  }
+
+  const response = await uploadEvaluationSignatures({
+    baseUrl,
+    token,
+    evaluationId,
+    weekNumber,
+    files,
+  });
+
+  const roleToFormKey: Record<string, string> = {
+    trainer: "trainerSignature",
+    employee: "teamMemberSignature",
+    supervisor: "supervisorSignature",
+  };
+
+  const uploadedPaths: Record<string, string> = {};
+
+  for (const role of Object.keys(roleToFormKey)) {
+    if (!files[role]) continue;
+
+    const absOrRel = pickUploadedFileUrl(response, role);
+    const relativePath = toRelativeApiPath(absOrRel, baseUrl);
+
+    if (!relativePath) {
+      throw new Error("Upload did not return a valid signature URL.");
+    }
+
+    uploadedPaths[roleToFormKey[role]] = relativePath;
+  }
+
+  return uploadedPaths;
+}
+
+/* ---------------- small ui ---------------- */
 const Labeled = ({
   label,
   children,
@@ -157,7 +343,7 @@ const Labeled = ({
   children: React.ReactNode;
 }) => (
   <View className="mb-5">
-    <Text className="text-base font-medium text-gray-700 mb-2">{label}</Text>
+    <Text className="mb-2 text-base font-medium text-gray-700">{label}</Text>
     {children}
   </View>
 );
@@ -181,50 +367,21 @@ export default function Step2Form(props: Props) {
   const { currentUser } = useAuthContext();
   const currentWeek = parseInt(String(weekParam || "1"), 10);
 
-  const [formData, setFormData] = useState<Record<string, any>>({
-    hoursMonday: "",
-    hoursTuesday: "",
-    hoursWednesday: "",
-    hoursThursday: "",
-    hoursFriday: "",
-    hoursSaturday: "",
-    hoursOffJobMonday: "",
-    hoursOffJobTuesday: "",
-    hoursOffJobWednesday: "",
-    hoursOffJobThursday: "",
-    hoursOffJobFriday: "",
-    hoursOffJobSaturday: "",
-    hoursWithTraineeMonday: "",
-    hoursWithTraineeTuesday: "",
-    hoursWithTraineeWednesday: "",
-    hoursWithTraineeThursday: "",
-    hoursWithTraineeFriday: "",
-    hoursWithTraineeSaturday: "",
-    percentQualified: "",
-    expectedQualified: "",
-    reTimeAchieved: "",
-    knifeScore: "",
-    yieldAuditDate: "",
-    knifeSkillsAuditDate: "",
-    handStretchCompleted: false,
-    hasPain: false,
-    comments: "",
-    trainerSignature: "",
-    teamMemberSignature: "",
-    supervisorSignature: "",
-  });
-
+  const [formData, setFormData] =
+    useState<Record<string, any>>(INITIAL_FORM_DATA);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [signatureType, setSignatureType] = useState<string | null>(null);
+
   const [traineeName, setTraineeName] = useState("Trainee");
   const [projectedTrainingHours, setProjectedTrainingHours] =
     useState<number>(200);
   const [jobStartDate, setJobStartDate] = useState("");
   const [prevHoursOnJob, setPrevHoursOnJob] = useState(0);
-  const inputRefs = useRef<Array<TextInput | null>>([]);
   const [apiBase, setApiBase] = useState<string>("");
+
+  const inputRefs = useRef<Array<TextInput | null>>([]);
 
   const [pendingSigs, setPendingSigs] = useState<
     Partial<
@@ -266,21 +423,21 @@ export default function Step2Form(props: Props) {
         if (weekData) {
           const next: Record<string, any> = {};
 
-          Object.entries(weekData).forEach(([k, v]) => {
-            if (k === "knifeScore") {
-              next[k] = v == null ? "" : String(v);
-            } else if (NUMERIC.has(k)) {
-              next[k] = v == null ? "" : String(v);
-            } else if (DATE_KEYS.has(k)) {
-              next[k] = typeof v === "string" ? v : "";
-            } else if (typeof v === "string" && /\/signatures\//.test(v)) {
-              next[k] = toRelativeSignaturePath(v, baseUrl) || v;
+          Object.entries(weekData).forEach(([key, value]) => {
+            if (key === "knifeScore") {
+              next[key] = value == null ? "" : String(value);
+            } else if (NUMERIC.has(key)) {
+              next[key] = value == null ? "" : String(value);
+            } else if (DATE_KEYS.has(key)) {
+              next[key] = typeof value === "string" ? value : "";
+            } else if (typeof value === "string" && value.includes("/api/")) {
+              next[key] = toRelativeApiPath(value, baseUrl) || value;
             } else {
-              next[k] = v;
+              next[key] = value;
             }
           });
 
-          setFormData((f) => ({ ...f, ...next }));
+          setFormData((prev) => ({ ...prev, ...next }));
         }
       } catch {
         Alert.alert("Error", "Failed to load evaluation");
@@ -290,23 +447,11 @@ export default function Step2Form(props: Props) {
     })();
   }, [evaluationId, currentWeek]);
 
-  const toNum = (v: any) => {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : 0;
-  };
-
-  const clamp = (n: number, lo = 0, hi = 100) => Math.min(hi, Math.max(lo, n));
-  const roundToQuarter = (n: number) => Math.round(n * 4) / 4;
-
   const expectedQualified = useMemo(() => {
-    const weekSum = [
-      "hoursMonday",
-      "hoursTuesday",
-      "hoursWednesday",
-      "hoursThursday",
-      "hoursFriday",
-      "hoursSaturday",
-    ].reduce((s, k) => s + toNum(formData[k]), 0);
+    const weekSum = HOURS_ON_JOB_KEYS.reduce(
+      (sum, key) => sum + toNum(formData[key]),
+      0,
+    );
 
     const total = toNum(prevHoursOnJob) + weekSum;
     const rawPct =
@@ -316,16 +461,7 @@ export default function Step2Form(props: Props) {
     const quarter = roundToQuarter(clamped);
 
     return Number(quarter.toFixed(2));
-  }, [
-    formData.hoursMonday,
-    formData.hoursTuesday,
-    formData.hoursWednesday,
-    formData.hoursThursday,
-    formData.hoursFriday,
-    formData.hoursSaturday,
-    prevHoursOnJob,
-    projectedTrainingHours,
-  ]);
+  }, [formData, prevHoursOnJob, projectedTrainingHours]);
 
   const handleChange = (key: string, raw: string) => {
     let next: string | null = raw;
@@ -351,9 +487,6 @@ export default function Step2Form(props: Props) {
     });
   };
 
-  const sum = (keys: string[]) =>
-    keys.reduce((s, k) => s + Number(formData[k] ?? 0), 0);
-
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
@@ -364,101 +497,31 @@ export default function Step2Form(props: Props) {
 
       let nextFormData = { ...formData };
 
-      const hasAnyPending =
-        !!pendingSigs.trainerSignature ||
-        !!pendingSigs.teamMemberSignature ||
-        !!pendingSigs.supervisorSignature;
-
-      if (hasAnyPending) {
-        const files: any = {};
-
-        if (pendingSigs.trainerSignature) {
-          files.trainer = await dataUrlToTempFile(
-            pendingSigs.trainerSignature,
-            { name: `trainer_${Date.now()}.png` },
-          );
-        }
-
-        if (pendingSigs.teamMemberSignature) {
-          files.employee = await dataUrlToTempFile(
-            pendingSigs.teamMemberSignature,
-            { name: `employee_${Date.now()}.png` },
-          );
-        }
-
-        if (pendingSigs.supervisorSignature) {
-          files.supervisor = await dataUrlToTempFile(
-            pendingSigs.supervisorSignature,
-            { name: `supervisor_${Date.now()}.png` },
-          );
-        }
-
-        const resp = await uploadSignaturesMultipart({
+      const uploadedSignaturePaths =
+        await uploadPendingEvaluationWeekSignatures({
+          pendingSigs,
           baseUrl,
-          evaluationId: String(evaluationId),
           token: token!,
-          files,
+          evaluationId: String(evaluationId),
           weekNumber,
         });
 
-        const roleToKey: Record<string, keyof typeof nextFormData> = {
-          trainer: "trainerSignature",
-          employee: "teamMemberSignature",
-          supervisor: "supervisorSignature",
+      if (uploadedSignaturePaths) {
+        nextFormData = {
+          ...nextFormData,
+          ...uploadedSignaturePaths,
         };
-
-        for (const role of Object.keys(roleToKey)) {
-          if (!files[role]) continue;
-
-          const uiKey = roleToKey[role];
-          const absOrRel = pickSigUrlFromResponse(role, resp);
-          const rel = toRelativeSignaturePath(absOrRel, baseUrl);
-
-          if (rel) {
-            nextFormData[uiKey] = rel;
-          } else {
-            const id =
-              resp?.files?.[role]?.gridfsId ||
-              resp?.finalSignatures?.[role]?.gridfsId ||
-              resp?.gridfsId;
-
-            if (!id) throw new Error("Upload did not return a valid URL.");
-
-            nextFormData[uiKey] = `/api/signatures/${id}`;
-          }
-        }
 
         setPendingSigs({});
         setFormData(nextFormData);
       }
 
-      const totalHoursOnJob = sum([
-        "hoursMonday",
-        "hoursTuesday",
-        "hoursWednesday",
-        "hoursThursday",
-        "hoursFriday",
-        "hoursSaturday",
-      ]);
-
-      const totalHoursOffJob = sum([
-        "hoursOffJobMonday",
-        "hoursOffJobTuesday",
-        "hoursOffJobWednesday",
-        "hoursOffJobThursday",
-        "hoursOffJobFriday",
-        "hoursOffJobSaturday",
-      ]);
-
-      const totalHoursWithTrainee = sum([
-        "hoursWithTraineeMonday",
-        "hoursWithTraineeTuesday",
-        "hoursWithTraineeWednesday",
-        "hoursWithTraineeThursday",
-        "hoursWithTraineeFriday",
-        "hoursWithTraineeSaturday",
-      ]);
-
+      const totalHoursOnJob = sumFields(nextFormData, HOURS_ON_JOB_KEYS);
+      const totalHoursOffJob = sumFields(nextFormData, HOURS_OFF_JOB_KEYS);
+      const totalHoursWithTrainee = sumFields(
+        nextFormData,
+        HOURS_WITH_TRAINEE_KEYS,
+      );
       const totalHours = totalHoursOnJob + totalHoursOffJob;
 
       const knifeScoreValue =
@@ -466,44 +529,7 @@ export default function Step2Form(props: Props) {
           ? null
           : Number(nextFormData.knifeScore);
 
-      const numericWeekData = {
-        ...nextFormData,
-        percentQualified: toNumOrNull(nextFormData.percentQualified),
-        reTimeAchieved: toNumOrNull(nextFormData.reTimeAchieved),
-
-        hoursMonday: toNumOrNull(nextFormData.hoursMonday),
-        hoursTuesday: toNumOrNull(nextFormData.hoursTuesday),
-        hoursWednesday: toNumOrNull(nextFormData.hoursWednesday),
-        hoursThursday: toNumOrNull(nextFormData.hoursThursday),
-        hoursFriday: toNumOrNull(nextFormData.hoursFriday),
-        hoursSaturday: toNumOrNull(nextFormData.hoursSaturday),
-
-        hoursOffJobMonday: toNumOrNull(nextFormData.hoursOffJobMonday),
-        hoursOffJobTuesday: toNumOrNull(nextFormData.hoursOffJobTuesday),
-        hoursOffJobWednesday: toNumOrNull(nextFormData.hoursOffJobWednesday),
-        hoursOffJobThursday: toNumOrNull(nextFormData.hoursOffJobThursday),
-        hoursOffJobFriday: toNumOrNull(nextFormData.hoursOffJobFriday),
-        hoursOffJobSaturday: toNumOrNull(nextFormData.hoursOffJobSaturday),
-
-        hoursWithTraineeMonday: toNumOrNull(
-          nextFormData.hoursWithTraineeMonday,
-        ),
-        hoursWithTraineeTuesday: toNumOrNull(
-          nextFormData.hoursWithTraineeTuesday,
-        ),
-        hoursWithTraineeWednesday: toNumOrNull(
-          nextFormData.hoursWithTraineeWednesday,
-        ),
-        hoursWithTraineeThursday: toNumOrNull(
-          nextFormData.hoursWithTraineeThursday,
-        ),
-        hoursWithTraineeFriday: toNumOrNull(
-          nextFormData.hoursWithTraineeFriday,
-        ),
-        hoursWithTraineeSaturday: toNumOrNull(
-          nextFormData.hoursWithTraineeSaturday,
-        ),
-      };
+      const numericWeekData = formatWeekDataForApi(nextFormData);
 
       await axios.patch(
         `${baseUrl}/evaluations/${evaluationId}`,
@@ -560,21 +586,22 @@ export default function Step2Form(props: Props) {
     startIndex: number;
     weekIndex: number;
   }) => {
-    const js = parseMDY(jobStartDate);
-    const baseMon = js ? getMonday(js) : null;
-    const mon = baseMon
+    const jobStart = parseMDY(jobStartDate);
+    const baseMonday = jobStart ? getMonday(jobStart) : null;
+    const monday = baseMonday
       ? new Date(
-          baseMon.getFullYear(),
-          baseMon.getMonth(),
-          baseMon.getDate() + weekIndex * 7,
+          baseMonday.getFullYear(),
+          baseMonday.getMonth(),
+          baseMonday.getDate() + weekIndex * 7,
         )
       : null;
+
     const isFirstWeek = weekIndex === 0;
-    const jsOnly = js ? stripTime(js) : null;
+    const jobStartOnly = jobStart ? stripTime(jobStart) : null;
 
     return (
       <View className="mb-6">
-        <Text className="text-lg font-semibold text-gray-800 mb-3">
+        <Text className="mb-3 text-lg font-semibold text-gray-800">
           {title}
         </Text>
 
@@ -586,28 +613,32 @@ export default function Step2Form(props: Props) {
           "Friday",
           "Saturday",
         ].map((weekday, i) => {
-          const k = keys[i];
-          const base = mon ?? stripTime(new Date());
-          const d = new Date(
+          const key = keys[i];
+          const base = monday ?? stripTime(new Date());
+          const date = new Date(
             base.getFullYear(),
             base.getMonth(),
             base.getDate() + i,
           );
+
           const isDisabled =
-            isFirstWeek && jsOnly && stripTime(d).getTime() < jsOnly.getTime();
-          const val = formData[k] == null ? "" : String(formData[k]);
+            isFirstWeek &&
+            jobStartOnly &&
+            stripTime(date).getTime() < jobStartOnly.getTime();
+
+          const value = formData[key] == null ? "" : String(formData[key]);
 
           return (
-            <View key={k} className="mb-4">
+            <View key={key} className="mb-4">
               <Text className="text-base text-gray-700">{weekday}</Text>
-              <Text className="text-[.8rem] text-gray-500 mb-2">
-                {fmtDateLong(d)}
+              <Text className="mb-2 text-[.8rem] text-gray-500">
+                {fmtDateLong(date)}
               </Text>
 
               <TextInput
                 ref={(r) => (inputRefs.current[startIndex + i] = r)}
-                value={val}
-                onChangeText={(t) => !isDisabled && handleChange(k, t)}
+                value={value}
+                onChangeText={(text) => !isDisabled && handleChange(key, text)}
                 editable={!isDisabled}
                 placeholder="0"
                 keyboardType="number-pad"
@@ -619,15 +650,15 @@ export default function Step2Form(props: Props) {
                 className={`rounded-md px-4 py-3 ${
                   isDisabled
                     ? "bg-gray-100 border-gray-200 text-gray-400"
-                    : errors[k]
-                      ? "border-red-500 border text-gray-900"
+                    : errors[key]
+                      ? "border border-red-500 text-gray-900"
                       : "border border-gray-300 text-gray-900"
                 }`}
                 maxLength={2}
               />
 
-              {errors[k] && !isDisabled && (
-                <Text className="text-sm text-red-500 mt-1">{errors[k]}</Text>
+              {errors[key] && !isDisabled && (
+                <Text className="mt-1 text-sm text-red-500">{errors[key]}</Text>
               )}
             </View>
           );
@@ -702,97 +733,82 @@ export default function Step2Form(props: Props) {
         >
           <FieldGroup
             title="Hours On Job"
-            keys={[
-              "hoursMonday",
-              "hoursTuesday",
-              "hoursWednesday",
-              "hoursThursday",
-              "hoursFriday",
-              "hoursSaturday",
-            ]}
+            keys={HOURS_ON_JOB_KEYS}
             startIndex={0}
             weekIndex={currentWeek - 1}
           />
 
           <FieldGroup
             title="Hours Off Job"
-            keys={[
-              "hoursOffJobMonday",
-              "hoursOffJobTuesday",
-              "hoursOffJobWednesday",
-              "hoursOffJobThursday",
-              "hoursOffJobFriday",
-              "hoursOffJobSaturday",
-            ]}
+            keys={HOURS_OFF_JOB_KEYS}
             startIndex={6}
             weekIndex={currentWeek - 1}
           />
 
           <FieldGroup
             title="Hours with Trainee"
-            keys={[
-              "hoursWithTraineeMonday",
-              "hoursWithTraineeTuesday",
-              "hoursWithTraineeWednesday",
-              "hoursWithTraineeThursday",
-              "hoursWithTraineeFriday",
-              "hoursWithTraineeSaturday",
-            ]}
+            keys={HOURS_WITH_TRAINEE_KEYS}
             startIndex={12}
             weekIndex={currentWeek - 1}
           />
 
-          {simpleFields.map((f) => {
-            const raw = formData[f.key];
-            const val = f.format ? f.format() : raw == null ? "" : String(raw);
+          {simpleFields.map((field) => {
+            const raw = formData[field.key];
+            const value = field.format
+              ? field.format()
+              : raw == null
+                ? ""
+                : String(raw);
 
             return (
-              <Labeled key={f.key} label={f.label}>
+              <Labeled key={field.key} label={field.label}>
                 <TextInput
-                  value={val == null ? "" : String(val)}
-                  onChangeText={(t) => handleChange(f.key, t)}
-                  placeholder={f.label}
-                  editable={f.editable !== false}
-                  multiline={!!f.multiline}
-                  keyboardType={f.keyboardType || "default"}
-                  className={`border ${
-                    errors[f.key] ? "border-red-500" : "border-gray-300"
-                  } rounded-md px-4 py-3 text-gray-900 ${
-                    f.editable === false ? "bg-gray-100 text-gray-400" : ""
-                  }`}
-                  style={{ textAlignVertical: f.multiline ? "top" : "center" }}
-                  numberOfLines={f.multiline ? 4 : 1}
+                  value={value == null ? "" : String(value)}
+                  onChangeText={(text) => handleChange(field.key, text)}
+                  placeholder={field.label}
+                  editable={field.editable !== false}
+                  multiline={!!field.multiline}
+                  keyboardType={field.keyboardType || "default"}
+                  className={`rounded-md border px-4 py-3 text-gray-900 ${
+                    errors[field.key] ? "border-red-500" : "border-gray-300"
+                  } ${field.editable === false ? "bg-gray-100 text-gray-400" : ""}`}
+                  style={{
+                    textAlignVertical: field.multiline ? "top" : "center",
+                  }}
+                  numberOfLines={field.multiline ? 4 : 1}
                   maxLength={
-                    f.key === "knifeScore"
+                    field.key === "knifeScore"
                       ? 6
-                      : f.key === "yieldAuditDate" ||
-                          f.key === "knifeSkillsAuditDate"
+                      : field.key === "yieldAuditDate" ||
+                          field.key === "knifeSkillsAuditDate"
                         ? 10
                         : undefined
                   }
                 />
 
-                {errors[f.key] && (
-                  <Text className="text-sm text-red-500 mt-1">
-                    {errors[f.key]}
+                {errors[field.key] && (
+                  <Text className="mt-1 text-sm text-red-500">
+                    {errors[field.key]}
                   </Text>
                 )}
               </Labeled>
             );
           })}
 
-          {(["hasPain", "handStretchCompleted"] as const).map((k) => (
-            <View key={k} className="mb-6">
-              <Text className="text-base font-medium text-gray-700 mb-2">
-                {k === "hasPain"
+          {(["hasPain", "handStretchCompleted"] as const).map((key) => (
+            <View key={key} className="mb-6">
+              <Text className="mb-2 text-base font-medium text-gray-700">
+                {key === "hasPain"
                   ? "Any pain/numbness?"
                   : "Hand Stretch Exercises Completed"}
               </Text>
 
               <SinglePressTouchable
-                onPress={() => setFormData((f) => ({ ...f, [k]: !f[k] }))}
-                className={`py-3 rounded-md items-center ${
-                  k === "hasPain"
+                onPress={() =>
+                  setFormData((prev) => ({ ...prev, [key]: !prev[key] }))
+                }
+                className={`items-center rounded-md py-3 ${
+                  key === "hasPain"
                     ? formData.hasPain
                       ? "bg-red-600"
                       : "bg-green-600"
@@ -801,8 +817,8 @@ export default function Step2Form(props: Props) {
                       : "bg-red-600"
                 }`}
               >
-                <Text className="text-white text-lg font-semibold">
-                  {formData[k] ? "Yes" : "No"}
+                <Text className="text-lg font-semibold text-white">
+                  {formData[key] ? "Yes" : "No"}
                 </Text>
               </SinglePressTouchable>
             </View>
@@ -814,16 +830,16 @@ export default function Step2Form(props: Props) {
               { key: "teamMemberSignature", label: traineeName || "Trainee" },
               { key: "supervisorSignature", label: "Supervisor" },
             ] as const
-          ).map((s) => {
-            const stored = formData[s.key];
+          ).map((sig) => {
+            const stored = formData[sig.key];
             const previewUri = makePreview(stored);
 
             return (
-              <Labeled key={s.key} label={s.label}>
+              <Labeled key={sig.key} label={sig.label}>
                 <SinglePressTouchable
-                  onPress={() => setSignatureType(s.key)}
-                  className={`rounded-md px-4 py-3 justify-center items-center ${
-                    errors[s.key]
+                  onPress={() => setSignatureType(sig.key)}
+                  className={`items-center justify-center rounded-md px-4 py-3 ${
+                    errors[sig.key]
                       ? "bg-gray-100 border border-red-500"
                       : "bg-gray-100 border border-gray-300"
                   }`}
@@ -831,7 +847,7 @@ export default function Step2Form(props: Props) {
                   {stored ? (
                     <Image
                       source={{ uri: previewUri }}
-                      className="w-full h-16"
+                      className="h-16 w-full"
                       resizeMode="contain"
                     />
                   ) : (
@@ -839,9 +855,9 @@ export default function Step2Form(props: Props) {
                   )}
                 </SinglePressTouchable>
 
-                {errors[s.key] && (
-                  <Text className="text-sm text-red-500 mt-1">
-                    {errors[s.key]}
+                {errors[sig.key] && (
+                  <Text className="mt-1 text-sm text-red-500">
+                    {errors[sig.key]}
                   </Text>
                 )}
               </Labeled>
@@ -852,13 +868,13 @@ export default function Step2Form(props: Props) {
             <SinglePressTouchable
               onPress={handleSubmit}
               activeOpacity={0.85}
-              className="bg-[#1a237e] py-4 rounded-md items-center"
+              className="items-center rounded-md bg-[#1a237e] py-4"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <ActivityIndicator color="#FFF" size="small" />
               ) : (
-                <Text className="text-white text-lg font-semibold">
+                <Text className="text-lg font-semibold text-white">
                   Save & Continue
                 </Text>
               )}
@@ -871,8 +887,8 @@ export default function Step2Form(props: Props) {
         visible={!!signatureType}
         onOK={(b64: string) => {
           if (!signatureType) return;
-          setPendingSigs((p) => ({ ...p, [signatureType]: b64 }));
-          setFormData((f) => ({ ...f, [signatureType]: b64 }));
+          setPendingSigs((prev) => ({ ...prev, [signatureType]: b64 }));
+          setFormData((prev) => ({ ...prev, [signatureType]: b64 }));
           setSignatureType(null);
         }}
         onCancel={() => setSignatureType(null)}
