@@ -103,7 +103,7 @@ const AddUserSheetContent = ({
   if (view === "lockerSelection") {
     return (
       <View className="flex-1 pt-2">
-        <View className="mb-3 px-1">
+        <View className="px-5">
           <Text className="text-[13px] text-neutral-500">
             Choose a locker for{" "}
             {addEmployeeInfo?.location || "the selected location"}.

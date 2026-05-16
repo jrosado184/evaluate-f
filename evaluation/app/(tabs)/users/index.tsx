@@ -57,6 +57,10 @@ const Users = () => {
   const sheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = ["94%"];
 
+  const clearSuccessMessage = useCallback(() => {
+    setActionsMessage("");
+  }, [setActionsMessage]);
+
   const computeSort = () => {
     switch (sortingBy) {
       case "Lockers":
@@ -371,7 +375,7 @@ const Users = () => {
       )}
 
       <SuccessModal
-        clearMessage={() => setActionsMessage("")}
+        clearMessage={clearSuccessMessage}
         message={actionsMessage}
       />
 
@@ -411,9 +415,9 @@ const Users = () => {
           setView={setAddUserSheetView}
           onClose={closeAddUserSheet}
           onSuccess={async () => {
+            setActionsMessage("User added successfully");
             closeAddUserSheet();
             await refreshUsersList();
-            setActionsMessage("User added successfully");
           }}
         />
       </AppBottomSheet>
