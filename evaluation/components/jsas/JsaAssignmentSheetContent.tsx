@@ -72,6 +72,7 @@ const JsaAssignmentSheetContent = ({
         </View>
 
         <SelectionSheet
+          jsa={jsa}
           mode="employees"
           searchPlaceholderLabel="employees"
           emptyTitle="No employees found"

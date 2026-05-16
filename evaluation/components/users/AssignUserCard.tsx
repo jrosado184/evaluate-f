@@ -1,7 +1,8 @@
 import getServerIP from "@/app/requests/NetworkAddress";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import React, { memo, useEffect } from "react";
+import { handleUrlParams } from "expo-router/build/fork/getStateFromPath-forks";
+import React, { memo, useEffect, useState } from "react";
 import { View, Text } from "react-native";
 
 type AssignEmployeeCardProps = {
@@ -37,6 +38,7 @@ const getAvatarTheme = (name: string) =>
   avatarThemes[(name?.charCodeAt(0) || 65) % avatarThemes.length];
 
 const AssignEmployeeCard = ({
+  jsa,
   name,
   employeeId,
   position,
@@ -53,22 +55,50 @@ const AssignEmployeeCard = ({
   const hireDate = item?.date_of_hire || dateOfHire || "";
   const avatarTheme = getAvatarTheme(employeeName);
 
+  const [assignedJsasId, setAssignedJsasId] = useState<any>([]);
+
   useEffect(() => {
+    if (!item?._id) return;
+
+    let isMounted = true;
+
     const getJsaByEmployeeId = async () => {
-      const token = await AsyncStorage.getItem("token");
-      const baseUrl = await getServerIP();
-      const response = await axios.get(
-        `${baseUrl}/${item?._id}/employee-jsas`,
-        {
-          headers: {
-            Authorization: token,
+      try {
+        const token = await AsyncStorage.getItem("token");
+        const baseUrl = await getServerIP();
+
+        const response = await axios.get(
+          `${baseUrl}/${item._id}/employee-jsas`,
+          {
+            headers: {
+              Authorization: token,
+            },
           },
-        },
-      );
-      console.log(response);
+        );
+
+        if (!isMounted) return;
+        setAssignedJsasId(response?.data);
+      } catch (error: any) {
+        if (!isMounted) return;
+        console.error(
+          "Failed to fetch employee JSAs:",
+          error?.response?.data || error,
+        );
+      }
     };
+
     getJsaByEmployeeId();
-  }, []);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [item?._id]);
+
+  const assignedJsaIds = new Set(
+    assignedJsasId?.data?.map((item: any) => String(item.jsaId)) || [],
+  );
+
+  const hasJsaAssigned = assignedJsaIds.has(String(jsa?._id));
 
   return (
     <View className="w-full mb-3.5">
@@ -119,11 +149,15 @@ const AssignEmployeeCard = ({
             )}
           </View>
 
-          <View className="h-8 w-24 items-center justify-center rounded-full bg-emerald-100">
-            <Text className="font-inter text-[.9rem] text-emerald-700">
-              Assigned
-            </Text>
-          </View>
+          {hasJsaAssigned ? (
+            <View className="h-8 w-24 items-center justify-center rounded-full bg-emerald-100">
+              <Text className="font-inter text-[.9rem] text-emerald-700">
+                Assigned
+              </Text>
+            </View>
+          ) : (
+            ""
+          )}
         </View>
 
         <View className="my-3.5 h-px bg-gray-100" />
@@ -146,7 +180,7 @@ const AssignEmployeeCard = ({
 
           <View className="min-w-[84px] items-center justify-center rounded-full border border-gray-300 bg-gray-100 px-4 py-2">
             <Text className="text-[13px] font-semibold text-gray-700">
-              Select
+              {!hasJsaAssigned ? "Select" : "View"}
             </Text>
           </View>
         </View>

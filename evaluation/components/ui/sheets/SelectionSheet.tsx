@@ -22,6 +22,7 @@ import AssignLockerCard from "@/components/users/AssignLockerCard";
 type SelectionMode = "employees" | "lockers";
 
 type SelectionSheetProps = {
+  jsa: any;
   mode: SelectionMode;
   filter?: string;
   onEmployeeSelected?: (employee: any) => Promise<void> | void;
@@ -36,6 +37,7 @@ const PAGE_SIZE = 8;
 const SelectionSheet: React.FC<SelectionSheetProps> = ({
   mode,
   filter,
+  jsa,
   onEmployeeSelected,
   onLockerSelected,
   searchPlaceholderLabel,
@@ -260,7 +262,11 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
             onPress={() => handleEmployeePress(item)}
             activeOpacity={0.82}
           >
-            <AssignEmployeeCard {...item} assigned={!!item.locker_id} />
+            <AssignEmployeeCard
+              jsa={jsa}
+              {...item}
+              assigned={!!item.locker_id}
+            />
           </SinglePressTouchable>
         );
       }

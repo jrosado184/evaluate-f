@@ -15,7 +15,6 @@ const addEmployee = async (addEmployeeInfo: any) => {
         },
       },
     );
-    console.log(response);
     return response;
   } catch (error: any) {
     return error.response;
