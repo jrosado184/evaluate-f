@@ -20,7 +20,7 @@ const JsaAssignmentSheetContent = ({
   jsa,
   onSuccess,
 }: Props) => {
-  const { employee, setEmployee } = useEmployeeContext();
+  const { setEmployee } = useEmployeeContext();
 
   const handleSelectEmployee = async (selectedEmployee: any) => {
     setEmployee(selectedEmployee);

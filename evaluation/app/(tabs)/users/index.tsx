@@ -333,6 +333,7 @@ const Users = () => {
       {can(currentUser, PERMISSIONS.USERS_CREATE) && (
         <Fab icon="user-plus" onPress={openAddUserSheet} />
       )}
+
       <Search
         label="users"
         total={userDetails?.totalUsers}
@@ -412,6 +413,7 @@ const Users = () => {
           onSuccess={async () => {
             closeAddUserSheet();
             await refreshUsersList();
+            setActionsMessage("User added successfully");
           }}
         />
       </AppBottomSheet>

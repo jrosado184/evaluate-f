@@ -73,7 +73,7 @@ const JsaScreen = () => {
       scroll: false,
     },
     AssignJSA: {
-      title: "AssignJSA",
+      title: "Assign JSA",
       iconName: "arrow-left" as const,
       enablePanDownToClose: false,
       scroll: false,

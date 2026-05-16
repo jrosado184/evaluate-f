@@ -13,8 +13,9 @@ const addEmployee = async (addEmployeeInfo: any) => {
         headers: {
           Authorization: token,
         },
-      }
+      },
     );
+    console.log(response);
     return response;
   } catch (error: any) {
     return error.response;

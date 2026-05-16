@@ -24,6 +24,14 @@ type AddUserSheetContentProps = {
   setView: React.Dispatch<React.SetStateAction<"form" | "lockerSelection">>;
 };
 
+const toIntOrNull = (value: any) => {
+  const cleaned = String(value ?? "").replace(/[^0-9]/g, "");
+  if (!cleaned) return null;
+
+  const parsed = parseInt(cleaned, 10);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
 const SectionCard = ({
   title,
   subtitle,
@@ -65,7 +73,8 @@ const AddUserSheetContent = ({
   const { setAddEmployeeInfo, addEmployeeInfo, loading } = useEmployeeContext();
 
   useEffect(() => {
-    setAddEmployeeInfo({
+    setAddEmployeeInfo((prev: any) => ({
+      ...prev,
       employee_name: "",
       locker_number: null,
       employee_id: null,
@@ -76,7 +85,7 @@ const AddUserSheetContent = ({
       added_by: "",
       date_of_hire: "",
       location: "",
-    });
+    }));
   }, [setAddEmployeeInfo]);
 
   const handleSubmit = async () => {
@@ -107,12 +116,9 @@ const AddUserSheetContent = ({
             addEmployeeInfo?.location || addEmployeeInfo?.locker_info?.location
           }
           onLockerSelected={(locker: any) => {
-            const num = locker?.locker_number;
+            const parsed = toIntOrNull(locker?.locker_number);
 
-            if (num != null) {
-              const parsed =
-                typeof num === "number" ? num : parseInt(String(num), 10);
-
+            if (parsed != null) {
               setAddEmployeeInfo((prev: any) => ({
                 ...prev,
                 locker_number: parsed,
@@ -168,6 +174,7 @@ const AddUserSheetContent = ({
         >
           <View className={`${errors.employee_name ? "min-h-[112px]" : ""}`}>
             <FormField
+              value={addEmployeeInfo?.employee_name ?? ""}
               title="Name"
               placeholder="Enter employee name"
               rounded="rounded-2xl"
@@ -183,15 +190,17 @@ const AddUserSheetContent = ({
 
           <View className={`${errors.employee_id ? "min-h-[112px]" : ""}`}>
             <FormField
+              value={
+                addEmployeeInfo?.employee_id != null
+                  ? String(addEmployeeInfo.employee_id)
+                  : ""
+              }
               title="ID Number"
               placeholder="Enter ID number"
               rounded="rounded-2xl"
               keyboardType="numeric"
               handleChangeText={(value: any) =>
-                handleEmployeeInfo(
-                  "employee_id",
-                  typeof value === "number" ? value : parseInt(value, 10),
-                )
+                handleEmployeeInfo("employee_id", toIntOrNull(value))
               }
             />
             <Error hidden={!errors.employee_id} title={errors.employee_id} />
@@ -236,15 +245,15 @@ const AddUserSheetContent = ({
               searchable
               title="Supervisor"
               placeholder="Select supervisor"
-              selectedValue={addEmployeeInfo.supervisor?.name}
+              selectedValue={addEmployeeInfo?.supervisor?.name}
               onSelect={(val: any) => {
-                setAddEmployeeInfo({
-                  ...addEmployeeInfo,
+                setAddEmployeeInfo((prev: any) => ({
+                  ...prev,
                   supervisor: {
                     name: titleCase(val.__k),
                     id: val?.children?.id,
                   },
-                });
+                }));
               }}
               returnOption
               loadData={loadSupervisorsOptions}
@@ -261,7 +270,7 @@ const AddUserSheetContent = ({
         >
           <View className={`${errors.hire_date ? "min-h-[112px]" : ""}`}>
             <FormField
-              value={addEmployeeInfo.date_of_hire}
+              value={addEmployeeInfo?.date_of_hire ?? ""}
               title="Hire Date"
               placeholder="MM/DD/YYYY"
               rounded="rounded-2xl"
@@ -336,7 +345,11 @@ const AddUserSheetContent = ({
                 }
               }}
               onSelect={() => {}}
-              selectedValue={addEmployeeInfo?.locker_number}
+              selectedValue={
+                addEmployeeInfo?.locker_number != null
+                  ? String(addEmployeeInfo.locker_number)
+                  : ""
+              }
             />
             <Error
               hidden={!errors.locker_number && !errors.existing_employee}

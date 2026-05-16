@@ -1,4 +1,7 @@
-import React, { memo } from "react";
+import getServerIP from "@/app/requests/NetworkAddress";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import React, { memo, useEffect } from "react";
 import { View, Text } from "react-native";
 
 type AssignEmployeeCardProps = {
@@ -45,13 +48,31 @@ const AssignEmployeeCard = ({
 }: AssignEmployeeCardProps) => {
   const employeeName = item?.employee_name || name || "";
   const id = item?.employee_id || employeeId || "";
+  const employeePosition = item?.position || position || "";
+  const employeeDepartment = item?.department || department || "";
   const hireDate = item?.date_of_hire || dateOfHire || "";
   const avatarTheme = getAvatarTheme(employeeName);
+
+  useEffect(() => {
+    const getJsaByEmployeeId = async () => {
+      const token = await AsyncStorage.getItem("token");
+      const baseUrl = await getServerIP();
+      const response = await axios.get(
+        `${baseUrl}/${item?._id}/employee-jsas`,
+        {
+          headers: {
+            Authorization: token,
+          },
+        },
+      );
+      console.log(response);
+    };
+    getJsaByEmployeeId();
+  }, []);
 
   return (
     <View className="w-full mb-3.5">
       <View className="w-full rounded-[22px] border border-gray-200 bg-white px-4 py-4">
-        {/* Top */}
         <View className="flex-row items-center">
           <View
             className={`h-[46px] w-[46px] items-center justify-center rounded-[14px] ${avatarTheme.bg}`}
@@ -71,36 +92,42 @@ const AssignEmployeeCard = ({
               {employeeName}
             </Text>
 
-            {(!!position || !!department) && (
+            {(!!employeePosition || !!employeeDepartment) && (
               <View className="flex-row items-center flex-wrap">
-                {!!position && (
+                {!!employeePosition && (
                   <Text
                     numberOfLines={1}
                     className="text-[13px] font-medium text-gray-500"
                   >
-                    {position}
+                    {employeePosition}
                   </Text>
                 )}
-                {!!position && !!department && (
+
+                {!!employeePosition && !!employeeDepartment && (
                   <Text className="mx-1.5 text-[13px] text-gray-300">•</Text>
                 )}
-                {!!department && (
+
+                {!!employeeDepartment && (
                   <Text
                     numberOfLines={1}
                     className="text-[13px] font-medium text-gray-500"
                   >
-                    {department}
+                    {employeeDepartment}
                   </Text>
                 )}
               </View>
             )}
           </View>
+
+          <View className="h-8 w-24 items-center justify-center rounded-full bg-emerald-100">
+            <Text className="font-inter text-[.9rem] text-emerald-700">
+              Assigned
+            </Text>
+          </View>
         </View>
 
-        {/* Divider */}
         <View className="my-3.5 h-px bg-gray-100" />
 
-        {/* Bottom */}
         <View className="flex-row items-center justify-between">
           <View className="flex-1 pr-3">
             {!!id && (
@@ -108,6 +135,7 @@ const AssignEmployeeCard = ({
                 ID: <Text className="font-semibold text-gray-500">{id}</Text>
               </Text>
             )}
+
             {!!hireDate && (
               <Text className="text-[13px] text-gray-400">
                 Hired:{" "}

@@ -43,7 +43,6 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
   emptyDescription,
 }) => {
   const isEmployeeMode = mode === "employees";
-
   const mountedRef = useRef(true);
 
   const [query, setQuery] = useState("");
