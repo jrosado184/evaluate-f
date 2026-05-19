@@ -1,17 +1,18 @@
-import getServerIP from "@/app/requests/NetworkAddress";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
-import { handleUrlParams } from "expo-router/build/fork/getStateFromPath-forks";
-import React, { memo, useEffect, useState } from "react";
+import React, { memo } from "react";
 import { View, Text } from "react-native";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 type AssignEmployeeCardProps = {
   name?: string;
   employeeId?: string | number;
+  handleEmployeePress: (
+    employee: any,
+    view: "viewCompletedJsa" | "AssignJSA",
+  ) => void;
   position?: string;
   department?: string;
   dateOfHire?: string;
-  assigned?: boolean;
+  hasJsaAssigned?: boolean;
   source?: string;
   [key: string]: any;
 };
@@ -38,14 +39,13 @@ const getAvatarTheme = (name: string) =>
   avatarThemes[(name?.charCodeAt(0) || 65) % avatarThemes.length];
 
 const AssignEmployeeCard = ({
-  jsa,
   name,
   employeeId,
   position,
   department,
   dateOfHire,
-  assigned,
-  source,
+  hasJsaAssigned = false,
+  handleEmployeePress,
   ...item
 }: AssignEmployeeCardProps) => {
   const employeeName = item?.employee_name || name || "";
@@ -55,53 +55,8 @@ const AssignEmployeeCard = ({
   const hireDate = item?.date_of_hire || dateOfHire || "";
   const avatarTheme = getAvatarTheme(employeeName);
 
-  const [assignedJsasId, setAssignedJsasId] = useState<any>([]);
-
-  useEffect(() => {
-    if (!item?._id) return;
-
-    let isMounted = true;
-
-    const getJsaByEmployeeId = async () => {
-      try {
-        const token = await AsyncStorage.getItem("token");
-        const baseUrl = await getServerIP();
-
-        const response = await axios.get(
-          `${baseUrl}/${item._id}/employee-jsas`,
-          {
-            headers: {
-              Authorization: token,
-            },
-          },
-        );
-
-        if (!isMounted) return;
-        setAssignedJsasId(response?.data);
-      } catch (error: any) {
-        if (!isMounted) return;
-        console.error(
-          "Failed to fetch employee JSAs:",
-          error?.response?.data || error,
-        );
-      }
-    };
-
-    getJsaByEmployeeId();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [item?._id]);
-
-  const assignedJsaIds = new Set(
-    assignedJsasId?.data?.map((item: any) => String(item.jsaId)) || [],
-  );
-
-  const hasJsaAssigned = assignedJsaIds.has(String(jsa?._id));
-
   return (
-    <View className="w-full mb-3.5">
+    <View className="mb-3.5 w-full">
       <View className="w-full rounded-[22px] border border-gray-200 bg-white px-4 py-4">
         <View className="flex-row items-center">
           <View
@@ -123,7 +78,7 @@ const AssignEmployeeCard = ({
             </Text>
 
             {(!!employeePosition || !!employeeDepartment) && (
-              <View className="flex-row items-center flex-wrap">
+              <View className="flex-row flex-wrap items-center">
                 {!!employeePosition && (
                   <Text
                     numberOfLines={1}
@@ -150,14 +105,12 @@ const AssignEmployeeCard = ({
           </View>
 
           {hasJsaAssigned ? (
-            <View className="h-8 w-24 items-center justify-center rounded-full bg-emerald-100">
+            <View className="mb-8 h-8 w-24 items-center justify-center rounded-full bg-emerald-100">
               <Text className="font-inter text-[.9rem] text-emerald-700">
                 Assigned
               </Text>
             </View>
-          ) : (
-            ""
-          )}
+          ) : null}
         </View>
 
         <View className="my-3.5 h-px bg-gray-100" />
@@ -178,10 +131,19 @@ const AssignEmployeeCard = ({
             )}
           </View>
 
-          <View className="min-w-[84px] items-center justify-center rounded-full border border-gray-300 bg-gray-100 px-4 py-2">
-            <Text className="text-[13px] font-semibold text-gray-700">
-              {!hasJsaAssigned ? "Select" : "View"}
-            </Text>
+          <View className="min-w-[84px] items-center justify-center rounded-lg border border-gray-300 bg-neutral-100 px-4 py-2">
+            <SinglePressTouchable
+              onPress={() =>
+                handleEmployeePress(
+                  item,
+                  hasJsaAssigned ? "viewCompletedJsa" : "AssignJSA",
+                )
+              }
+            >
+              <Text className="text-[13px] font-semibold text-gray-700">
+                {hasJsaAssigned ? "View" : "Select"}
+              </Text>
+            </SinglePressTouchable>
           </View>
         </View>
       </View>

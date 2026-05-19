@@ -5,10 +5,13 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import SelectionSheet from "@/components/ui/sheets/SelectionSheet";
 import JsaQuestions from "./JsaQuestions";
 import useEmployeeContext from "@/app/context/EmployeeContext";
+import ViewCompletedJsa from "./ViewCompletedJsa";
 
 type Props = {
-  view: "employeeSelection" | "AssignJSA";
-  setView: (view: "employeeSelection" | "AssignJSA") => void;
+  view: "employeeSelection" | "AssignJSA" | "viewCompletedJsa";
+  setView: (
+    view: "employeeSelection" | "AssignJSA" | "viewCompletedJsa",
+  ) => void;
   jsa: any;
   onClose: () => void;
   onSuccess: () => void;
@@ -22,9 +25,12 @@ const JsaAssignmentSheetContent = ({
 }: Props) => {
   const { setEmployee } = useEmployeeContext();
 
-  const handleSelectEmployee = async (selectedEmployee: any) => {
+  const handleSelectEmployee = async (
+    selectedEmployee: any,
+    nextView: "AssignJSA" | "viewCompletedJsa",
+  ) => {
     setEmployee(selectedEmployee);
-    setView("AssignJSA");
+    setView(nextView);
   };
 
   if (view === "employeeSelection") {
@@ -77,7 +83,7 @@ const JsaAssignmentSheetContent = ({
           searchPlaceholderLabel="employees"
           emptyTitle="No employees found"
           emptyDescription="Try searching by employee name or ID."
-          onEmployeeSelected={handleSelectEmployee}
+          handleSelectedEmployee={handleSelectEmployee}
         />
       </View>
     );
@@ -85,6 +91,10 @@ const JsaAssignmentSheetContent = ({
 
   if (view === "AssignJSA") {
     return <JsaQuestions jsa={jsa} onSuccess={onSuccess} />;
+  }
+
+  if (view === "viewCompletedJsa") {
+    return <ViewCompletedJsa jsa={jsa} />;
   }
 
   return null;
