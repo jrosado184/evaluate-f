@@ -368,8 +368,8 @@ const ViewCompletedJsa = ({ jsa, onViewPdf }: Props) => {
           const previewSource = makePreview(stored);
           const label =
             sig.key === "employeeSignature"
-              ? employee?.employee_name || sig.label
-              : sig.label;
+              ? employee?.employee_name
+              : assignedByName;
 
           return (
             <View

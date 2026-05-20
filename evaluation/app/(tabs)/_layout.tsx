@@ -9,7 +9,7 @@ import { Animated, Easing } from "react-native";
 import { router, Tabs, usePathname } from "expo-router";
 import HomeIcon from "@/constants/icons/HomeIcon";
 import UsersIcon from "@/constants/icons/UsersIcon";
-import LockIcon from "@/constants/icons/LockIcon";
+import JSAIcon from "@/constants/icons/JSAIcon";
 import EvaluationsIcon from "@/constants/icons/EvaluationIcon";
 import { TabIcon } from "@/components/navigation/TabBarIcon";
 
@@ -19,11 +19,14 @@ export const unstable_settings = {
 
 const TabBarContext = createContext({
   isTabBarVisible: true,
-  setIsTabBarVisible: (visible: boolean) => {},
+  setIsTabBarVisible: (_visible: boolean) => {},
   scrollY: 0,
 });
 
 export const useTabBar = () => useContext(TabBarContext);
+
+const ACTIVE_COLOR = "#1a237e";
+const INACTIVE_COLOR = "#B4B4B4";
 
 export default function TabsLayout() {
   const [isTabBarVisible, setIsTabBarVisible] = useState(true);
@@ -37,7 +40,7 @@ export default function TabsLayout() {
       easing: Easing.inOut(Easing.ease),
       useNativeDriver: true,
     }).start();
-  }, [isTabBarVisible]);
+  }, [isTabBarVisible, tabBarTranslate]);
 
   return (
     <TabBarContext.Provider
@@ -71,8 +74,8 @@ export default function TabsLayout() {
                   <HomeIcon
                     width={32}
                     height={32}
-                    fillColor={focused ? "#1a237e" : "#B4B4B4"}
-                    strokeColor={focused ? "#1a237e" : "#B4B4B4"}
+                    fillColor={focused ? ACTIVE_COLOR : INACTIVE_COLOR}
+                    strokeColor={focused ? ACTIVE_COLOR : INACTIVE_COLOR}
                   />
                 }
                 focused={focused}
@@ -80,6 +83,7 @@ export default function TabsLayout() {
             ),
           }}
         />
+
         <Tabs.Screen
           name="users"
           listeners={{
@@ -100,8 +104,8 @@ export default function TabsLayout() {
                   <UsersIcon
                     width={32}
                     height={32}
-                    fillColor={focused ? "#1a237e" : "#B4B4B4"}
-                    strokeColor={focused ? "#1a237e" : "#B4B4B4"}
+                    fillColor={focused ? ACTIVE_COLOR : INACTIVE_COLOR}
+                    strokeColor={focused ? ACTIVE_COLOR : INACTIVE_COLOR}
                   />
                 }
                 focused={focused}
@@ -109,28 +113,29 @@ export default function TabsLayout() {
             ),
           }}
         />
+
         <Tabs.Screen
-          name="lockers"
+          name="jsas"
           listeners={{
             tabPress: (e) => {
               e.preventDefault();
-              if (pathname !== "/lockers") {
-                router.replace("/(tabs)/lockers");
+              if (pathname !== "/jsas") {
+                router.replace("/(tabs)/jsas");
               }
             },
           }}
           options={{
-            title: "Lockers",
+            title: "JSAs",
             tabBarIcon: ({ color, focused }) => (
               <TabIcon
                 color={color}
-                icon_name="Lockers"
+                icon_name="JSAs"
                 icon={
-                  <LockIcon
+                  <JSAIcon
                     width={32}
                     height={32}
-                    fillColor={focused ? "#1a237e" : "#B4B4B4"}
-                    strokeColor={focused ? "#1a237e" : "#B4B4B4"}
+                    fillColor={focused ? ACTIVE_COLOR : INACTIVE_COLOR}
+                    strokeColor={focused ? ACTIVE_COLOR : INACTIVE_COLOR}
                   />
                 }
                 focused={focused}
@@ -138,6 +143,7 @@ export default function TabsLayout() {
             ),
           }}
         />
+
         <Tabs.Screen
           name="evaluations"
           listeners={{
@@ -158,8 +164,8 @@ export default function TabsLayout() {
                   <EvaluationsIcon
                     width={32}
                     height={32}
-                    fillColor={focused ? "#1a237e" : "#B4B4B4"}
-                    strokeColor={focused ? "#1a237e" : "#B4B4B4"}
+                    fillColor={focused ? ACTIVE_COLOR : INACTIVE_COLOR}
+                    strokeColor={focused ? ACTIVE_COLOR : INACTIVE_COLOR}
                   />
                 }
                 focused={focused}
