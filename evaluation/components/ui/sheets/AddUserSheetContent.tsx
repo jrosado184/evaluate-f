@@ -42,7 +42,10 @@ const SectionCard = ({
   children: React.ReactNode;
 }) => {
   return (
-    <View className="mb-6 rounded-3xl border border-neutral-200 bg-white px-5 py-5 shadow-sm">
+    <View
+      className="mb-6 rounded-3xl border border-neutral-200 bg-white px-5 py-5
+    "
+    >
       <Text className="text-[16px] font-semibold text-black">{title}</Text>
       {subtitle ? (
         <Text className="mt-1.5 text-[13px] leading-5 text-neutral-500">
@@ -359,7 +362,7 @@ const AddUserSheetContent = ({
           </View>
         </SectionCard>
 
-        <View className="mt-2 px-5 py-5 shadow-sm">
+        <View className="mt-2 px-5 py-5">
           <Text className="text-[15px] font-semibold text-black">
             Ready to save?
           </Text>

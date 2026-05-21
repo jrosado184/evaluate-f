@@ -62,6 +62,10 @@ const JsaScreen = () => {
     sheetRef.current?.dismiss();
   };
 
+  const handleCompletedJsa = () => {
+    setSheetView("viewCompletedJsa");
+  };
+
   const handleDismiss = () => {
     resetSheetFlow();
   };
@@ -71,9 +75,13 @@ const JsaScreen = () => {
   return (
     <>
       <SafeAreaView className="flex-1 p-6 bg-white">
-        <View className="flex-row h-7 justify-between items-center w-full">
-          <Text className="pl-2 font-inter-regular text-[1.6rem]">
-            JSA&apos;s
+        <View className="w-full">
+          <View className="flex-row items-center justify-between w-full">
+            <Text className="text-3xl font-bold text-black">JSA&apos;s</Text>
+          </View>
+
+          <Text className="mt-1 text-[13px] leading-5 text-neutral-500">
+            Manage safety assignments and track JSA completion.
           </Text>
         </View>
 
@@ -155,8 +163,8 @@ const JsaScreen = () => {
           setView={setSheetView}
           jsa={selectedJsa}
           onClose={closeAssignSheet}
-          onSuccess={() => {
-            closeAssignSheet();
+          onSuccess={async () => {
+            await handleCompletedJsa();
           }}
         />
       </AppBottomSheet>

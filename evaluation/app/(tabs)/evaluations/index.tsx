@@ -89,7 +89,7 @@ const Evaluations = () => {
 
   useEffect(() => {
     fetchEvaluations();
-  }, [fetchEvaluations, sheetView]);
+  }, [fetchEvaluations, selectedEmployeeId]);
 
   const onRefresh = useCallback(async () => {
     try {

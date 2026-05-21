@@ -89,6 +89,8 @@ export default function ModernDashboard() {
     fetchAllEvaluations();
   }, []);
 
+  useEffect(() => {}, [sheetView]);
+
   useGetUsers(8);
 
   const resetEvaluationFlow = () => {

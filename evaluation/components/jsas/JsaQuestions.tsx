@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { Alert, View, Text, Image } from "react-native";
+import { Alert, View, Text, Image, useWindowDimensions } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { ActivityIndicator } from "react-native-paper";
@@ -146,6 +146,9 @@ async function uploadPendingJsaSignatures({
 const JsaQuestions = ({ jsa, onSuccess }: Props) => {
   const { employee } = useEmployeeContext();
   const { currentUser } = useAuthContext();
+  const { width } = useWindowDimensions();
+
+  const isTabletLayout = width >= 768;
 
   const questions = useMemo(
     () => (Array.isArray(jsa?.questions) ? jsa.questions : []),
@@ -272,7 +275,16 @@ const JsaQuestions = ({ jsa, onSuccess }: Props) => {
 
   return (
     <>
-      <ScrollView className="flex-1 px-4 pb-4 pt-2">
+      <ScrollView
+        className="px-4 pt-2"
+        contentContainerStyle={{
+          paddingBottom: 40,
+          alignSelf: "center",
+          width: "100%",
+          maxWidth: isTabletLayout ? 980 : undefined,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
         <View className="rounded-[22px] border border-gray-200 bg-white px-4 py-4">
           <View className="flex-row items-start">
             <View className="h-[46px] w-[46px] items-center justify-center rounded-[14px] border border-blue-100 bg-blue-50">
@@ -313,43 +325,53 @@ const JsaQuestions = ({ jsa, onSuccess }: Props) => {
             </View>
           </View>
 
-          <View className="my-3.5 h-px bg-gray-100" />
+          <View className="my-4 h-px bg-gray-100" />
 
-          <View className="flex-row items-center">
-            <MaterialCommunityIcons
-              name="account-outline"
-              size={18}
-              color="#6B7280"
-            />
-            <Text className="ml-2 text-[13px] text-gray-500">Assigning to</Text>
-          </View>
-
-          <Text className="mt-2 text-[16px] font-semibold text-gray-900">
-            {employee?.employee_name ?? "Selected employee"}
-          </Text>
-
-          {(!!employee?.position || !!employee?.department) && (
-            <View className="mt-1 flex-row items-center flex-wrap">
-              {!!employee?.position && (
-                <Text className="text-[13px] font-medium text-gray-500">
-                  {employee.position}
+          <View
+            className={`${isTabletLayout ? "flex-row items-start justify-between" : ""}`}
+          >
+            <View className={`${isTabletLayout ? "flex-1 pr-4" : ""}`}>
+              <View className="flex-row items-center">
+                <MaterialCommunityIcons
+                  name="account-outline"
+                  size={18}
+                  color="#6B7280"
+                />
+                <Text className="ml-2 text-[13px] text-gray-500">
+                  Assigning to
                 </Text>
-              )}
+              </View>
 
-              {!!employee?.position && !!employee?.department && (
-                <Text className="mx-1.5 text-[13px] text-gray-300">•</Text>
-              )}
+              <Text className="mt-2 text-[16px] font-semibold text-gray-900">
+                {employee?.employee_name ?? "Selected employee"}
+              </Text>
 
-              {!!employee?.department && (
-                <Text className="text-[13px] font-medium text-gray-500">
-                  {employee.department}
-                </Text>
+              {(!!employee?.position || !!employee?.department) && (
+                <View className="mt-1 flex-row items-center flex-wrap">
+                  {!!employee?.position && (
+                    <Text className="text-[13px] font-medium text-gray-500">
+                      {employee.position}
+                    </Text>
+                  )}
+
+                  {!!employee?.position && !!employee?.department && (
+                    <Text className="mx-1.5 text-[13px] text-gray-300">•</Text>
+                  )}
+
+                  {!!employee?.department && (
+                    <Text className="text-[13px] font-medium text-gray-500">
+                      {employee.department}
+                    </Text>
+                  )}
+                </View>
               )}
             </View>
-          )}
+          </View>
         </View>
 
-        <View className="mt-4 gap-3 pb-6">
+        <View
+          className={`mt-4 ${isTabletLayout ? "flex-row flex-wrap justify-between" : "gap-3"} pb-6`}
+        >
           {questions.map((question: any, index: number) => {
             const questionText = question?.question ?? "";
             const selected = responses[questionText];
@@ -358,7 +380,9 @@ const JsaQuestions = ({ jsa, onSuccess }: Props) => {
             return (
               <View
                 key={question?.order ?? index}
-                className="rounded-[20px] border border-gray-200 bg-white px-4 py-4"
+                className={`rounded-[20px] border border-gray-200 bg-white px-4 py-4 ${
+                  isTabletLayout ? "mb-4 w-[48.7%]" : ""
+                }`}
               >
                 <View className="mb-3 flex-row items-start">
                   <View className="mr-3 h-8 w-8 items-center justify-center rounded-full bg-blue-50">
@@ -407,39 +431,44 @@ const JsaQuestions = ({ jsa, onSuccess }: Props) => {
           })}
         </View>
 
-        {SIGNATURE_FIELDS.map((sig) => {
-          const stored = formData[sig.key];
-          const previewSource = pendingSigs[sig.key] || makePreview(stored);
-          const label =
-            sig.key === "employeeSignature"
-              ? employee?.employee_name || sig.label
-              : sig.label;
+        <View className={`${isTabletLayout ? "flex-row justify-between" : ""}`}>
+          {SIGNATURE_FIELDS.map((sig) => {
+            const stored = formData[sig.key];
+            const previewSource = pendingSigs[sig.key] || makePreview(stored);
+            const label =
+              sig.key === "employeeSignature"
+                ? employee?.employee_name || sig.label
+                : sig.label;
 
-          return (
-            <View key={sig.key} className="mb-5">
-              <Text className="mb-2 text-base font-medium text-gray-700">
-                {label} Signature
-              </Text>
-
-              <SinglePressTouchable
-                onPress={() => setSignatureType(sig.key)}
-                className="items-center justify-center rounded-md border border-gray-300 bg-gray-100 px-4 py-3"
+            return (
+              <View
+                key={sig.key}
+                className={`mb-5 ${isTabletLayout ? "w-[49%]" : ""}`}
               >
-                {previewSource ? (
-                  <Image
-                    source={{ uri: previewSource }}
-                    className="h-16 w-full"
-                    resizeMode="contain"
-                  />
-                ) : (
-                  <Text className="text-gray-500">Tap to sign</Text>
-                )}
-              </SinglePressTouchable>
-            </View>
-          );
-        })}
+                <Text className="mb-2 text-base font-medium text-gray-700">
+                  {label} Signature
+                </Text>
 
-        <View className="pb-20 my-4">
+                <SinglePressTouchable
+                  onPress={() => setSignatureType(sig.key)}
+                  className="items-center justify-center rounded-md border border-gray-300 bg-gray-100 px-4 py-3 min-h-[92px]"
+                >
+                  {previewSource ? (
+                    <Image
+                      source={{ uri: previewSource }}
+                      className="h-16 w-full"
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <Text className="text-gray-500">Tap to sign</Text>
+                  )}
+                </SinglePressTouchable>
+              </View>
+            );
+          })}
+        </View>
+
+        <View className="my-4 pb-20">
           <SinglePressTouchable
             activeOpacity={0.85}
             onPress={handleSubmit}
