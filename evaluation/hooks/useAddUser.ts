@@ -40,7 +40,7 @@ const useAddUser = () => {
   const handleEmployeeInfo = (field: string, value: any) => {
     setAddEmployeeInfo({
       ...addEmployeeInfo,
-      added_by: currentUser.name,
+      added_by: currentUser?.name,
       [field]: value,
     });
     setErrors({

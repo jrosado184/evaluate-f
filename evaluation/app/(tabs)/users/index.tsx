@@ -57,6 +57,10 @@ const Users = () => {
   const sheetRef = useRef<BottomSheetModal>(null);
   const snapPoints = ["94%"];
 
+  const clearSuccessMessage = useCallback(() => {
+    setActionsMessage("");
+  }, [setActionsMessage]);
+
   const computeSort = () => {
     switch (sortingBy) {
       case "Lockers":
@@ -326,14 +330,26 @@ const Users = () => {
 
   return (
     <SafeAreaView className="p-6 h-[104vh] bg-white">
-      <View className="flex-row h-7 justify-between items-center w-full">
-        <Text className="pl-2 font-inter-regular text-[1.6rem]">Users</Text>
+      <View className="w-full">
+        <View className="flex-row items-center justify-between w-full">
+          <Text className="text-3xl font-bold text-black">Users</Text>
+        </View>
+
+        <Text className="mt-1 text-[13px] leading-5 text-neutral-500">
+          Manage employee details and track progress.
+        </Text>
       </View>
 
       {can(currentUser, PERMISSIONS.USERS_CREATE) && (
         <Fab icon="user-plus" onPress={openAddUserSheet} />
       )}
-      <Search total="users" query={query} setQuery={handleSearchChange} />
+
+      <Search
+        label="users"
+        total={userDetails?.totalUsers}
+        query={query}
+        setQuery={handleSearchChange}
+      />
 
       {employees?.length === 0 && !loading ? (
         <View className="h-[50vh] justify-center items-center">
@@ -365,7 +381,7 @@ const Users = () => {
       )}
 
       <SuccessModal
-        clearMessage={() => setActionsMessage("")}
+        clearMessage={clearSuccessMessage}
         message={actionsMessage}
       />
 
@@ -405,6 +421,7 @@ const Users = () => {
           setView={setAddUserSheetView}
           onClose={closeAddUserSheet}
           onSuccess={async () => {
+            setActionsMessage("User added successfully");
             closeAddUserSheet();
             await refreshUsersList();
           }}

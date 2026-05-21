@@ -13,7 +13,7 @@ const addEmployee = async (addEmployeeInfo: any) => {
         headers: {
           Authorization: token,
         },
-      }
+      },
     );
     return response;
   } catch (error: any) {

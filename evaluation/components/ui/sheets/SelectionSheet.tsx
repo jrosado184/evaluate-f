@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { View, Text, FlatList, Alert } from "react-native";
+import { View, Text, FlatList } from "react-native";
 import { ActivityIndicator } from "react-native-paper";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
@@ -13,9 +13,7 @@ import debounce from "lodash.debounce";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import Search from "@/components/Search";
-import SinglePressTouchable from "@/app/utils/SinglePress";
 import getServerIP from "@/app/requests/NetworkAddress";
-import useAuthContext from "@/app/context/AuthContext";
 
 import AssignEmployeeCard from "@/components/users/AssignUserCard";
 import AssignLockerCard from "@/components/users/AssignLockerCard";
@@ -24,38 +22,43 @@ type SelectionMode = "employees" | "lockers";
 
 type SelectionSheetProps = {
   mode: SelectionMode;
-  source?: string;
+  jsa?: any;
   filter?: string;
-  lockerId?: string;
-  onLockerSelected?: (locker: any) => void;
-  onEmployeeAssigned?: () => void;
-  onEmployeeSelected?: (employeeId: string) => void;
+  handleSelectedEmployee?: (
+    employee: any,
+    view: "viewCompletedJsa" | "AssignJSA",
+  ) => Promise<void> | void;
+  onLockerSelected?: (locker: any) => Promise<void> | void;
+  searchPlaceholderLabel?: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
 };
 
 const PAGE_SIZE = 8;
 
 const SelectionSheet: React.FC<SelectionSheetProps> = ({
   mode,
-  source,
+  jsa,
   filter,
-  lockerId,
+  handleSelectedEmployee,
   onLockerSelected,
-  onEmployeeAssigned,
-  onEmployeeSelected,
+  searchPlaceholderLabel,
+  emptyTitle,
+  emptyDescription,
 }) => {
   const isEmployeeMode = mode === "employees";
-  const { currentUser } = useAuthContext();
-
   const mountedRef = useRef(true);
 
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<any[]>([]);
   const [filteredItems, setFilteredItems] = useState<any[]>([]);
+  const [employeeJsaRecords, setEmployeeJsaRecords] = useState<any[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [fetchingMore, setFetchingMore] = useState(false);
+  const [loadingAssignments, setLoadingAssignments] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -97,10 +100,12 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
 
       if (!mountedRef.current) return;
 
-      const nextItems = res.data?.results ?? [];
+      const nextItems = res.data?.results ?? res.data?.data ?? [];
       setItems(nextItems);
-      setCurrentPage(res.data?.currentPage ?? 1);
-      setTotalPages(res.data?.totalPages ?? 1);
+      setCurrentPage(res.data?.currentPage ?? res.data?.pagination?.page ?? 1);
+      setTotalPages(
+        res.data?.totalPages ?? res.data?.pagination?.totalPages ?? 1,
+      );
     } catch (err) {
       console.error("SelectionSheet initial load error:", err);
       if (mountedRef.current) {
@@ -116,6 +121,51 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
   useEffect(() => {
     loadInitial();
   }, [loadInitial]);
+
+  useEffect(() => {
+    if (!isEmployeeMode || !jsa?._id) return;
+
+    let isMounted = true;
+
+    const loadJsaAssignments = async () => {
+      try {
+        setLoadingAssignments(true);
+
+        const token = await AsyncStorage.getItem("token");
+        const baseUrl = await getServerIP();
+
+        const response = await axios.get(
+          `${baseUrl}/employee-jsas?jsaId=${jsa._id}`,
+          {
+            headers: {
+              Authorization: token,
+            },
+          },
+        );
+
+        if (!isMounted || !mountedRef.current) return;
+
+        setEmployeeJsaRecords(response?.data?.data || []);
+      } catch (error: any) {
+        if (!isMounted || !mountedRef.current) return;
+        console.error(
+          "Failed to fetch JSA employee assignments:",
+          error?.response?.data || error,
+        );
+        setEmployeeJsaRecords([]);
+      } finally {
+        if (isMounted && mountedRef.current) {
+          setLoadingAssignments(false);
+        }
+      }
+    };
+
+    loadJsaAssignments();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isEmployeeMode, jsa?._id]);
 
   const loadMore = useCallback(async () => {
     if (fetchingMore || loading) return;
@@ -135,10 +185,14 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
 
       if (!mountedRef.current) return;
 
-      const nextItems = res.data?.results ?? [];
+      const nextItems = res.data?.results ?? res.data?.data ?? [];
       setItems((prev) => [...prev, ...nextItems]);
-      setCurrentPage(res.data?.currentPage ?? nextPage);
-      setTotalPages(res.data?.totalPages ?? totalPages);
+      setCurrentPage(
+        res.data?.currentPage ?? res.data?.pagination?.page ?? nextPage,
+      );
+      setTotalPages(
+        res.data?.totalPages ?? res.data?.pagination?.totalPages ?? totalPages,
+      );
     } catch (err) {
       console.error("SelectionSheet loadMore error:", err);
     } finally {
@@ -170,7 +224,9 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
 
         if (!mountedRef.current) return;
 
-        setFilteredItems(res.data?.users || res.data?.results || []);
+        setFilteredItems(
+          res.data?.users || res.data?.results || res.data?.data || [],
+        );
       } catch (err) {
         console.error("SelectionSheet search error:", err);
         if (mountedRef.current) {
@@ -208,118 +264,101 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
   }, []);
 
   const handleEmployeePress = useCallback(
-    async (employeeId: string) => {
-      if (source === "dashboard") {
-        onEmployeeSelected?.(employeeId);
-        return;
-      }
-
-      if (onEmployeeSelected && !lockerId) {
-        onEmployeeSelected(employeeId);
-        return;
-      }
-
-      if (!lockerId) {
-        Alert.alert("Error", "No locker selected.");
-        return;
-      }
+    async (employee: any, view: "viewCompletedJsa" | "AssignJSA") => {
+      if (!handleSelectedEmployee) return;
 
       try {
         setActionLoading(true);
-
-        const token = await AsyncStorage.getItem("token");
-        const baseUrl = await getServerIP();
-
-        const response = await axios.post(
-          `${baseUrl}/lockers/assign`,
-          {
-            lockerId,
-            employeeId,
-            assigned_by: currentUser?.name,
-          },
-          {
-            headers: {
-              Authorization: token,
-              "Content-Type": "application/json",
-            },
-          },
-        );
-
-        if (response.status === 200) {
-          onEmployeeAssigned?.();
-        }
-      } catch (error: any) {
-        console.error(
-          "Assignment failed:",
-          error?.response?.data || error.message,
-        );
-
-        Alert.alert(
-          "Error",
-          error?.response?.data?.error || "Failed to assign locker",
-        );
+        await handleSelectedEmployee(employee, view);
+      } catch (error) {
+        console.error("SelectionSheet employee action error:", error);
       } finally {
         if (mountedRef.current) {
           setActionLoading(false);
         }
       }
     },
-    [
-      source,
-      lockerId,
-      currentUser?.name,
-      onEmployeeAssigned,
-      onEmployeeSelected,
-    ],
+    [handleSelectedEmployee],
+  );
+
+  const handleLockerPress = useCallback(
+    async (locker: any) => {
+      if (!onLockerSelected) return;
+
+      try {
+        setActionLoading(true);
+        await onLockerSelected(locker);
+      } catch (error) {
+        console.error("SelectionSheet locker action error:", error);
+      } finally {
+        if (mountedRef.current) {
+          setActionLoading(false);
+        }
+      }
+    },
+    [onLockerSelected],
   );
 
   const listData = useMemo(() => {
     return query.trim() ? filteredItems : items;
   }, [query, filteredItems, items]);
 
+  const assignedEmployeeIds = useMemo(() => {
+    return new Set(
+      employeeJsaRecords.map((record: any) => String(record.employeeId)),
+    );
+  }, [employeeJsaRecords]);
+
   const renderItem = useCallback(
     ({ item }: any) => {
       if (isEmployeeMode) {
         return (
-          <SinglePressTouchable
-            onPress={() => handleEmployeePress(item._id)}
-            activeOpacity={0.82}
-          >
-            <AssignEmployeeCard
-              source={source}
-              {...item}
-              assigned={!!item.locker_id}
-            />
-          </SinglePressTouchable>
+          <AssignEmployeeCard
+            jsa={jsa}
+            {...item}
+            hasJsaAssigned={assignedEmployeeIds.has(String(item?._id))}
+            handleEmployeePress={handleEmployeePress}
+          />
         );
       }
 
       return (
-        <AssignLockerCard {...item} onPress={() => onLockerSelected?.(item)} />
+        <AssignLockerCard {...item} onPress={() => handleLockerPress(item)} />
       );
     },
-    [isEmployeeMode, handleEmployeePress, onLockerSelected, source],
+    [
+      isEmployeeMode,
+      jsa,
+      assignedEmployeeIds,
+      handleEmployeePress,
+      handleLockerPress,
+    ],
   );
 
   return (
     <View className="flex-1 px-4 pb-4">
       <Search
+        label={isEmployeeMode ? "employees" : "lockers"}
         noFilter
-        total={isEmployeeMode ? "employees" : "lockers"}
+        total={
+          searchPlaceholderLabel || (isEmployeeMode ? "employees" : "lockers")
+        }
         query={query}
         setQuery={setQuery}
       />
 
       <View className="mt-2 flex-1">
-        {loading || searchLoading || actionLoading ? (
+        {loading || searchLoading || actionLoading || loadingAssignments ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" color="#111827" />
             <Text className="mt-3 text-[14px] font-medium text-gray-500">
               {actionLoading
-                ? "Assigning..."
-                : query.trim()
-                  ? "Searching..."
-                  : "Loading..."}
+                ? "Processing..."
+                : loadingAssignments
+                  ? "Checking assignments..."
+                  : query.trim()
+                    ? "Searching..."
+                    : "Loading..."}
             </Text>
           </View>
         ) : (
@@ -351,13 +390,14 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
                 </View>
 
                 <Text className="mt-4 text-[17px] font-semibold text-gray-800">
-                  No results found
+                  {emptyTitle || "No results found"}
                 </Text>
 
                 <Text className="mt-2 text-center text-[14px] leading-5 text-gray-500">
-                  {query.trim()
-                    ? `No ${isEmployeeMode ? "employees" : "lockers"} matched your search.`
-                    : `No ${isEmployeeMode ? "employees" : "lockers"} available right now.`}
+                  {emptyDescription ||
+                    (query.trim()
+                      ? `No ${isEmployeeMode ? "employees" : "lockers"} matched your search.`
+                      : `No ${isEmployeeMode ? "employees" : "lockers"} available right now.`)}
                 </Text>
               </View>
             }

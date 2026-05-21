@@ -4,16 +4,18 @@ import { Alert, AlertText } from "@/components/ui/alert";
 import Icon from "react-native-vector-icons/Octicons";
 
 interface Props {
-  show: boolean;
-  setShow: (value: boolean) => void;
   message: string;
+  clearMessage: () => void;
 }
 
-const SuccessModal = ({ show, setShow, message }: Props) => {
+const SuccessModal = ({ message, clearMessage }: Props) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const visible = !!message?.trim();
 
   useEffect(() => {
-    if (!show) return;
+    if (!visible) return;
+
+    fadeAnim.setValue(0);
 
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -26,13 +28,13 @@ const SuccessModal = ({ show, setShow, message }: Props) => {
         toValue: 0,
         duration: 800,
         useNativeDriver: true,
-      }).start(() => setShow(false));
+      }).start(() => clearMessage());
     }, 3000);
 
     return () => clearTimeout(timeout);
-  }, [show]);
+  }, [visible, message, fadeAnim, clearMessage]);
 
-  if (!show) return null;
+  if (!visible) return null;
 
   return (
     <View
@@ -41,12 +43,13 @@ const SuccessModal = ({ show, setShow, message }: Props) => {
         position: "absolute",
         bottom: 0,
         left: 20,
-        width: "100%",
+        right: 20,
       }}
+      pointerEvents="none"
     >
-      <Animated.View className="w-full" style={{ opacity: fadeAnim }}>
+      <Animated.View style={{ opacity: fadeAnim }}>
         <Alert
-          className="mb-48 w-full bg-[#008000] justify-center items-center"
+          className="mb-48 w-full items-center justify-center bg-[#008000]"
           action="success"
           variant="solid"
         >

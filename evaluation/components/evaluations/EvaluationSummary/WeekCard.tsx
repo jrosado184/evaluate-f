@@ -121,31 +121,33 @@ export default function WeekCard({
               <Icon name="edit-2" size={13} color="#2563EB" />
             </TouchableOpacity>
           )}
-          {evaluation.status !== "complete" && lastWeekAdded && (
-            <TouchableOpacity
-              onPress={() =>
-                Alert.alert(
-                  "Delete week?",
-                  "Are you sure you want to delete this week?",
-                  [
-                    {
-                      text: "Cancel",
-                      style: "cancel",
-                    },
-                    {
-                      text: "Delete",
-                      style: "destructive",
-                      onPress: () => onDelete(weekNumber), // or your delete handler
-                    },
-                  ],
-                )
-              }
-              className="ml-2.5 rounded-md bg-blue-50 p-1.5"
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Icon name="trash" size={13} color="#2563EB" />
-            </TouchableOpacity>
-          )}
+          {evaluation.status !== "complete" &&
+            canEditEvaluation &&
+            lastWeekAdded && (
+              <TouchableOpacity
+                onPress={() =>
+                  Alert.alert(
+                    "Delete week?",
+                    "Are you sure you want to delete this week?",
+                    [
+                      {
+                        text: "Cancel",
+                        style: "cancel",
+                      },
+                      {
+                        text: "Delete",
+                        style: "destructive",
+                        onPress: () => onDelete(weekNumber), // or your delete handler
+                      },
+                    ],
+                  )
+                }
+                className="ml-2.5 rounded-md bg-blue-50 p-1.5"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Icon name="trash" size={13} color="#2563EB" />
+              </TouchableOpacity>
+            )}
         </View>
       </View>
 

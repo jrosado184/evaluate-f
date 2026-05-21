@@ -1,13 +1,18 @@
 import React, { memo } from "react";
 import { View, Text } from "react-native";
+import SinglePressTouchable from "@/app/utils/SinglePress";
 
 type AssignEmployeeCardProps = {
   name?: string;
   employeeId?: string | number;
+  handleEmployeePress: (
+    employee: any,
+    view: "viewCompletedJsa" | "AssignJSA",
+  ) => void;
   position?: string;
   department?: string;
   dateOfHire?: string;
-  assigned?: boolean;
+  hasJsaAssigned?: boolean;
   source?: string;
   [key: string]: any;
 };
@@ -39,19 +44,20 @@ const AssignEmployeeCard = ({
   position,
   department,
   dateOfHire,
-  assigned,
-  source,
+  hasJsaAssigned = false,
+  handleEmployeePress,
   ...item
 }: AssignEmployeeCardProps) => {
   const employeeName = item?.employee_name || name || "";
   const id = item?.employee_id || employeeId || "";
+  const employeePosition = item?.position || position || "";
+  const employeeDepartment = item?.department || department || "";
   const hireDate = item?.date_of_hire || dateOfHire || "";
   const avatarTheme = getAvatarTheme(employeeName);
 
   return (
-    <View className="w-full mb-3.5">
+    <View className="mb-3.5 w-full">
       <View className="w-full rounded-[22px] border border-gray-200 bg-white px-4 py-4">
-        {/* Top */}
         <View className="flex-row items-center">
           <View
             className={`h-[46px] w-[46px] items-center justify-center rounded-[14px] ${avatarTheme.bg}`}
@@ -71,57 +77,44 @@ const AssignEmployeeCard = ({
               {employeeName}
             </Text>
 
-            {(!!position || !!department) && (
-              <View className="flex-row items-center flex-wrap">
-                {!!position && (
+            {(!!employeePosition || !!employeeDepartment) && (
+              <View className="flex-row flex-wrap items-center">
+                {!!employeePosition && (
                   <Text
                     numberOfLines={1}
                     className="text-[13px] font-medium text-gray-500"
                   >
-                    {position}
+                    {employeePosition}
                   </Text>
                 )}
-                {!!position && !!department && (
+
+                {!!employeePosition && !!employeeDepartment && (
                   <Text className="mx-1.5 text-[13px] text-gray-300">•</Text>
                 )}
-                {!!department && (
+
+                {!!employeeDepartment && (
                   <Text
                     numberOfLines={1}
                     className="text-[13px] font-medium text-gray-500"
                   >
-                    {department}
+                    {employeeDepartment}
                   </Text>
                 )}
               </View>
             )}
           </View>
 
-          {source !== "evaluations" && source !== "dashboard" && (
-            <View
-              className={`ml-2 flex-row items-center rounded-full px-2.5 py-1 ${
-                assigned ? "bg-emerald-50" : "bg-red-50"
-              }`}
-            >
-              <View
-                className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
-                  assigned ? "bg-emerald-500" : "bg-red-500"
-                }`}
-              />
-              <Text
-                className={`text-[11px] font-semibold ${
-                  assigned ? "text-emerald-700" : "text-red-600"
-                }`}
-              >
-                {assigned ? "Assigned" : "Unassigned"}
+          {hasJsaAssigned ? (
+            <View className="mb-8 h-8 w-24 items-center justify-center rounded-full bg-emerald-100">
+              <Text className="font-inter text-[.9rem] text-emerald-700">
+                Assigned
               </Text>
             </View>
-          )}
+          ) : null}
         </View>
 
-        {/* Divider */}
         <View className="my-3.5 h-px bg-gray-100" />
 
-        {/* Bottom */}
         <View className="flex-row items-center justify-between">
           <View className="flex-1 pr-3">
             {!!id && (
@@ -129,6 +122,7 @@ const AssignEmployeeCard = ({
                 ID: <Text className="font-semibold text-gray-500">{id}</Text>
               </Text>
             )}
+
             {!!hireDate && (
               <Text className="text-[13px] text-gray-400">
                 Hired:{" "}
@@ -137,10 +131,19 @@ const AssignEmployeeCard = ({
             )}
           </View>
 
-          <View className="min-w-[84px] items-center justify-center rounded-full border border-gray-300 bg-gray-100 px-4 py-2">
-            <Text className="text-[13px] font-semibold text-gray-700">
-              Select
-            </Text>
+          <View className="min-w-[84px] items-center justify-center rounded-lg border border-gray-300 bg-neutral-100 px-4 py-2">
+            <SinglePressTouchable
+              onPress={() =>
+                handleEmployeePress(
+                  item,
+                  hasJsaAssigned ? "viewCompletedJsa" : "AssignJSA",
+                )
+              }
+            >
+              <Text className="text-[13px] font-semibold text-gray-700">
+                {hasJsaAssigned ? "View" : "Select"}
+              </Text>
+            </SinglePressTouchable>
           </View>
         </View>
       </View>
