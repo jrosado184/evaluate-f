@@ -84,29 +84,52 @@ export async function uploadMultipart({
   return response.data;
 }
 
+const getLatestEvaluationWeek = (response: any) => {
+  const evaluations =
+    response?.evaluations || response?.data?.evaluations || [];
+
+  if (!Array.isArray(evaluations) || evaluations.length === 0) {
+    return null;
+  }
+
+  return [...evaluations].sort(
+    (a, b) => Number(b?.weekNumber || 0) - Number(a?.weekNumber || 0),
+  )[0];
+};
+
 export function getUploadedFileMeta(
   response: any,
   key: string,
   fallbacks: string[] = [],
 ) {
-  const candidates = [
-    response?.files?.[key],
-    response?.data?.files?.[key],
-    response?.[key],
-    response?.data?.[key],
-    ...fallbacks.map((fallbackKey) => response?.files?.[fallbackKey]),
-    ...fallbacks.map((fallbackKey) => response?.data?.files?.[fallbackKey]),
-    ...fallbacks.map((fallbackKey) => response?.[fallbackKey]),
-    ...fallbacks.map((fallbackKey) => response?.data?.[fallbackKey]),
-  ].filter(Boolean);
+  const latestWeek = getLatestEvaluationWeek(response);
+
+  const allKeys = [key, ...fallbacks];
+
+  const candidates = allKeys
+    .flatMap((candidateKey) => [
+      response?.files?.[candidateKey],
+      response?.data?.files?.[candidateKey],
+      response?.finalSignatures?.[candidateKey],
+      response?.data?.finalSignatures?.[candidateKey],
+      response?.[candidateKey],
+      response?.data?.[candidateKey],
+      latestWeek?.[candidateKey],
+    ])
+    .filter(Boolean);
 
   const match = candidates[0] || null;
+  const isString = typeof match === "string";
 
   return {
     raw: match,
-    fileId: match?.gridfsId || match?.fileId || match?._id || match?.id || null,
-    path: match?.path || match?.url || match?.fileUrl || null,
-    url: match?.url || match?.path || match?.fileUrl || null,
+    fileId: isString
+      ? null
+      : match?.gridfsId || match?.fileId || match?._id || match?.id || null,
+    path: isString
+      ? match
+      : match?.path || match?.url || match?.fileUrl || null,
+    url: isString ? match : match?.url || match?.path || match?.fileUrl || null,
   };
 }
 
@@ -129,9 +152,9 @@ export function pickUploadedFileId(
 }
 
 export function toRelativeApiPath(absOrRel: string, baseUrl: string) {
-  if (!absOrRel) return "";
+  if (!absOrRel || typeof absOrRel !== "string") return "";
 
-  if (absOrRel.startsWith("/api/")) {
+  if (absOrRel.startsWith("/")) {
     return absOrRel;
   }
 
@@ -139,10 +162,7 @@ export function toRelativeApiPath(absOrRel: string, baseUrl: string) {
     const fileUrl = new URL(absOrRel);
     const apiUrl = new URL(baseUrl);
 
-    if (
-      fileUrl.origin === apiUrl.origin &&
-      fileUrl.pathname.startsWith("/api/")
-    ) {
+    if (fileUrl.origin === apiUrl.origin) {
       return fileUrl.pathname;
     }
   } catch {
