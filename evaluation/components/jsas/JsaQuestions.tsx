@@ -12,6 +12,7 @@ import useEmployeeContext from "@/app/context/EmployeeContext";
 import getServerIP from "@/app/requests/NetworkAddress";
 import SignatureModal from "@/components/SignatureModal";
 import {
+  pickUploadedFileId,
   pickUploadedFileUrl,
   toRelativeApiPath,
   uploadJsaSignatures,
@@ -24,6 +25,14 @@ type Props = {
 };
 
 type SignatureKey = "employeeSignature" | "trainerSignature";
+
+type SignatureRef = {
+  signatureId: string | null;
+  storage: "gridfs";
+  signedAt: string | null;
+  path: string | null;
+  url: null;
+};
 
 const INITIAL_FORM_DATA = {
   employeeSignature: "",
@@ -80,6 +89,24 @@ function getQuestionOptions(question: any) {
     : ["Yes", "No"];
 }
 
+function buildSignatureRef({
+  signatureId,
+  path,
+  signedAt,
+}: {
+  signatureId?: string | null;
+  path?: string | null;
+  signedAt?: string | null;
+}): SignatureRef {
+  return {
+    signatureId: signatureId || null,
+    storage: "gridfs",
+    signedAt: signedAt || null,
+    path: path || null,
+    url: null,
+  };
+}
+
 async function uploadPendingJsaSignatures({
   pendingSigs,
   baseUrl,
@@ -125,22 +152,34 @@ async function uploadPendingJsaSignatures({
     trainer: "trainerSignature",
   };
 
+  const uploadedSignatures: Partial<Record<SignatureKey, SignatureRef>> = {};
   const uploadedPaths: Partial<Record<SignatureKey, string>> = {};
+  const now = new Date().toISOString();
 
   for (const role of Object.keys(roleToFormKey)) {
     if (!files[role]) continue;
 
-    const absOrRel = pickUploadedFileUrl(response, role);
+    const formKey = roleToFormKey[role];
+    const absOrRel = pickUploadedFileUrl(response, role, [formKey]);
+    const signatureId = pickUploadedFileId(response, role, [formKey]);
     const relativePath = toRelativeApiPath(absOrRel, baseUrl);
 
     if (!relativePath) {
       throw new Error("Upload did not return a valid signature URL.");
     }
 
-    uploadedPaths[roleToFormKey[role]] = relativePath;
+    uploadedPaths[formKey] = relativePath;
+    uploadedSignatures[formKey] = buildSignatureRef({
+      signatureId: signatureId || null,
+      path: relativePath,
+      signedAt: now,
+    });
   }
 
-  return uploadedPaths;
+  return {
+    uploadedPaths,
+    uploadedSignatures,
+  };
 }
 
 const JsaQuestions = ({ jsa, onSuccess }: Props) => {
@@ -162,6 +201,9 @@ const JsaQuestions = ({ jsa, onSuccess }: Props) => {
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
   const [pendingSigs, setPendingSigs] = useState<
     Partial<Record<SignatureKey, string>>
+  >({});
+  const [signatureRefs, setSignatureRefs] = useState<
+    Partial<Record<SignatureKey, SignatureRef>>
   >({});
 
   const handleSelect = (questionText: string, answer: string) => {
@@ -210,8 +252,9 @@ const JsaQuestions = ({ jsa, onSuccess }: Props) => {
       setApiBase(baseUrl);
 
       let nextFormData = { ...formData };
+      let nextSignatureRefs = { ...signatureRefs };
 
-      const uploadedSignaturePaths = await uploadPendingJsaSignatures({
+      const uploadResult = await uploadPendingJsaSignatures({
         pendingSigs,
         baseUrl,
         token: token!,
@@ -219,15 +262,37 @@ const JsaQuestions = ({ jsa, onSuccess }: Props) => {
         jsaId: String(jsa._id),
       });
 
-      if (uploadedSignaturePaths) {
+      if (uploadResult) {
         nextFormData = {
           ...nextFormData,
-          ...uploadedSignaturePaths,
+          ...uploadResult.uploadedPaths,
+        };
+
+        nextSignatureRefs = {
+          ...nextSignatureRefs,
+          ...uploadResult.uploadedSignatures,
         };
 
         setPendingSigs({});
         setFormData(nextFormData);
+        setSignatureRefs(nextSignatureRefs);
       }
+
+      const now = new Date().toISOString();
+
+      const employeeSignature =
+        nextSignatureRefs.employeeSignature ||
+        buildSignatureRef({
+          path: nextFormData.employeeSignature,
+          signedAt: now,
+        });
+
+      const trainerSignature =
+        nextSignatureRefs.trainerSignature ||
+        buildSignatureRef({
+          path: nextFormData.trainerSignature,
+          signedAt: now,
+        });
 
       await axios.post(
         `${baseUrl}/employee-jsas`,
@@ -237,15 +302,9 @@ const JsaQuestions = ({ jsa, onSuccess }: Props) => {
           responses,
           assignedBy: currentUser?.name,
           status: "completed",
-          completedAt: new Date().toISOString(),
-          employeeSignature: {
-            url: nextFormData.employeeSignature,
-            signedAt: new Date().toISOString(),
-          },
-          trainerSignature: {
-            url: nextFormData.trainerSignature,
-            signedAt: new Date().toISOString(),
-          },
+          completedAt: now,
+          employeeSignature,
+          trainerSignature,
         },
         {
           headers: {

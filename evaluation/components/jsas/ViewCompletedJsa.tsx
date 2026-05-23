@@ -48,6 +48,16 @@ function getQuestionOptions(question: any) {
     : ["Yes", "No"];
 }
 
+function getSignaturePath(signature: any) {
+  if (!signature) return "";
+
+  if (typeof signature === "string") {
+    return signature;
+  }
+
+  return signature?.path || signature?.url || "";
+}
+
 const ViewCompletedJsa = ({ jsa, onViewPdf }: Props) => {
   const { employee } = useEmployeeContext();
   const { width } = useWindowDimensions();
@@ -107,8 +117,8 @@ const ViewCompletedJsa = ({ jsa, onViewPdf }: Props) => {
         setResponses(nextResponses);
 
         setFormData({
-          employeeSignature: record?.employeeSignature?.url || "",
-          trainerSignature: record?.trainerSignature?.url || "",
+          employeeSignature: getSignaturePath(record?.employeeSignature),
+          trainerSignature: getSignaturePath(record?.trainerSignature),
         });
       } catch (error: any) {
         if (!isMounted) return;
@@ -368,8 +378,8 @@ const ViewCompletedJsa = ({ jsa, onViewPdf }: Props) => {
           const previewSource = makePreview(stored);
           const label =
             sig.key === "employeeSignature"
-              ? employee?.employee_name
-              : assignedByName;
+              ? employee?.employee_name || sig.label
+              : sig.label;
 
           return (
             <View
