@@ -20,14 +20,18 @@ import AssignLockerCard from "@/components/users/AssignLockerCard";
 
 type SelectionMode = "employees" | "lockers";
 
+type EmployeeSelectionView = "viewCompletedJsa" | "AssignJSA";
+
 type SelectionSheetProps = {
   mode: SelectionMode;
   jsa?: any;
   filter?: string;
+  source?: string;
   handleSelectedEmployee?: (
     employee: any,
-    view: "viewCompletedJsa" | "AssignJSA",
+    view: EmployeeSelectionView,
   ) => Promise<void> | void;
+  onEmployeeSelected?: (employee: any) => Promise<void> | void;
   onLockerSelected?: (locker: any) => Promise<void> | void;
   searchPlaceholderLabel?: string;
   emptyTitle?: string;
@@ -40,13 +44,16 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
   mode,
   jsa,
   filter,
+  source,
   handleSelectedEmployee,
+  onEmployeeSelected,
   onLockerSelected,
   searchPlaceholderLabel,
   emptyTitle,
   emptyDescription,
 }) => {
   const isEmployeeMode = mode === "employees";
+  const isJsaEmployeeMode = isEmployeeMode && !!jsa;
   const mountedRef = useRef(true);
 
   const [query, setQuery] = useState("");
@@ -123,7 +130,7 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
   }, [loadInitial]);
 
   useEffect(() => {
-    if (!isEmployeeMode || !jsa?._id) return;
+    if (!isJsaEmployeeMode || !jsa?._id) return;
 
     let isMounted = true;
 
@@ -165,7 +172,7 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [isEmployeeMode, jsa?._id]);
+  }, [isJsaEmployeeMode, jsa?._id]);
 
   const loadMore = useCallback(async () => {
     if (fetchingMore || loading) return;
@@ -264,12 +271,21 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
   }, []);
 
   const handleEmployeePress = useCallback(
-    async (employee: any, view: "viewCompletedJsa" | "AssignJSA") => {
-      if (!handleSelectedEmployee) return;
-
+    async (employee: any, view?: EmployeeSelectionView) => {
       try {
         setActionLoading(true);
-        await handleSelectedEmployee(employee, view);
+
+        if (isJsaEmployeeMode && handleSelectedEmployee && view) {
+          await handleSelectedEmployee(employee, view);
+          return;
+        }
+
+        if (onEmployeeSelected) {
+          await onEmployeeSelected(employee);
+          return;
+        }
+
+        console.warn("SelectionSheet: no employee selection handler provided.");
       } catch (error) {
         console.error("SelectionSheet employee action error:", error);
       } finally {
@@ -278,7 +294,7 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
         }
       }
     },
-    [handleSelectedEmployee],
+    [isJsaEmployeeMode, handleSelectedEmployee, onEmployeeSelected],
   );
 
   const handleLockerPress = useCallback(
@@ -315,8 +331,13 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
         return (
           <AssignEmployeeCard
             jsa={jsa}
+            source={source}
             {...item}
-            hasJsaAssigned={assignedEmployeeIds.has(String(item?._id))}
+            hasJsaAssigned={
+              isJsaEmployeeMode
+                ? assignedEmployeeIds.has(String(item?._id))
+                : false
+            }
             handleEmployeePress={handleEmployeePress}
           />
         );
@@ -328,7 +349,9 @@ const SelectionSheet: React.FC<SelectionSheetProps> = ({
     },
     [
       isEmployeeMode,
+      isJsaEmployeeMode,
       jsa,
+      source,
       assignedEmployeeIds,
       handleEmployeePress,
       handleLockerPress,

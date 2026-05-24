@@ -408,8 +408,8 @@ const Evaluations = () => {
           <SelectionSheet
             mode="employees"
             source="evaluations"
-            onEmployeeSelected={(employeeId) => {
-              setSelectedEmployeeId(employeeId);
+            onEmployeeSelected={(employee: any) => {
+              setSelectedEmployeeId(employee?._id);
               setSheetMode("evaluation");
               setSheetView("step1");
               setSelectedEvaluationId(null);
