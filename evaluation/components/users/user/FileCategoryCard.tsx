@@ -1,20 +1,13 @@
 import React from "react";
-
 import { Text, View } from "react-native";
-
 import Icon from "react-native-vector-icons/Feather";
-
 import SinglePressTouchable from "@/app/utils/SinglePress";
-
 import { FileCategory } from "./EmployeeFilesHub";
 
 type Props = {
   category: FileCategory;
-
   isActive: boolean;
-
   isTablet?: boolean;
-
   onPress: () => void;
 };
 

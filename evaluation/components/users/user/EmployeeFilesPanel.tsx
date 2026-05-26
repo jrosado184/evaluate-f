@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Text, View } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 
@@ -26,7 +26,8 @@ const EmployeeFilesPanel = ({
   onSwipeableWillOpen,
   onOpenJsa,
 }: Props) => {
-  const [hasJsaFiles, setHasJsaFiles] = useState(false);
+  const [jsaCount, setJsaCount] = useState(0);
+  const [jsaLoading, setJsaLoading] = useState(false);
 
   const activeCategoryLabel =
     categories.find((category) => category.key === activeCategory)?.title ||
@@ -37,16 +38,26 @@ const EmployeeFilesPanel = ({
 
   const showJsas = activeCategory === "all" || activeCategory === "jsas";
 
-  const hasEvaluationFiles = showEvaluations && evaluationFiles.length > 0;
+  const hasEvaluationFiles = evaluationFiles.length > 0;
+  const hasJsaFiles = jsaCount > 0;
 
-  const shouldShowEmpty =
-    activeCategory === "evaluations"
-      ? evaluationFiles.length === 0
-      : activeCategory === "jsas"
-        ? !hasJsaFiles
-        : activeCategory === "all"
-          ? !hasEvaluationFiles && !hasJsaFiles
-          : true;
+  const shouldShowEmpty = useMemo(() => {
+    if (jsaLoading) return false;
+
+    if (activeCategory === "evaluations") {
+      return !hasEvaluationFiles;
+    }
+
+    if (activeCategory === "jsas") {
+      return !hasJsaFiles;
+    }
+
+    if (activeCategory === "all") {
+      return !hasEvaluationFiles && !hasJsaFiles;
+    }
+
+    return true;
+  }, [activeCategory, hasEvaluationFiles, hasJsaFiles, jsaLoading]);
 
   return (
     <View className="bg-white">
@@ -63,7 +74,7 @@ const EmployeeFilesPanel = ({
       </View>
 
       <View className="gap-3">
-        {hasEvaluationFiles && (
+        {showEvaluations && hasEvaluationFiles && (
           <EvaluationFilesList
             files={evaluationFiles}
             onOpenEvaluation={onOpenEvaluation}
@@ -72,7 +83,14 @@ const EmployeeFilesPanel = ({
           />
         )}
 
-        {showJsas && <JsaFilesList onOpenJsa={onOpenJsa} />}
+        {showJsas && (
+          <JsaFilesList
+            onOpenJsa={onOpenJsa}
+            onCountChange={setJsaCount}
+            onLoadingChange={setJsaLoading}
+            showEmptyState={activeCategory === "jsas"}
+          />
+        )}
 
         {shouldShowEmpty && <EmployeeFilesEmptyState />}
       </View>

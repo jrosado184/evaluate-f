@@ -34,7 +34,7 @@ type Props = {
   workHardeningFiles: any[];
   newHireFiles: any[];
   jsaFiles: any[];
-  onCreate: () => void;
+  onCreate: (activeCategory: any) => void;
   onOpenEvaluation: (evaluationId: string) => void;
   onDeleteEvaluation: (evaluationId: string) => void;
   onSwipeableWillOpen: (ref: Swipeable | null) => void;
@@ -70,7 +70,7 @@ const EmployeeFilesHub = ({
       },
       {
         key: "jsas",
-        title: "JSA Files",
+        title: "JSA's",
         icon: "shield",
         count: jsaFiles.length,
       },
@@ -121,7 +121,7 @@ const EmployeeFilesHub = ({
 
         {activeCategory !== "all" && (
           <SinglePressTouchable
-            onPress={onCreate}
+            onPress={() => onCreate(activeCategory)}
             className="h-11 w-11 items-center justify-center rounded-full bg-blue-900"
           >
             <Icon name="plus" size={18} color="#FFFFFF" />
