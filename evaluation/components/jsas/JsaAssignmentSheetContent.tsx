@@ -17,12 +17,7 @@ type Props = {
   onSuccess: () => void;
 };
 
-const JsaAssignmentSheetContent = ({
-  view,
-  setView,
-  jsa,
-  onSuccess,
-}: Props) => {
+const JsaAssignmentSheetContent = ({ view, setView, jsa }: Props) => {
   const { setEmployee } = useEmployeeContext();
 
   const handleSelectEmployee = async (
@@ -90,7 +85,7 @@ const JsaAssignmentSheetContent = ({
   }
 
   if (view === "AssignJSA") {
-    return <JsaQuestions jsa={jsa} onSuccess={onSuccess} />;
+    return <JsaQuestions jsa={jsa} />;
   }
 
   if (view === "viewCompletedJsa") {

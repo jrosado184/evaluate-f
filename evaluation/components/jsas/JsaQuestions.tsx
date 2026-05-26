@@ -9,19 +9,19 @@ import * as FileSystem from "expo-file-system";
 
 import SinglePressTouchable from "@/app/utils/SinglePress";
 import useEmployeeContext from "@/app/context/EmployeeContext";
+import useAuthContext from "@/app/context/AuthContext";
 import getServerIP from "@/app/requests/NetworkAddress";
 import SignatureModal from "@/components/SignatureModal";
+import ViewCompletedJsa from "@/components/jsas/ViewCompletedJsa";
 import {
   pickUploadedFileId,
   pickUploadedFileUrl,
   toRelativeApiPath,
   uploadJsaSignatures,
 } from "@/app/helpers/signatureHelpers";
-import useAuthContext from "@/app/context/AuthContext";
 
 type Props = {
   jsa: any;
-  onSuccess: () => void;
 };
 
 type SignatureKey = "employeeSignature" | "trainerSignature";
@@ -182,7 +182,7 @@ async function uploadPendingJsaSignatures({
   };
 }
 
-const JsaQuestions = ({ jsa, onSuccess }: Props) => {
+const JsaQuestions = ({ jsa }: Props) => {
   const { employee } = useEmployeeContext();
   const { currentUser } = useAuthContext();
   const { width } = useWindowDimensions();
@@ -205,6 +205,7 @@ const JsaQuestions = ({ jsa, onSuccess }: Props) => {
   const [signatureRefs, setSignatureRefs] = useState<
     Partial<Record<SignatureKey, SignatureRef>>
   >({});
+  const [completedJsa, setCompletedJsa] = useState<any | null>(null);
 
   const handleSelect = (questionText: string, answer: string) => {
     setResponses((prev) => ({
@@ -249,6 +250,12 @@ const JsaQuestions = ({ jsa, onSuccess }: Props) => {
 
       const token = await AsyncStorage.getItem("token");
       const baseUrl = await getServerIP();
+
+      if (!token) {
+        Alert.alert("Error", "Missing auth token.");
+        return;
+      }
+
       setApiBase(baseUrl);
 
       let nextFormData = { ...formData };
@@ -257,7 +264,7 @@ const JsaQuestions = ({ jsa, onSuccess }: Props) => {
       const uploadResult = await uploadPendingJsaSignatures({
         pendingSigs,
         baseUrl,
-        token: token!,
+        token,
         employeeId: String(employee._id),
         jsaId: String(jsa._id),
       });
@@ -294,7 +301,7 @@ const JsaQuestions = ({ jsa, onSuccess }: Props) => {
           signedAt: now,
         });
 
-      await axios.post(
+      const response = await axios.post(
         `${baseUrl}/employee-jsas`,
         {
           employeeId: employee._id,
@@ -314,12 +321,21 @@ const JsaQuestions = ({ jsa, onSuccess }: Props) => {
         },
       );
 
-      onSuccess();
+      setCompletedJsa({
+        ...(response.data || {}),
+        jsa,
+        employee,
+        responses,
+        completedAt: now,
+        employeeSignature,
+        trainerSignature,
+      });
     } catch (error: any) {
       console.error(
         "Failed to create completed employee JSA:",
         error?.response?.data || error,
       );
+
       Alert.alert(
         "Error",
         error?.response?.data?.error ||
@@ -331,6 +347,10 @@ const JsaQuestions = ({ jsa, onSuccess }: Props) => {
       setSubmitting(false);
     }
   };
+
+  if (completedJsa) {
+    return <ViewCompletedJsa completedJsa={completedJsa} />;
+  }
 
   return (
     <>
@@ -386,16 +406,15 @@ const JsaQuestions = ({ jsa, onSuccess }: Props) => {
 
           <View className="my-4 h-px bg-gray-100" />
 
-          <View
-            className={`${isTabletLayout ? "flex-row items-start justify-between" : ""}`}
-          >
-            <View className={`${isTabletLayout ? "flex-1 pr-4" : ""}`}>
+          <View className={isTabletLayout ? "flex-row items-start" : ""}>
+            <View className={isTabletLayout ? "flex-1 pr-4" : ""}>
               <View className="flex-row items-center">
                 <MaterialCommunityIcons
                   name="account-outline"
                   size={18}
                   color="#6B7280"
                 />
+
                 <Text className="ml-2 text-[13px] text-gray-500">
                   Assigning to
                 </Text>
@@ -429,7 +448,9 @@ const JsaQuestions = ({ jsa, onSuccess }: Props) => {
         </View>
 
         <View
-          className={`mt-4 ${isTabletLayout ? "flex-row flex-wrap justify-between" : "gap-3"} pb-6`}
+          className={`mt-4 ${
+            isTabletLayout ? "flex-row flex-wrap justify-between" : "gap-3"
+          } pb-6`}
         >
           {questions.map((question: any, index: number) => {
             const questionText = question?.question ?? "";
@@ -490,7 +511,7 @@ const JsaQuestions = ({ jsa, onSuccess }: Props) => {
           })}
         </View>
 
-        <View className={`${isTabletLayout ? "flex-row justify-between" : ""}`}>
+        <View className={isTabletLayout ? "flex-row justify-between" : ""}>
           {SIGNATURE_FIELDS.map((sig) => {
             const stored = formData[sig.key];
             const previewSource = pendingSigs[sig.key] || makePreview(stored);
@@ -543,6 +564,7 @@ const JsaQuestions = ({ jsa, onSuccess }: Props) => {
                     size={18}
                     color="#FFFFFF"
                   />
+
                   <Text className="ml-2 text-[14px] font-semibold text-white">
                     Save JSA
                   </Text>
