@@ -1,17 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import { FlatList, Text, View } from "react-native";
 import { ActivityIndicator } from "react-native-paper";
 
 import Search from "@/components/Search";
 import JsaCard from "@/components/jsas/JsaCard";
+import JsaQuestions from "@/components/jsas/JsaQuestions";
 import SinglePressTouchable from "@/app/utils/SinglePress";
 import useJsaList from "@/hooks/useJsaList";
 
-type Props = {
-  onSelectJsa?: (jsa: any) => void;
-};
+const JsaSelection = () => {
+  const [selectedJsa, setSelectedJsa] = useState<any | null>(null);
 
-const JsaSelection = ({ onSelectJsa }: Props) => {
   const {
     query,
     jsas,
@@ -22,6 +21,23 @@ const JsaSelection = ({ onSelectJsa }: Props) => {
     handleSearchChange,
     getMoreData,
   } = useJsaList();
+
+  if (selectedJsa) {
+    return (
+      <View className="flex-1 bg-white">
+        <SinglePressTouchable
+          onPress={() => setSelectedJsa(null)}
+          className="mb-4 px-5 pt-5"
+        >
+          <Text className="text-sm font-inter-semibold text-blue-700">
+            ← Back to JSA list
+          </Text>
+        </SinglePressTouchable>
+
+        <JsaQuestions jsa={selectedJsa} />
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-white p-5">
@@ -62,7 +78,7 @@ const JsaSelection = ({ onSelectJsa }: Props) => {
           onEndReached={getMoreData}
           onEndReachedThreshold={0.35}
           renderItem={({ item }) => (
-            <SinglePressTouchable onPress={() => onSelectJsa?.(item)}>
+            <SinglePressTouchable onPress={() => setSelectedJsa(item)}>
               <JsaCard
                 name={item?.name}
                 position={item?.position}

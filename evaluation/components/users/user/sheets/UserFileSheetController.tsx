@@ -177,12 +177,7 @@ const UserFileSheetController = forwardRef<UserFileSheetControllerRef, Props>(
             onRefresh={onRefresh}
           />
         ) : mode === "jsaSelection" ? (
-          <JsaSelection
-            onSelectJsa={(jsa) => {
-              console.log("Selected JSA:", jsa);
-              close();
-            }}
-          />
+          <JsaSelection />
         ) : mode === "workHardening" ? (
           <PlaceholderSheet title="Work hardening flow coming next." />
         ) : mode === "newHire" ? (

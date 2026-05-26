@@ -12,34 +12,39 @@ import getServerIP from "@/app/requests/NetworkAddress";
 import { getAvatarMeta } from "@/app/helpers/avatar";
 
 type Props = {
-  jsa: any;
-  onSuccess?: () => void;
+  jsa?: any;
+  completedJsa?: any;
   onViewPdf?: (employeeJsa: any) => void;
 };
 
 type SignatureKey = "employeeSignature" | "trainerSignature";
-
-const INITIAL_FORM_DATA = {
-  employeeSignature: "",
-  trainerSignature: "",
-};
 
 const SIGNATURE_FIELDS: Array<{ key: SignatureKey; label: string }> = [
   { key: "employeeSignature", label: "Employee" },
   { key: "trainerSignature", label: "Trainer" },
 ];
 
-function absFromRelative(rel: string, baseUrl: string) {
-  if (!rel) return "";
-  if (!rel.startsWith("/")) return rel;
+const INITIAL_FORM_DATA = {
+  employeeSignature: "",
+  trainerSignature: "",
+};
+
+function absFromRelative(path: string, baseUrl: string) {
+  if (!path) return "";
+  if (!path.startsWith("/")) return path;
 
   try {
-    const u = new URL(baseUrl);
-    return `${u.origin}${rel}`;
+    const url = new URL(baseUrl);
+    return `${url.origin}${path}`;
   } catch {
-    const origin = baseUrl.replace(/\/api\/?$/, "");
-    return `${origin}${rel}`;
+    return `${baseUrl.replace(/\/api\/?$/, "")}${path}`;
   }
+}
+
+function getSignaturePath(signature: any) {
+  if (!signature) return "";
+  if (typeof signature === "string") return signature;
+  return signature.path || signature.url || "";
 }
 
 function getQuestionOptions(question: any) {
@@ -48,42 +53,56 @@ function getQuestionOptions(question: any) {
     : ["Yes", "No"];
 }
 
-function getSignaturePath(signature: any) {
-  if (!signature) return "";
-
-  if (typeof signature === "string") {
-    return signature;
-  }
-
-  return signature?.path || signature?.url || "";
-}
-
-const ViewCompletedJsa = ({ jsa, onViewPdf }: Props) => {
+const ViewCompletedJsa = ({ jsa, completedJsa, onViewPdf }: Props) => {
   const { employee } = useEmployeeContext();
   const { width } = useWindowDimensions();
 
   const isTabletLayout = width >= 768;
 
-  const questions = useMemo(
-    () => (Array.isArray(jsa?.questions) ? jsa.questions : []),
-    [jsa?.questions],
-  );
+  const completedRecord = completedJsa?.data || completedJsa || null;
+  const sourceJsa = completedJsa?.jsa || jsa || {};
+  const sourceEmployee = completedJsa?.employee || employee || {};
+
+  const questions = useMemo(() => {
+    return Array.isArray(sourceJsa?.questions) ? sourceJsa.questions : [];
+  }, [sourceJsa?.questions]);
 
   const [apiBase, setApiBase] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [employeeJsa, setEmployeeJsa] = useState<any | null>(null);
-  const [responses, setResponses] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(!completedRecord);
+  const [employeeJsa, setEmployeeJsa] = useState<any | null>(completedRecord);
+  const [responses, setResponses] = useState<Record<string, string>>(
+    completedRecord?.responses || completedJsa?.responses || {},
+  );
   const [formData, setFormData] = useState(INITIAL_FORM_DATA);
 
-  const assignedByName = employeeJsa?.assignedBy || "Not available";
-  const assignedByAvatar = getAvatarMeta(
-    assignedByName === "Not available" ? "NA" : assignedByName,
-  );
+  useEffect(() => {
+    const setupCompletedData = async () => {
+      if (!completedRecord) return;
+
+      const baseUrl = await getServerIP();
+
+      setApiBase(baseUrl);
+      setEmployeeJsa(completedRecord);
+      setResponses(completedRecord?.responses || completedJsa?.responses || {});
+      setFormData({
+        employeeSignature: getSignaturePath(
+          completedRecord?.employeeSignature || completedJsa?.employeeSignature,
+        ),
+        trainerSignature: getSignaturePath(
+          completedRecord?.trainerSignature || completedJsa?.trainerSignature,
+        ),
+      });
+      setLoading(false);
+    };
+
+    setupCompletedData();
+  }, [completedJsa, completedRecord]);
 
   useEffect(() => {
-    if (!jsa?._id || !employee?._id) return;
+    if (completedRecord) return;
+    if (!sourceJsa?._id || !sourceEmployee?._id) return;
 
-    let isMounted = true;
+    let mounted = true;
 
     const fetchCompletedJsa = async () => {
       try {
@@ -92,11 +111,12 @@ const ViewCompletedJsa = ({ jsa, onViewPdf }: Props) => {
         const token = await AsyncStorage.getItem("token");
         const baseUrl = await getServerIP();
 
-        if (!isMounted) return;
+        if (!mounted) return;
+
         setApiBase(baseUrl);
 
         const response = await axios.get(
-          `${baseUrl}/employee-jsas?jsaId=${jsa._id}&employeeId=${employee._id}`,
+          `${baseUrl}/employee-jsas?jsaId=${sourceJsa._id}&employeeId=${sourceEmployee._id}`,
           {
             headers: {
               Authorization: token,
@@ -104,47 +124,45 @@ const ViewCompletedJsa = ({ jsa, onViewPdf }: Props) => {
           },
         );
 
-        if (!isMounted) return;
+        if (!mounted) return;
 
         const record = response?.data?.data?.[0] || null;
+
         setEmployeeJsa(record);
-
-        const nextResponses =
-          record?.responses && typeof record.responses === "object"
-            ? record.responses
-            : {};
-
-        setResponses(nextResponses);
-
+        setResponses(record?.responses || {});
         setFormData({
           employeeSignature: getSignaturePath(record?.employeeSignature),
           trainerSignature: getSignaturePath(record?.trainerSignature),
         });
       } catch (error: any) {
-        if (!isMounted) return;
         console.log(
           "Failed to fetch completed employee JSA",
           error?.response?.data || error,
         );
+
         setEmployeeJsa(null);
         setResponses({});
         setFormData(INITIAL_FORM_DATA);
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (mounted) setLoading(false);
       }
     };
 
     fetchCompletedJsa();
 
     return () => {
-      isMounted = false;
+      mounted = false;
     };
-  }, [jsa?._id, employee?._id]);
+  }, [completedRecord, sourceJsa?._id, sourceEmployee?._id]);
 
-  const makePreview = (value: string) =>
-    value?.startsWith("/api/") ? absFromRelative(value, apiBase) : value;
+  const makePreview = (path: string) => {
+    return path?.startsWith("/api/") ? absFromRelative(path, apiBase) : path;
+  };
+
+  const assignedByName = employeeJsa?.assignedBy || "Not available";
+  const assignedByAvatar = getAvatarMeta(
+    assignedByName === "Not available" ? "NA" : assignedByName,
+  );
 
   if (loading) {
     return (
@@ -167,9 +185,11 @@ const ViewCompletedJsa = ({ jsa, onViewPdf }: Props) => {
             color="#9CA3AF"
           />
         </View>
+
         <Text className="mt-4 text-[17px] font-semibold text-gray-800">
           Completed JSA not found
         </Text>
+
         <Text className="mt-2 text-center text-[14px] leading-5 text-gray-500">
           We couldn’t find a saved JSA record for this employee and document.
         </Text>
@@ -203,24 +223,24 @@ const ViewCompletedJsa = ({ jsa, onViewPdf }: Props) => {
               numberOfLines={2}
               className="mb-1 text-[16px] font-bold text-gray-900"
             >
-              {jsa?.name ?? "Selected JSA"}
+              {sourceJsa?.name || employeeJsa?.jsaName || "Completed JSA"}
             </Text>
 
-            {(!!jsa?.position || !!jsa?.department) && (
-              <View className="flex-row items-center flex-wrap">
-                {!!jsa?.position && (
+            {(!!sourceJsa?.position || !!sourceJsa?.department) && (
+              <View className="flex-row flex-wrap items-center">
+                {!!sourceJsa?.position && (
                   <Text className="text-[13px] font-medium text-gray-500">
-                    {jsa.position}
+                    {sourceJsa.position}
                   </Text>
                 )}
 
-                {!!jsa?.position && !!jsa?.department && (
+                {!!sourceJsa?.position && !!sourceJsa?.department && (
                   <Text className="mx-1.5 text-[13px] text-gray-300">•</Text>
                 )}
 
-                {!!jsa?.department && (
+                {!!sourceJsa?.department && (
                   <Text className="text-[13px] font-medium text-gray-500">
-                    {jsa.department}
+                    {sourceJsa.department}
                   </Text>
                 )}
               </View>
@@ -230,42 +250,41 @@ const ViewCompletedJsa = ({ jsa, onViewPdf }: Props) => {
 
         <View className="my-4 h-px bg-gray-100" />
 
-        <View
-          className={`${isTabletLayout ? "flex-row items-start justify-between" : ""}`}
-        >
-          <View className={`${isTabletLayout ? "flex-1 pr-4" : ""}`}>
+        <View className={isTabletLayout ? "flex-row justify-between" : ""}>
+          <View className={isTabletLayout ? "flex-1 pr-4" : ""}>
             <View className="flex-row items-center">
               <MaterialCommunityIcons
                 name="account-outline"
                 size={18}
                 color="#6B7280"
               />
+
               <Text className="ml-2 text-[13px] text-gray-500">
                 Assigned to
               </Text>
             </View>
 
             <Text className="mt-2 text-[16px] font-semibold text-gray-900">
-              {employee?.employee_name ??
-                employeeJsa?.employeeName ??
+              {sourceEmployee?.employee_name ||
+                employeeJsa?.employeeName ||
                 "Selected employee"}
             </Text>
 
-            {(!!employee?.position || !!employee?.department) && (
-              <View className="mt-1 flex-row items-center flex-wrap">
-                {!!employee?.position && (
+            {(!!sourceEmployee?.position || !!sourceEmployee?.department) && (
+              <View className="mt-1 flex-row flex-wrap items-center">
+                {!!sourceEmployee?.position && (
                   <Text className="text-[13px] font-medium text-gray-500">
-                    {employee.position}
+                    {sourceEmployee.position}
                   </Text>
                 )}
 
-                {!!employee?.position && !!employee?.department && (
+                {!!sourceEmployee?.position && !!sourceEmployee?.department && (
                   <Text className="mx-1.5 text-[13px] text-gray-300">•</Text>
                 )}
 
-                {!!employee?.department && (
+                {!!sourceEmployee?.department && (
                   <Text className="text-[13px] font-medium text-gray-500">
-                    {employee.department}
+                    {sourceEmployee.department}
                   </Text>
                 )}
               </View>
@@ -273,13 +292,16 @@ const ViewCompletedJsa = ({ jsa, onViewPdf }: Props) => {
           </View>
 
           <View
-            className={`mt-4 ${isTabletLayout ? "mt-0 items-end justify-start" : ""}`}
+            className={`mt-4 ${
+              isTabletLayout ? "mt-0 items-end justify-start" : ""
+            }`}
           >
-            <View className="rounded-full bg-emerald-100 px-3 py-1.5 self-start">
+            <View className="self-start rounded-full bg-emerald-100 px-3 py-1.5">
               <Text className="text-[12px] font-semibold capitalize text-emerald-700">
-                {employeeJsa?.status
-                  ? String(employeeJsa.status).replaceAll("_", " ")
-                  : "completed"}
+                {String(employeeJsa?.status || "completed").replaceAll(
+                  "_",
+                  " ",
+                )}
               </Text>
             </View>
 
@@ -316,7 +338,9 @@ const ViewCompletedJsa = ({ jsa, onViewPdf }: Props) => {
       </View>
 
       <View
-        className={`mt-4 ${isTabletLayout ? "flex-row flex-wrap justify-between" : "gap-3"} pb-6`}
+        className={`mt-4 ${
+          isTabletLayout ? "flex-row flex-wrap justify-between" : "gap-3"
+        } pb-6`}
       >
         {questions.map((question: any, index: number) => {
           const questionText = question?.question ?? "";
@@ -325,7 +349,7 @@ const ViewCompletedJsa = ({ jsa, onViewPdf }: Props) => {
 
           return (
             <View
-              key={question?.order ?? index}
+              key={question?.order ?? questionText ?? index}
               className={`rounded-[20px] border border-gray-200 bg-white px-4 py-4 ${
                 isTabletLayout ? "mb-4 w-[48.7%]" : ""
               }`}
@@ -372,13 +396,14 @@ const ViewCompletedJsa = ({ jsa, onViewPdf }: Props) => {
         })}
       </View>
 
-      <View className={`${isTabletLayout ? "flex-row justify-between" : ""}`}>
+      <View className={isTabletLayout ? "flex-row justify-between" : ""}>
         {SIGNATURE_FIELDS.map((sig) => {
           const stored = formData[sig.key];
           const previewSource = makePreview(stored);
+
           const label =
             sig.key === "employeeSignature"
-              ? employee?.employee_name || sig.label
+              ? sourceEmployee?.employee_name || sig.label
               : sig.label;
 
           return (
@@ -390,7 +415,7 @@ const ViewCompletedJsa = ({ jsa, onViewPdf }: Props) => {
                 {label} Signature
               </Text>
 
-              <View className="items-center justify-center rounded-md border border-gray-300 bg-gray-100 px-4 py-3 min-h-[92px]">
+              <View className="min-h-[92px] items-center justify-center rounded-md border border-gray-300 bg-gray-100 px-4 py-3">
                 {previewSource ? (
                   <Image
                     source={{ uri: previewSource }}
@@ -420,6 +445,7 @@ const ViewCompletedJsa = ({ jsa, onViewPdf }: Props) => {
             <Text className="text-[15px] font-semibold text-gray-900">
               JSA Summary
             </Text>
+
             <Text className="mt-0.5 text-[13px] text-gray-500">
               View as PDF document
             </Text>
